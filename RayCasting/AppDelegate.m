@@ -7,6 +7,7 @@
 
 #import "AppDelegate.h"
 #import "MainViewController.h"
+#import "Config.h"
 
 @interface AppDelegate ()
 
@@ -18,7 +19,7 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification*)aNotification {
     [self setupMenus];
-    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 800, 600)
+    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT)
                                               styleMask:(NSWindowStyleMaskTitled |
                                                          NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskMiniaturizable |
@@ -72,9 +73,6 @@
     [windowMenu addItem:zoomMenuItem];
 
     [NSApp setMainMenu:mainMenu];
-}
-
-- (void)applicationWillTerminate:(NSNotification*)aNotification {
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)sender {

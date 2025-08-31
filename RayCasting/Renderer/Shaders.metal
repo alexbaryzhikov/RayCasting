@@ -43,9 +43,9 @@ fragment float4 fragmentShader(ColorInOut in [[stage_in]],
                                constant Uniforms & uniforms [[ buffer(BufferIndexUniforms) ]],
                                texture2d<half> colorMap     [[ texture(TextureIndexColor) ]])
 {
-    constexpr sampler colorSampler(mip_filter::linear,
-                                   mag_filter::linear,
-                                   min_filter::linear);
+    constexpr sampler colorSampler(mip_filter::nearest,
+                                   mag_filter::nearest,
+                                   min_filter::nearest);
 
     half4 colorSample   = colorMap.sample(colorSampler, in.texCoord.xy);
 

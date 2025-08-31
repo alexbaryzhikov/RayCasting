@@ -6,6 +6,7 @@
 //
 
 #import "MainViewController.h"
+#import "Config.h"
 #import "Renderer.h"
 
 @implementation MainViewController {
@@ -15,14 +16,13 @@
 }
 
 - (void)loadView {
-    self.view = [[MTKView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600)];
+    self.view = [[MTKView alloc] initWithFrame:NSMakeRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT)];
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
 
     _view = (MTKView*)self.view;
-
     _view.device = MTLCreateSystemDefaultDevice();
 
     if (!_view.device) {
@@ -32,9 +32,7 @@
     }
 
     _renderer = [[Renderer alloc] initWithMetalKitView:_view];
-
     [_renderer mtkView:_view drawableSizeWillChange:_view.drawableSize];
-
     _view.delegate = _renderer;
 }
 
