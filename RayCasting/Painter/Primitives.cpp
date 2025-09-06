@@ -54,23 +54,35 @@ void line(float x0, float y0, float x1, float y1) {
 
 void box(float x, float y, float w, float h) {
     assert(w >= 0.f && h >= 0.f);
-    w = round(w);
-    h = round(h);
-    if (w > 0) {
-        --w;
-        if (h > 0) {
-            --h;
-            line(x, y, x + w, y);
-            line(x, y + h, x + w, y + h);
-            line(x, y, x, y + h);
-            line(x + w, y, x + w, y + h);
-        } else {
-            line(x, y, x + w, y);
-        }
-    } else {
-        if (h > 0) {
-            --h;
-            line(x, y, x, y + h);
+    if (w == 0.f || h == 0.f) return;
+    w = (w < 1.f ? 1.f : w);
+    h = (h < 1.f ? 1.f : h);
+    int xStart = round(x);
+    int xEnd = round(x + w);
+    int yStart = round(y);
+    int yEnd = round(y + h);
+    for (int i = xStart; i < xEnd; ++i) {
+        point(i, yStart);
+        point(i, yEnd - 1);
+    }
+    for (int j = yStart + 1; j < yEnd - 1; ++j) {
+        point(xStart, j);
+        point(xEnd - 1, j);
+    }
+}
+
+void boxFill(float x, float y, float w, float h) {
+    assert(w >= 0.f && h >= 0.f);
+    if (w == 0.f || h == 0.f) return;
+    w = (w < 1.f ? 1.f : w);
+    h = (h < 1.f ? 1.f : h);
+    int xStart = round(x);
+    int xEnd = round(x + w);
+    int yStart = round(y);
+    int yEnd = round(y + h);
+    for (int j = yStart; j < yEnd; ++j) {
+        for (int i = xStart; i < xEnd; ++i) {
+            point(i, j);
         }
     }
 }
