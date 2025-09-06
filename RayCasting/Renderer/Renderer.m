@@ -6,6 +6,8 @@
 //
 
 #import <ModelIO/ModelIO.h>
+#import <os/log.h>
+#import <os/signpost.h>
 #import <simd/simd.h>
 
 #import "Config.h"
@@ -16,6 +18,8 @@
 static const NSUInteger kMaxBuffersInFlight = 3;
 
 static const size_t kAlignedUniformsSize = (sizeof(Uniforms) & ~0xFF) + 0x100;
+
+static os_log_t rendererLog;
 
 @implementation Renderer {
     dispatch_semaphore_t _inFlightSemaphore;
@@ -37,6 +41,7 @@ static const size_t kAlignedUniformsSize = (sizeof(Uniforms) & ~0xFF) + 0x100;
 - (nonnull instancetype)initWithMetalKitView:(nonnull MTKView*)view {
     self = [super init];
     if (self) {
+        rendererLog = os_log_create("com.alexb.RayCasting", "PointsOfInterest");
         _inFlightSemaphore = dispatch_semaphore_create(kMaxBuffersInFlight);
         _device = view.device;
         [self _loadMetalWithView:view];
@@ -161,44 +166,11 @@ static const size_t kAlignedUniformsSize = (sizeof(Uniforms) & ~0xFF) + 0x100;
                                        error:error];
 }
 
-- (void)_updateDynamicBufferState {
-    /// Update the state of our uniform buffers before rendering
-
-    _uniformBufferIndex = (_uniformBufferIndex + 1) % kMaxBuffersInFlight;
-
-    _uniformBufferOffset = kAlignedUniformsSize * _uniformBufferIndex;
-
-    _uniformBufferAddress = ((uint8_t*)_dynamicUniformBuffer.contents) + _uniformBufferOffset;
-}
-
-- (void)_updateGameState {
-    /// Update any game state before encoding rendering commands to our drawable
-    [self _placeMesh];
-    [self _updateTexture];
-}
-
-- (void)_placeMesh {
-    Uniforms* uniforms = (Uniforms*)_uniformBufferAddress;
-
-    uniforms->projectionMatrix = _projectionMatrix;
-
-    vector_float3 rotationAxis = {1, 0, 0};
-    matrix_float4x4 modelMatrix = matrix4x4_rotation(M_PI_2, rotationAxis);
-    matrix_float4x4 viewMatrix = matrix4x4_translation(0, 0, -1.f / tanf(M_PI_4));
-
-    uniforms->modelViewMatrix = matrix_multiply(viewMatrix, modelMatrix);
-}
-
-- (void)_updateTexture {
-    const void* pixelBytes = [Painter drawFrame];
-    [_colorMap replaceRegion:MTLRegionMake2D(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-                 mipmapLevel:0
-                   withBytes:pixelBytes
-                 bytesPerRow:sizeof(uint32_t) * CANVAS_WIDTH];
-}
-
 - (void)drawInMTKView:(nonnull MTKView*)view {
     /// Per frame updates here
+
+    os_signpost_id_t signpostID = os_signpost_id_generate(rendererLog);
+    os_signpost_interval_begin(rendererLog, signpostID, "Renderer::draw", "Started");
 
     dispatch_semaphore_wait(_inFlightSemaphore, DISPATCH_TIME_FOREVER);
 
@@ -207,7 +179,7 @@ static const size_t kAlignedUniformsSize = (sizeof(Uniforms) & ~0xFF) + 0x100;
 
     __block dispatch_semaphore_t block_sema = _inFlightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
-      dispatch_semaphore_signal(block_sema);
+        dispatch_semaphore_signal(block_sema);
     }];
 
     [self _updateDynamicBufferState];
@@ -223,7 +195,7 @@ static const size_t kAlignedUniformsSize = (sizeof(Uniforms) & ~0xFF) + 0x100;
         /// Final pass rendering code here
 
         id<MTLRenderCommandEncoder> renderEncoder =
-            [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+        [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
         renderEncoder.label = @"MyRenderEncoder";
 
         [renderEncoder pushDebugGroup:@"DrawBox"];
@@ -269,6 +241,44 @@ static const size_t kAlignedUniformsSize = (sizeof(Uniforms) & ~0xFF) + 0x100;
     }
 
     [commandBuffer commit];
+
+    os_signpost_interval_end(rendererLog, signpostID, "Renderer::draw", "Finished");
+}
+
+- (void)_updateDynamicBufferState {
+    /// Update the state of our uniform buffers before rendering
+
+    _uniformBufferIndex = (_uniformBufferIndex + 1) % kMaxBuffersInFlight;
+
+    _uniformBufferOffset = kAlignedUniformsSize * _uniformBufferIndex;
+
+    _uniformBufferAddress = ((uint8_t*)_dynamicUniformBuffer.contents) + _uniformBufferOffset;
+}
+
+- (void)_updateGameState {
+    /// Update any game state before encoding rendering commands to our drawable
+    [self _placeMesh];
+    [self _updateTexture];
+}
+
+- (void)_placeMesh {
+    Uniforms* uniforms = (Uniforms*)_uniformBufferAddress;
+
+    uniforms->projectionMatrix = _projectionMatrix;
+
+    vector_float3 rotationAxis = {1, 0, 0};
+    matrix_float4x4 modelMatrix = matrix4x4_rotation(M_PI_2, rotationAxis);
+    matrix_float4x4 viewMatrix = matrix4x4_translation(0, 0, -1.f / tanf(M_PI_4));
+
+    uniforms->modelViewMatrix = matrix_multiply(viewMatrix, modelMatrix);
+}
+
+- (void)_updateTexture {
+    const void* pixelBytes = [Painter drawFrame];
+    [_colorMap replaceRegion:MTLRegionMake2D(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+                 mipmapLevel:0
+                   withBytes:pixelBytes
+                 bytesPerRow:sizeof(uint32_t) * CANVAS_WIDTH];
 }
 
 - (void)mtkView:(nonnull MTKView*)view drawableSizeWillChange:(CGSize)size {
