@@ -7,6 +7,6 @@
 
 @interface Painter : NSObject
 
-+ (const void*)drawFrame;
++ (void*)drawFrame;
 
 @end

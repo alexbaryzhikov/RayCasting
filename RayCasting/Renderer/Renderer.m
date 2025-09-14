@@ -14,6 +14,9 @@
 #import "Painter.h"
 #import "Renderer.h"
 #import "ShaderTypes.h"
+#import "Text.h"
+
+#define BYTES_PER_PIXEL 4
 
 static const NSUInteger kMaxBuffersInFlight = 3;
 
@@ -28,7 +31,7 @@ static os_log_t rendererLog;
     id<MTLBuffer> _dynamicUniformBuffer;
     id<MTLRenderPipelineState> _pipelineState;
     id<MTLDepthStencilState> _depthState;
-    id<MTLTexture> _colorMap;
+    id<MTLTexture> _canvasTexture;
     MTLVertexDescriptor* _mtlVertexDescriptor;
 
     uint32_t _uniformBufferOffset;
@@ -113,7 +116,7 @@ static os_log_t rendererLog;
 }
 
 - (void)_loadAssets {
-    /// Mesh
+    /// Canvas Mesh
 
     NSError* error;
     MTKMeshBufferAllocator* metalAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:_device];
@@ -130,16 +133,34 @@ static os_log_t rendererLog;
     _mesh = [[MTKMesh alloc] initWithMesh:mdlMesh device:_device error:&error];
 
     if (!_mesh || error) {
-        NSLog(@"Error creating MetalKit mesh %@", error.localizedDescription);
+        NSLog(@"Error creating mesh: %@", error.localizedDescription);
+        error = NULL;
     }
 
-    /// Texture
+    /// Canvas Texture
 
-    _colorMap = [self _createTexture];
+    _canvasTexture = [self _createTexture];
 
-    if (!_colorMap || error) {
-        NSLog(@"Error creating texture %@", error.localizedDescription);
+    if (!_canvasTexture || error) {
+        NSLog(@"Error creating canvas texture: %@", error.localizedDescription);
+        error = NULL;
     }
+
+    // Font Texture
+
+    id<MTLTexture> fontTexture = [self _loadTexture:@"FontSFMono" error:&error];
+
+    if (!fontTexture || error) {
+        NSLog(@"Error loading font texture: %@", error.localizedDescription);
+        error = NULL;
+    }
+
+    void* fontData = [Text fontData];
+    [fontTexture getBytes:fontData
+              bytesPerRow:BYTES_PER_PIXEL * fontTexture.width
+               fromRegion:MTLRegionMake2D(0, 0, fontTexture.width, fontTexture.height)
+              mipmapLevel:0];
+    [self _flipVertically:fontData width:fontTexture.width height:fontTexture.height];
 }
 
 - (nullable id<MTLTexture>)_createTexture {
@@ -153,17 +174,37 @@ static os_log_t rendererLog;
     return [_device newTextureWithDescriptor:descriptor];
 }
 
-- (nullable id<MTLTexture>)_loadTexture:(NSError* __nullable* __nullable)error {
+- (nullable id<MTLTexture>)_loadTexture:(nonnull NSString*)name error:(NSError**)error {
     MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:_device];
-    NSDictionary* textureLoaderOptions = @{
-        MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead),
-        MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate)
+    NSDictionary<MTKTextureLoaderOption, id>* options = @{
+        MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageUnknown),
+        MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModeShared),
     };
-    return [textureLoader newTextureWithName:@"ColorMap"
+    return [textureLoader newTextureWithName:name
                                  scaleFactor:1.0
                                       bundle:nil
-                                     options:textureLoaderOptions
+                                     options:options
                                        error:error];
+}
+
+- (void)_flipVertically:(void*)buffer width:(NSUInteger)width height:(NSUInteger)height {
+    if (!buffer || width == 0 || height == 0) {
+        return;
+    }
+
+    NSUInteger bytesPerRow = BYTES_PER_PIXEL * width;
+    uint8_t tempRow[bytesPerRow];
+    uint8_t* byteBuffer = (uint8_t*)buffer;
+
+    for (NSUInteger i = 0; i < height / 2; ++i) {
+        NSUInteger j = height - 1 - i;
+        uint8_t* topRow = byteBuffer + (i * bytesPerRow);
+        uint8_t* bottomRow = byteBuffer + (j * bytesPerRow);
+
+        memcpy(tempRow, topRow, bytesPerRow);
+        memcpy(topRow, bottomRow, bytesPerRow);
+        memcpy(bottomRow, tempRow, bytesPerRow);
+    }
 }
 
 - (void)drawInMTKView:(nonnull MTKView*)view {
@@ -179,7 +220,7 @@ static os_log_t rendererLog;
 
     __block dispatch_semaphore_t block_sema = _inFlightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
-        dispatch_semaphore_signal(block_sema);
+      dispatch_semaphore_signal(block_sema);
     }];
 
     [self _updateDynamicBufferState];
@@ -195,7 +236,7 @@ static os_log_t rendererLog;
         /// Final pass rendering code here
 
         id<MTLRenderCommandEncoder> renderEncoder =
-        [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+            [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
         renderEncoder.label = @"MyRenderEncoder";
 
         [renderEncoder pushDebugGroup:@"DrawBox"];
@@ -222,7 +263,7 @@ static os_log_t rendererLog;
             }
         }
 
-        [renderEncoder setFragmentTexture:_colorMap
+        [renderEncoder setFragmentTexture:_canvasTexture
                                   atIndex:TextureIndexColor];
 
         for (MTKSubmesh* submesh in _mesh.submeshes) {
@@ -274,11 +315,11 @@ static os_log_t rendererLog;
 }
 
 - (void)_updateTexture {
-    const void* pixelBytes = [Painter drawFrame];
-    [_colorMap replaceRegion:MTLRegionMake2D(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-                 mipmapLevel:0
-                   withBytes:pixelBytes
-                 bytesPerRow:sizeof(uint32_t) * CANVAS_WIDTH];
+    const void* frameData = [Painter drawFrame];
+    [_canvasTexture replaceRegion:MTLRegionMake2D(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+                      mipmapLevel:0
+                        withBytes:frameData
+                      bytesPerRow:BYTES_PER_PIXEL * CANVAS_WIDTH];
 }
 
 - (void)mtkView:(nonnull MTKView*)view drawableSizeWillChange:(CGSize)size {

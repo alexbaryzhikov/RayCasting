@@ -8,11 +8,11 @@
 #include "Canvas.hpp"
 #include "Palette.hpp"
 
-std::array<uint32_t, CANVAS_WIDTH * CANVAS_HEIGHT> canvas;
+std::array<uint32_t, CANVAS_SIZE> canvas;
 
 void point(int x, int y) {
     if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
-        uint32_t& c = canvas[y * CANVAS_WIDTH + x];
+        uint32_t& c = canvas[x + y * CANVAS_WIDTH];
         c = blend(c);
     }
 }

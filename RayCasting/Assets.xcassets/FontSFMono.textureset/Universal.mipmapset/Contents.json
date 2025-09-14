@@ -1,0 +1,12 @@
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "levels" : [
+    {
+      "filename" : "font_sf_mono_128.png",
+      "mipmap-level" : "base"
+    }
+  ]
+}

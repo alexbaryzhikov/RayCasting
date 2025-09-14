@@ -13,7 +13,7 @@
 
 @implementation Painter
 
-+ (const void*)drawFrame {
++ (void*)drawFrame {
     return drawFrame();
 }
 

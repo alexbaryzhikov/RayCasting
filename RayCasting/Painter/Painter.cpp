@@ -11,6 +11,7 @@
 #include "Painter.hpp"
 #include "Palette.hpp"
 #include "Primitives.hpp"
+#include "Text.hpp"
 
 void drawAnimatedBox() {
     const float size = 32;
@@ -67,8 +68,9 @@ void drawCheckers() {
     }
 }
 
-const void* drawFrame() {
+void* drawFrame() {
     canvas.fill(BLACK);
     drawAnimatedBox();
+    drawText(50, 30, "Ray Caster 2000", WHITE);
     return canvas.data();
 }
