@@ -18,6 +18,6 @@ void drawFontMap();
 
 void drawChar(float x, float y, const char c);
 
-void drawText(float x, float y, const std::string& text, uint32_t textColor = color);
+void drawText(float x, float y, const std::string& text, uint32_t textColor = fgColor);
 
 #endif /* Text_hpp */

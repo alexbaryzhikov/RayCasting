@@ -5,6 +5,7 @@
 //  Created by Aleksei Baryzhikov on 06.09.25.
 //
 
+#include <algorithm>
 #include <cassert>
 
 #include "Canvas.hpp"

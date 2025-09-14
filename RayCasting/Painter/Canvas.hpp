@@ -8,11 +8,11 @@
 #ifndef Canvas_hpp
 #define Canvas_hpp
 
-#include <array>
+#include <cstdint>
 
-#include "Config.h"
+void* canvasData();
 
-extern std::array<uint32_t, CANVAS_WIDTH * CANVAS_HEIGHT> canvas;
+void fillCanvas(uint32_t color);
 
 void point(int x, int y);
 

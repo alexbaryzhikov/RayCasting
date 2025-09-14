@@ -29,7 +29,7 @@ enum class BlendMode {
     add
 };
 
-extern uint32_t color;
+extern uint32_t fgColor;
 
 extern BlendMode blendMode;
 
@@ -45,6 +45,6 @@ uint32_t rgb(uint32_t bg, uint32_t fg);
 
 uint32_t alpha(uint32_t c, uint32_t a);
 
-uint32_t blend(uint32_t bg, uint32_t fg = color, BlendMode mode = blendMode);
+uint32_t blend(uint32_t bg, uint32_t fg = fgColor, BlendMode mode = blendMode);
 
 #endif /* Palette_hpp */

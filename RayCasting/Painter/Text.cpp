@@ -42,7 +42,7 @@ void drawChar(float x, float y, const char c) {
 }
 
 void drawText(float x, float y, const std::string& text, uint32_t textColor) {
-    uint32_t lastColor = color;
+    uint32_t lastColor = fgColor;
     setColor(textColor);
     for (int i = 0; i < text.size(); ++i) {
         drawChar(x + i * GLYPH_WIDTH, y, text[i]);

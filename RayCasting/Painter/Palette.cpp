@@ -9,15 +9,15 @@
 
 #include "Palette.hpp"
 
-uint32_t color = WHITE;
+uint32_t fgColor = WHITE;
 
 BlendMode blendMode = BlendMode::normal;
 
-void setColor(uint32_t c) { color = c; }
+void setColor(uint32_t c) { fgColor = c; }
 
-void setRgb(uint32_t c) { color = rgb(color, c); }
+void setRgb(uint32_t c) { fgColor = rgb(fgColor, c); }
 
-void setAlpha(uint32_t a) { color = alpha(color, a); }
+void setAlpha(uint32_t a) { fgColor = alpha(fgColor, a); }
 
 void setBlendMode(BlendMode mode) { blendMode = mode; }
 
