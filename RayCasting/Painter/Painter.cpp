@@ -12,7 +12,7 @@
 
 void* drawFrame() {
     fillCanvas(BLACK);
-    drawCheckers();
+    drawAnimatedBox();
     drawText(50, 30, "Ray Caster 2000", WHITE);
     return canvasData();
 }

@@ -148,7 +148,7 @@ static os_log_t rendererLog;
 
     // Font Texture
 
-    id<MTLTexture> fontTexture = [self _loadTexture:@"FontSFMono" error:&error];
+    id<MTLTexture> fontTexture = [self _loadTexture:@"FontSweet16" error:&error];
 
     if (!fontTexture || error) {
         NSLog(@"Error loading font texture: %@", error.localizedDescription);
