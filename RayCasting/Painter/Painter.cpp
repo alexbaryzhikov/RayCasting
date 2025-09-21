@@ -8,11 +8,9 @@
 #include "Painter.hpp"
 #include "Canvas.hpp"
 #include "Helpers.hpp"
-#include "Text.hpp"
+#include "Palette.hpp"
 
-void* drawFrame() {
+void drawFrame() {
     fillCanvas(BLACK);
     drawAnimatedBox();
-    drawText(50, 30, "Ray Caster 2000", WHITE);
-    return canvasData();
 }

@@ -6,8 +6,8 @@
 //
 
 #import "AppDelegate.h"
-#import "MainViewController.h"
 #import "Config.h"
+#import "MainViewController.h"
 
 @interface AppDelegate ()
 
@@ -19,18 +19,7 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification*)aNotification {
     [self setupMenus];
-    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT)
-                                              styleMask:(NSWindowStyleMaskTitled |
-                                                         NSWindowStyleMaskClosable |
-                                                         NSWindowStyleMaskMiniaturizable |
-                                                         NSWindowStyleMaskResizable)
-                                                backing:NSBackingStoreBuffered
-                                                  defer:NO];
-    self.window.title = @"Ray Casting";
-    MainViewController* viewController = [[MainViewController alloc] init];
-    self.window.contentViewController = viewController;
-    [self.window center];
-    [self.window makeKeyAndOrderFront:nil];
+    [self setupWindow];
 }
 
 - (void)setupMenus {
@@ -73,6 +62,21 @@
     [windowMenu addItem:zoomMenuItem];
 
     [NSApp setMainMenu:mainMenu];
+}
+
+- (void)setupWindow {
+    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT)
+                                              styleMask:(NSWindowStyleMaskTitled |
+                                                         NSWindowStyleMaskClosable |
+                                                         NSWindowStyleMaskMiniaturizable |
+                                                         NSWindowStyleMaskResizable)
+                                                backing:NSBackingStoreBuffered
+                                                  defer:NO];
+    self.window.title = @"Ray Casting";
+    MainViewController* viewController = [[MainViewController alloc] init];
+    self.window.contentViewController = viewController;
+    [self.window center];
+    [self.window makeKeyAndOrderFront:nil];
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)sender {

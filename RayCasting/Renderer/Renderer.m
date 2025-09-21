@@ -10,11 +10,13 @@
 #import <os/signpost.h>
 #import <simd/simd.h>
 
+#import "CanvasBridge.h"
 #import "Config.h"
-#import "Painter.h"
+#import "PainterBridge.h"
 #import "Renderer.h"
 #import "ShaderTypes.h"
-#import "Text.h"
+#import "TextBridge.h"
+#import "WorldBridge.h"
 
 #define BYTES_PER_PIXEL 4
 
@@ -49,6 +51,7 @@ static os_log_t rendererLog;
         _device = view.device;
         [self _loadMetalWithView:view];
         [self _loadAssets];
+        [self _loadWorld];
     }
     return self;
 }
@@ -155,12 +158,29 @@ static os_log_t rendererLog;
         error = NULL;
     }
 
-    void* fontData = [Text fontData];
+    void* fontData = [TextBridge fontData];
     [fontTexture getBytes:fontData
               bytesPerRow:BYTES_PER_PIXEL * fontTexture.width
                fromRegion:MTLRegionMake2D(0, 0, fontTexture.width, fontTexture.height)
               mipmapLevel:0];
     [self _flipVertically:fontData width:fontTexture.width height:fontTexture.height];
+}
+
+- (void)_loadWorld {
+    NSString* mapName = @(MAP_NAME);
+    NSString* mapType = @(MAP_TYPE);
+    NSString* mapPath = [[NSBundle mainBundle] pathForResource:mapName ofType:mapType];
+    if (!mapPath) {
+        NSLog(@"Map not found: %@.%@", mapName, mapType);
+        return;
+    }
+    NSData* mapData = [NSData dataWithContentsOfFile:mapPath];
+    if (!mapData) {
+        NSLog(@"Error loading map data: %@", mapPath);
+        return;
+    }
+    [WorldBridge loadMap:[mapData bytes] size:[mapData length]];
+    [WorldBridge start];
 }
 
 - (nullable id<MTLTexture>)_createTexture {
@@ -216,7 +236,7 @@ static os_log_t rendererLog;
     dispatch_semaphore_wait(_inFlightSemaphore, DISPATCH_TIME_FOREVER);
 
     id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
-    commandBuffer.label = @"MyCommand";
+    commandBuffer.label = @"RCCommandBuffer";
 
     __block dispatch_semaphore_t block_sema = _inFlightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
@@ -237,9 +257,7 @@ static os_log_t rendererLog;
 
         id<MTLRenderCommandEncoder> renderEncoder =
             [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
-        renderEncoder.label = @"MyRenderEncoder";
-
-        [renderEncoder pushDebugGroup:@"DrawBox"];
+        renderEncoder.label = @"RCRenderEncoder";
 
         [renderEncoder setFrontFacingWinding:MTLWindingCounterClockwise];
         [renderEncoder setCullMode:MTLCullModeBack];
@@ -287,17 +305,13 @@ static os_log_t rendererLog;
 }
 
 - (void)_updateDynamicBufferState {
-    /// Update the state of our uniform buffers before rendering
-
     _uniformBufferIndex = (_uniformBufferIndex + 1) % kMaxBuffersInFlight;
-
     _uniformBufferOffset = kAlignedUniformsSize * _uniformBufferIndex;
-
     _uniformBufferAddress = ((uint8_t*)_dynamicUniformBuffer.contents) + _uniformBufferOffset;
 }
 
 - (void)_updateGameState {
-    /// Update any game state before encoding rendering commands to our drawable
+    [WorldBridge draw];
     [self _placeMesh];
     [self _updateTexture];
 }
@@ -315,7 +329,7 @@ static os_log_t rendererLog;
 }
 
 - (void)_updateTexture {
-    const void* frameData = [Painter drawFrame];
+    const void* frameData = [CanvasBridge getData];
     [_canvasTexture replaceRegion:MTLRegionMake2D(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
                       mipmapLevel:0
                         withBytes:frameData

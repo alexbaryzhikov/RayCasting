@@ -1,11 +1,11 @@
 //
-//  Text.h
+//  TextBridge.h
 //  RayCasting
 //
 //  Created by Aleksei Baryzhikov on 14.09.25.
 //
 
-@interface Text : NSObject
+@interface TextBridge : NSObject
 
 + (void*)fontData;
 

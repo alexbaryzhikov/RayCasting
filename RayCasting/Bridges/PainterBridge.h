@@ -1,12 +1,12 @@
 //
-//  Painter.h
+//  PainterBridge.h
 //  RayCasting
 //
 //  Created by Aleksei Baryzhikov on 05.09.25.
 //
 
-@interface Painter : NSObject
+@interface PainterBridge : NSObject
 
-+ (void*)drawFrame;
++ (void)drawFrame;
 
 @end

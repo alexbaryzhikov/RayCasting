@@ -1,5 +1,5 @@
 //
-//  Painter.m
+//  PainterBridge.mm
 //  RayCasting
 //
 //  Created by Aleksei Baryzhikov on 05.09.25.
@@ -7,14 +7,14 @@
 
 #import <Foundation/Foundation.h>
 
-#import "Painter.h"
+#import "PainterBridge.h"
 
 #include "Painter.hpp"
 
-@implementation Painter
+@implementation PainterBridge
 
-+ (void*)drawFrame {
-    return drawFrame();
++ (void)drawFrame {
+    drawFrame();
 }
 
 @end

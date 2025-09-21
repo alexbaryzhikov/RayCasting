@@ -6,6 +6,7 @@
 //
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 
 #include "Canvas.hpp"

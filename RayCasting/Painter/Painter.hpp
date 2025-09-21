@@ -8,6 +8,6 @@
 #ifndef Painter_hpp
 #define Painter_hpp
 
-void* drawFrame();
+void drawFrame();
 
 #endif /* Painter_hpp */
