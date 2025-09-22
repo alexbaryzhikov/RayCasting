@@ -10,6 +10,8 @@
 
 #include <cstdint>
 
+namespace RC {
+
 void* canvasData();
 
 void fillCanvas(uint32_t color);
@@ -17,5 +19,7 @@ void fillCanvas(uint32_t color);
 void point(int x, int y);
 
 void point(int x, int y, uint32_t alpha);
+
+} // namespace RC
 
 #endif /* Canvas_hpp */

@@ -13,6 +13,8 @@
 #include "Config.h"
 #include "Text.hpp"
 
+namespace RC {
+
 static std::array<uint32_t, FONT_MAP_SIZE> font;
 
 void* fontData() {
@@ -50,3 +52,5 @@ void drawText(float x, float y, const std::string& text, uint32_t textColor) {
     }
     setColor(lastColor);
 }
+
+} // namespace RC

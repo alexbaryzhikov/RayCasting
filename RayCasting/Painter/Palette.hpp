@@ -10,6 +10,8 @@
 
 #include <cstdint>
 
+namespace RC {
+
 constexpr uint32_t BLACK = 0xFF000000;
 constexpr uint32_t WHITE = 0xFFFFFFFF;
 constexpr uint32_t RED = 0xFFFF0000;
@@ -46,5 +48,7 @@ uint32_t rgb(uint32_t bg, uint32_t fg);
 uint32_t alpha(uint32_t c, uint32_t a);
 
 uint32_t blend(uint32_t bg, uint32_t fg = fgColor, BlendMode mode = blendMode);
+
+} // namespace RC
 
 #endif /* Palette_hpp */

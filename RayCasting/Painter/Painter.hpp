@@ -8,6 +8,10 @@
 #ifndef Painter_hpp
 #define Painter_hpp
 
+namespace RC {
+
 void drawFrame();
+
+}
 
 #endif /* Painter_hpp */

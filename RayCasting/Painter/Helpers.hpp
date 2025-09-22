@@ -8,8 +8,12 @@
 #ifndef Helpers_hpp
 #define Helpers_hpp
 
+namespace RC {
+
 void drawAnimatedBox();
 
 void drawCheckers();
+
+} // namespace RC
 
 #endif /* Helpers_hpp */

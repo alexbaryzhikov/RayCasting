@@ -9,6 +9,8 @@
 
 #include "Palette.hpp"
 
+namespace RC {
+
 uint32_t fgColor = WHITE;
 
 BlendMode blendMode = BlendMode::normal;
@@ -56,3 +58,5 @@ uint32_t blend(uint32_t bg, uint32_t fg, BlendMode mode) {
     }
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
+
+} // namespace RC

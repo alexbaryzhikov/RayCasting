@@ -11,6 +11,8 @@
 #include "Config.h"
 #include "Palette.hpp"
 
+namespace RC {
+
 std::array<uint32_t, CANVAS_SIZE> canvas;
 
 void* canvasData() {
@@ -32,3 +34,5 @@ void point(int x, int y, uint32_t alpha) {
     setAlpha(alpha);
     point(x, y);
 }
+
+} // namespace RC

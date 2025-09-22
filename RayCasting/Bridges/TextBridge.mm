@@ -14,7 +14,7 @@
 @implementation TextBridge
 
 + (void*)fontData {
-    return fontData();
+    return RC::fontData();
 }
 
 @end

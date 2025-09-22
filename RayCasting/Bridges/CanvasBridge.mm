@@ -14,7 +14,7 @@
 @implementation CanvasBridge
 
 + (const void*)getData {
-    return canvasData();
+    return RC::canvasData();
 }
 
 @end

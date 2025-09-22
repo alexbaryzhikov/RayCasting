@@ -14,7 +14,7 @@
 @implementation PainterBridge
 
 + (void)drawFrame {
-    drawFrame();
+    RC::drawFrame();
 }
 
 @end

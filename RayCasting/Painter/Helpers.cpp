@@ -11,6 +11,8 @@
 #include "Palette.hpp"
 #include "Primitives.hpp"
 
+namespace RC {
+
 void drawAnimatedBox() {
     const float size = 32;
     static float x = 0.f;
@@ -68,3 +70,5 @@ void drawCheckers() {
         y += size;
     }
 }
+
+} // namespace RC

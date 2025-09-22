@@ -12,6 +12,8 @@
 #include "Canvas.hpp"
 #include "Primitives.hpp"
 
+namespace RC {
+
 void line(float x0, float y0, float x1, float y1) {
     float dx = x1 - x0;
     float dy = y1 - y0;
@@ -88,3 +90,5 @@ void boxFill(float x, float y, float w, float h) {
         }
     }
 }
+
+} // namespace RC

@@ -10,7 +10,11 @@
 #include "Helpers.hpp"
 #include "Palette.hpp"
 
+namespace RC {
+
 void drawFrame() {
     fillCanvas(BLACK);
     drawAnimatedBox();
 }
+
+} // namespace RC
