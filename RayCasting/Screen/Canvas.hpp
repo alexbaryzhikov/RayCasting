@@ -12,7 +12,7 @@
 
 namespace RC {
 
-void* canvasData();
+const void* canvasBytes();
 
 void fillCanvas(uint32_t color);
 

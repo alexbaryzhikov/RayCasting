@@ -8,27 +8,26 @@
 #include <print>
 
 #include "World.hpp"
-#include "WorldPresenter.hpp"
+
+#include "Canvas.hpp"
+#include "Palette.hpp"
+#include "Player.hpp"
 
 namespace RC {
 
-World world;
-WorldPresenter presenter;
+static constexpr uint32_t BG_GRAY = 0xFF202020;
 
-World& World::get() {
-    return world;
-}
-
-void World::loadMap(const void* data, size_t size) {
-    std::println("Loading map: {} size: {}", data, size);
-}
-
-void World::start() {
+void startWorld() {
     std::println("Starting world");
 }
 
-void World::draw() {
-    presenter.drawWorld();
+void drawWorld() {
+    fillCanvas(BG_GRAY);
+    drawPlayer();
+}
+
+void updateWorld() {
+    updatePlayer();
 }
 
 } // namespace RC

@@ -14,7 +14,7 @@
 
 namespace RC {
 
-void* fontData();
+void* fontBytes();
 
 void drawFontMap();
 

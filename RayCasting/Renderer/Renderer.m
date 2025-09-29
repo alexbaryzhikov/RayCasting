@@ -10,13 +10,11 @@
 #import <os/signpost.h>
 #import <simd/simd.h>
 
-#import "CanvasBridge.h"
-#import "Config.h"
-#import "PainterBridge.h"
 #import "Renderer.h"
+
+#import "Config.h"
+#import "RCBridge.h"
 #import "ShaderTypes.h"
-#import "TextBridge.h"
-#import "WorldBridge.h"
 
 #define BYTES_PER_PIXEL 4
 
@@ -51,7 +49,6 @@ static os_log_t rendererLog;
         _device = view.device;
         [self _loadMetalWithView:view];
         [self _loadAssets];
-        [self _loadWorld];
     }
     return self;
 }
@@ -88,7 +85,7 @@ static os_log_t rendererLog;
     id<MTLFunction> fragmentFunction = [defaultLibrary newFunctionWithName:@"fragmentShader"];
 
     MTLRenderPipelineDescriptor* pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-    pipelineStateDescriptor.label = @"MyPipeline";
+    pipelineStateDescriptor.label = @"RCPipeline";
     pipelineStateDescriptor.rasterSampleCount = view.sampleCount;
     pipelineStateDescriptor.vertexFunction = vertexFunction;
     pipelineStateDescriptor.fragmentFunction = fragmentFunction;
@@ -119,7 +116,9 @@ static os_log_t rendererLog;
 }
 
 - (void)_loadAssets {
-    /// Canvas Mesh
+    /// Load textures and initialize world
+
+    // Canvas Mesh
 
     NSError* error;
     MTKMeshBufferAllocator* metalAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:_device];
@@ -140,7 +139,7 @@ static os_log_t rendererLog;
         error = NULL;
     }
 
-    /// Canvas Texture
+    // Canvas Texture
 
     _canvasTexture = [self _createTexture];
 
@@ -151,36 +150,35 @@ static os_log_t rendererLog;
 
     // Font Texture
 
-    id<MTLTexture> fontTexture = [self _loadTexture:@"FontSweet16" error:&error];
-
+    id<MTLTexture> fontTexture = [self _loadTexture:@(FONT_MAP) error:&error];
     if (!fontTexture || error) {
         NSLog(@"Error loading font texture: %@", error.localizedDescription);
         error = NULL;
     }
-
-    void* fontData = [TextBridge fontData];
-    [fontTexture getBytes:fontData
-              bytesPerRow:BYTES_PER_PIXEL * fontTexture.width
+    void* fontBytes = [RCBridge fontBytes];
+    [fontTexture getBytes:fontBytes
+              bytesPerRow:fontTexture.width * BYTES_PER_PIXEL
                fromRegion:MTLRegionMake2D(0, 0, fontTexture.width, fontTexture.height)
               mipmapLevel:0];
-    [self _flipVertically:fontData width:fontTexture.width height:fontTexture.height];
-}
+    [self _flipVertically:fontBytes width:fontTexture.width height:fontTexture.height];
 
-- (void)_loadWorld {
+    // Map
+
     NSString* mapName = @(MAP_NAME);
     NSString* mapType = @(MAP_TYPE);
     NSString* mapPath = [[NSBundle mainBundle] pathForResource:mapName ofType:mapType];
     if (!mapPath) {
         NSLog(@"Map not found: %@.%@", mapName, mapType);
-        return;
     }
     NSData* mapData = [NSData dataWithContentsOfFile:mapPath];
     if (!mapData) {
         NSLog(@"Error loading map data: %@", mapPath);
-        return;
     }
-    [WorldBridge loadMap:[mapData bytes] size:[mapData length]];
-    [WorldBridge start];
+    [RCBridge loadMap:[mapData bytes] size:[mapData length]];
+
+    // World
+
+    [RCBridge startWorld];
 }
 
 - (nullable id<MTLTexture>)_createTexture {
@@ -227,8 +225,10 @@ static os_log_t rendererLog;
     }
 }
 
+#pragma mark MTRViewDelegate Methods
+
 - (void)drawInMTKView:(nonnull MTKView*)view {
-    /// Per frame updates here
+    /// Per frame updates
 
     os_signpost_id_t signpostID = os_signpost_id_generate(rendererLog);
     os_signpost_interval_begin(rendererLog, signpostID, "Renderer::draw", "Started");
@@ -244,17 +244,13 @@ static os_log_t rendererLog;
     }];
 
     [self _updateDynamicBufferState];
-
-    [self _updateGameState];
+    [self _updateWorldState];
 
     /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
-    ///   holding onto the drawable and blocking the display pipeline any longer than necessary
+    /// holding onto the drawable and blocking the display pipeline any longer than necessary
     MTLRenderPassDescriptor* renderPassDescriptor = view.currentRenderPassDescriptor;
 
     if (renderPassDescriptor != nil) {
-
-        /// Final pass rendering code here
-
         id<MTLRenderCommandEncoder> renderEncoder =
             [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
         renderEncoder.label = @"RCRenderEncoder";
@@ -310,8 +306,9 @@ static os_log_t rendererLog;
     _uniformBufferAddress = ((uint8_t*)_dynamicUniformBuffer.contents) + _uniformBufferOffset;
 }
 
-- (void)_updateGameState {
-    [WorldBridge draw];
+- (void)_updateWorldState {
+    [RCBridge updateWorld];
+    [RCBridge drawWorld];
     [self _placeMesh];
     [self _updateTexture];
 }
@@ -329,15 +326,15 @@ static os_log_t rendererLog;
 }
 
 - (void)_updateTexture {
-    const void* frameData = [CanvasBridge getData];
+    const void* canvasBytes = [RCBridge canvasBytes];
     [_canvasTexture replaceRegion:MTLRegionMake2D(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
                       mipmapLevel:0
-                        withBytes:frameData
+                        withBytes:canvasBytes
                       bytesPerRow:BYTES_PER_PIXEL * CANVAS_WIDTH];
 }
 
 - (void)mtkView:(nonnull MTKView*)view drawableSizeWillChange:(CGSize)size {
-    /// Respond to drawable size or orientation changes here
+    /// Respond to drawable size or orientation changes
 
     float aspect = size.width / (float)size.height;
     _projectionMatrix = matrix_perspective_right_hand(M_PI_2, aspect, 0.1f, 100.0f);

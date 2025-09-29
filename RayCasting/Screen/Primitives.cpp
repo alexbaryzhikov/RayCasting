@@ -9,8 +9,9 @@
 #include <cassert>
 #include <cmath>
 
-#include "Canvas.hpp"
 #include "Primitives.hpp"
+
+#include "Canvas.hpp"
 
 namespace RC {
 

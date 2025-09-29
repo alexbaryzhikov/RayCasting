@@ -9,15 +9,16 @@
 #include <cmath>
 #include <cstdint>
 
+#include "Text.hpp"
+
 #include "Canvas.hpp"
 #include "Config.h"
-#include "Text.hpp"
 
 namespace RC {
 
 static std::array<uint32_t, FONT_MAP_SIZE> font;
 
-void* fontData() {
+void* fontBytes() {
     return font.data();
 }
 

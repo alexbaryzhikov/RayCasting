@@ -8,23 +8,13 @@
 #ifndef World_hpp
 #define World_hpp
 
-#include "Map.hpp"
-#include "Player.hpp"
-
 namespace RC {
 
-struct World {
-    Map map;
-    Player player;
+void startWorld();
 
-    static World& get();
+void drawWorld();
 
-    void loadMap(const void* data, size_t size);
-
-    void start();
-
-    void draw();
-};
+void updateWorld();
 
 } // namespace RC
 

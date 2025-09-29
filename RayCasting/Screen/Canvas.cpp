@@ -8,6 +8,7 @@
 #include <array>
 
 #include "Canvas.hpp"
+
 #include "Config.h"
 #include "Palette.hpp"
 
@@ -15,7 +16,7 @@ namespace RC {
 
 std::array<uint32_t, CANVAS_SIZE> canvas;
 
-void* canvasData() {
+const void* canvasBytes() {
     return canvas.data();
 }
 

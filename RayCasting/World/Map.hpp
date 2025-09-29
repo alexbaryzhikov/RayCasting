@@ -20,6 +20,8 @@ struct Map {
     std::vector<std::vector<MapTile>> tiles;
 };
 
+void loadMap(const void* bytes, size_t size);
+
 } // namespace RC
 
 #endif /* Map_hpp */

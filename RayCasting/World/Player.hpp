@@ -17,6 +17,12 @@ struct Player {
     float angle = 0.f;
 };
 
+extern Player player;
+
+void drawPlayer();
+
+void updatePlayer();
+
 } // namespace RC
 
 #endif /* Player_hpp */
