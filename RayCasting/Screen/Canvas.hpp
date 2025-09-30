@@ -10,16 +10,22 @@
 
 #include <cstdint>
 
-namespace RC {
+namespace RC::Canvas {
 
-const void* canvasBytes();
+const void* bytes();
 
-void fillCanvas(uint32_t color);
+void fill(uint32_t color);
 
 void point(int x, int y);
 
 void point(int x, int y, uint32_t alpha);
 
-} // namespace RC
+void line(float x0, float y0, float x1, float y1);
+
+void box(float x, float y, float w, float h);
+
+void boxFill(float x, float y, float w, float h);
+
+} // namespace RC::Canvas
 
 #endif /* Canvas_hpp */

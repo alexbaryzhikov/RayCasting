@@ -10,6 +10,8 @@
 
 #include <simd/simd.h>
 
+namespace RC {
+
 /**
  * @brief Creates a 3x3 translation matrix for 2D transformations.
  * This is suitable for use with 2D homogeneous coordinates (x, y, 1).
@@ -36,5 +38,7 @@ constexpr matrix_float3x3 createRotationMatrix(float angleRad) {
                             {-s, c, 0.0f},
                             {0, 0, 1.0f}});
 }
+
+} // namespace RC
 
 #endif /* MathUtils_hpp */

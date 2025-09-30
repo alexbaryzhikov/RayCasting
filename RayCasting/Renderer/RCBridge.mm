@@ -17,27 +17,27 @@
 @implementation RCBridge
 
 + (const void*)canvasBytes {
-    return RC::canvasBytes();
+    return RC::Canvas::bytes();
 }
 
 + (void*)fontBytes {
-    return RC::fontBytes();
+    return RC::Text::fontBytes();
 }
 
 + (void)loadMap:(const void*)bytes size:(NSUInteger)size {
-    RC::loadMap(bytes, size);
+    RC::Map::load(bytes, size);
 }
 
 + (void)startWorld {
-    RC::startWorld();
+    RC::World::start();
 }
 
 + (void)drawWorld {
-    RC::drawWorld();
+    RC::World::draw();
 }
 
 + (void)updateWorld {
-    RC::updateWorld();
+    RC::World::update();
 }
 
 @end

@@ -9,10 +9,12 @@
 
 #include "Map.hpp"
 
-namespace RC {
+namespace RC::Map {
 
-void loadMap(const void* bytes, size_t size) {
+std::vector<std::vector<Tile>> tiles;
+
+void load(const void* bytes, size_t size) {
     std::println("Loading map: {} size: {}", bytes, size);
 }
 
-} // namespace RC
+} // namespace RC::Map

@@ -12,22 +12,24 @@
 #include "Canvas.hpp"
 #include "Palette.hpp"
 #include "Player.hpp"
+#include "Text.hpp"
 
-namespace RC {
+namespace RC::World {
 
 static constexpr uint32_t BG_GRAY = 0xFF202020;
 
-void startWorld() {
+void start() {
     std::println("Starting world");
 }
 
-void drawWorld() {
-    fillCanvas(BG_GRAY);
-    drawPlayer();
+void draw() {
+    Canvas::fill(BG_GRAY);
+    Text::draw(10, 10, "Hello, world!", Palette::WHITE);
+    Player::draw();
 }
 
-void updateWorld() {
-    updatePlayer();
+void update() {
+    Player::update();
 }
 
-} // namespace RC
+} // namespace RC::World

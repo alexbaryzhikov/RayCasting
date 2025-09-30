@@ -14,7 +14,7 @@
 #include "Canvas.hpp"
 #include "Config.h"
 
-namespace RC {
+namespace RC::Text {
 
 static std::array<uint32_t, FONT_MAP_SIZE> font;
 
@@ -25,8 +25,8 @@ void* fontBytes() {
 void drawFontMap() {
     for (int y = 0; y < FONT_MAP_HEIGHT; ++y) {
         for (int x = 0; x < FONT_MAP_WIDTH; ++x) {
-            setColor(font[x + y * FONT_MAP_WIDTH]);
-            point(x, y);
+            Palette::setColor(font[x + y * FONT_MAP_WIDTH]);
+            Canvas::point(x, y);
         }
     }
 }
@@ -39,19 +39,17 @@ void drawChar(float x, float y, const char c) {
     for (int j = 0; j < GLYPH_HEIGHT; ++j) {
         for (int i = 0; i < GLYPH_WIDTH; ++i) {
             uint32_t color = font[glyphX + i + (glyphY + j) * FONT_MAP_WIDTH];
-            setAlpha(color & 0xFF);
-            point(canvasX + i, canvasY + j);
+            Palette::setAlpha(color & 0xFF);
+            Canvas::point(canvasX + i, canvasY + j);
         }
     }
 }
 
-void drawText(float x, float y, const std::string& text, uint32_t textColor) {
-    uint32_t lastColor = fgColor;
-    setColor(textColor);
+void draw(float x, float y, const std::string& text, uint32_t textColor) {
+    Palette::setColor(textColor);
     for (int i = 0; i < text.size(); ++i) {
         drawChar(x + i * GLYPH_WIDTH, y, text[i]);
     }
-    setColor(lastColor);
 }
 
-} // namespace RC
+} // namespace RC::Text

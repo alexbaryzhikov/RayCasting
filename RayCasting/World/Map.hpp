@@ -10,18 +10,17 @@
 
 #include <vector>
 
-namespace RC {
+namespace RC::Map {
 
-struct MapTile {
-    bool isWall;
+enum class Tile {
+    FLOOR,
+    WALL,
 };
 
-struct Map {
-    std::vector<std::vector<MapTile>> tiles;
-};
+extern std::vector<std::vector<Tile>> tiles;
 
-void loadMap(const void* bytes, size_t size);
+void load(const void* bytes, size_t size);
 
-} // namespace RC
+} // namespace RC::Map
 
 #endif /* Map_hpp */

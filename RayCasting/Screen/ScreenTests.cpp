@@ -9,9 +9,9 @@
 
 #include "ScreenTests.hpp"
 
+#include "Canvas.hpp"
 #include "Config.h"
 #include "Palette.hpp"
-#include "Primitives.hpp"
 
 namespace RC {
 
@@ -21,10 +21,10 @@ void drawAnimatedBox() {
     static float y = 0.f;
     static float dx = 1.f;
     static float dy = 1.f;
-    static uint32_t color = RED;
+    static uint32_t color = Palette::RED;
 
-    setColor(color);
-    boxFill(x, y, size, size);
+    Palette::setColor(color);
+    Canvas::boxFill(x, y, size, size);
 
     x += dx;
     y += dy;
@@ -39,30 +39,30 @@ void drawAnimatedBox() {
     }
     if (bounced) {
         switch (color) {
-            case RED:
-                color = GREEN;
+            case Palette::RED:
+                color = Palette::GREEN;
                 break;
-            case GREEN:
-                color = BLUE;
+            case Palette::GREEN:
+                color = Palette::BLUE;
                 break;
-            case BLUE:
-                color = RED;
+            case Palette::BLUE:
+                color = Palette::RED;
                 break;
         }
     }
 }
 
 void drawFrame() {
-    setColor(BLUE);
-    line(0, 0, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
-    setColor(GREEN);
-    line(CANVAS_WIDTH - 1, 0, 0, CANVAS_HEIGHT - 1);
-    setColor(RED);
-    box(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    Palette::setColor(Palette::BLUE);
+    Canvas::line(0, 0, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
+    Palette::setColor(Palette::GREEN);
+    Canvas::line(CANVAS_WIDTH - 1, 0, 0, CANVAS_HEIGHT - 1);
+    Palette::setColor(Palette::RED);
+    Canvas::box(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
 void drawCheckers() {
-    setColor(CYAN);
+    Palette::setColor(Palette::CYAN);
     const float size = 16;
     const bool oddBoxesPerRow = int(ceil(CANVAS_WIDTH / size)) & 1;
     float x = 0;
@@ -71,7 +71,7 @@ void drawCheckers() {
     while (y < CANVAS_HEIGHT) {
         while (x < CANVAS_WIDTH) {
             if (flag) {
-                boxFill(x, y, size, size);
+                Canvas::boxFill(x, y, size, size);
             }
             flag = !flag;
             x += size;

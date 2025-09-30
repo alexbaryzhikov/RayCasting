@@ -12,7 +12,7 @@
 
 #include "Palette.hpp"
 
-namespace RC {
+namespace RC::Text {
 
 void* fontBytes();
 
@@ -20,8 +20,8 @@ void drawFontMap();
 
 void drawChar(float x, float y, const char c);
 
-void drawText(float x, float y, const std::string& text, uint32_t textColor = fgColor);
+void draw(float x, float y, const std::string& text, uint32_t textColor = Palette::color);
 
-} // namespace RC
+} // namespace RC::Text
 
 #endif /* Text_hpp */

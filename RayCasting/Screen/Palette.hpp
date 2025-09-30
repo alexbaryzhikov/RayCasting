@@ -10,7 +10,7 @@
 
 #include <cstdint>
 
-namespace RC {
+namespace RC::Palette {
 
 constexpr uint32_t BLACK = 0xFF000000;
 constexpr uint32_t WHITE = 0xFFFFFFFF;
@@ -31,7 +31,7 @@ enum class BlendMode {
     add
 };
 
-extern uint32_t fgColor;
+extern uint32_t color;
 
 extern BlendMode blendMode;
 
@@ -47,7 +47,7 @@ uint32_t rgb(uint32_t bg, uint32_t fg);
 
 uint32_t alpha(uint32_t c, uint32_t a);
 
-uint32_t blend(uint32_t bg, uint32_t fg = fgColor, BlendMode mode = blendMode);
+uint32_t blend(uint32_t bg, uint32_t fg = color, BlendMode mode = blendMode);
 
 } // namespace RC
 

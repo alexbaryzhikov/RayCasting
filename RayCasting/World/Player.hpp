@@ -10,19 +10,15 @@
 
 #include "Geometry.hpp"
 
-namespace RC {
+namespace RC::Player {
 
-struct Player {
-    Point position;
-    float angle = 0.f;
-};
+extern Point position;
+extern float angle;
 
-extern Player player;
+void draw();
 
-void drawPlayer();
+void update();
 
-void updatePlayer();
-
-} // namespace RC
+} // namespace RC::Player
 
 #endif /* Player_hpp */

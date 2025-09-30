@@ -8,14 +8,14 @@
 #ifndef World_hpp
 #define World_hpp
 
-namespace RC {
+namespace RC::World {
 
-void startWorld();
+void start();
 
-void drawWorld();
+void draw();
 
-void updateWorld();
+void update();
 
-} // namespace RC
+} // namespace RC::World
 
 #endif /* World_hpp */
