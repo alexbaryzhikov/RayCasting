@@ -5,6 +5,7 @@
 
 #include "Canvas.hpp"
 #include "Config.h"
+#include "Keyboard.hpp"
 #include "MathUtils.hpp"
 #include "Palette.hpp"
 
@@ -18,7 +19,7 @@ static const std::vector<Segment> playerGeometry = {
 
 static const matrix_float3x3 worldTransform = matrix_multiply(
     createTranslationMatrix(CANVAS_WIDTH / 2.0f, CANVAS_HEIGHT / 2.0f),
-    createRotationMatrix(M_PI));
+    createScaleMatrix(1.0f, -1.0f));
 
 Point position;
 float angle = 0.0f;
@@ -42,7 +43,37 @@ void draw() {
 }
 
 void update() {
-    angle += 0.01f;
+    if (Keyboard::keys[Keyboard::KEY_LEFT]) {
+        angle += PLAYER_TURN_SPEED;
+    }
+    if (Keyboard::keys[Keyboard::KEY_RIGHT]) {
+        angle -= PLAYER_TURN_SPEED;
+    }
+
+    float dx = 0.0f;
+    float dy = 0.0f;
+
+    if (Keyboard::keys[Keyboard::KEY_W] || Keyboard::keys[Keyboard::KEY_UP]) {
+        dy += 1.0f;
+    }
+    if (Keyboard::keys[Keyboard::KEY_S] || Keyboard::keys[Keyboard::KEY_DOWN]) {
+        dy -= 1.0f;
+    }
+    if (Keyboard::keys[Keyboard::KEY_A]) {
+        dx -= 1.0f;
+    }
+    if (Keyboard::keys[Keyboard::KEY_D]) {
+        dx += 1.0f;
+    }
+
+    if (dx != 0.0f || dy != 0.0f) {
+        float velocityAngle = radians(dx, dy);
+        vector_float3 velocityVector = {PLAYER_MOVE_SPEED, 0.0f, 0.0f};
+        vector_float3 translation = matrix_multiply(createRotationMatrix(angle + velocityAngle), velocityVector);
+
+        position.x += translation.x;
+        position.y += translation.y;
+    }
 }
 
 } // namespace RC::Player

@@ -21,4 +21,8 @@
 #define MAP_NAME        "map001"
 #define MAP_TYPE        "map"
 
+// Player
+#define PLAYER_MOVE_SPEED   1.0f
+#define PLAYER_TURN_SPEED   0.1f
+
 #endif /* Config_h */

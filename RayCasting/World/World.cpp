@@ -15,7 +15,6 @@ void start() {
 
 void draw() {
     Canvas::fill(BG_GRAY);
-    Text::draw(10, 10, "Hello, world!", Palette::WHITE);
     Player::draw();
 }
 
