@@ -1,10 +1,3 @@
-//
-//  Text.cpp
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 14.09.25.
-//
-
 #include <array>
 #include <cmath>
 #include <cstdint>

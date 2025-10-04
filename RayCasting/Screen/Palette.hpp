@@ -1,10 +1,3 @@
-//
-//  Palette.hpp
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 04.09.25.
-//
-
 #ifndef Palette_hpp
 #define Palette_hpp
 

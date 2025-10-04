@@ -1,11 +1,4 @@
 //
-//  ShaderTypes.h
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 30.08.25.
-//
-
-//
 //  Header containing types and enum constants shared between Metal shaders and Swift/ObjC source
 //
 #ifndef ShaderTypes_h

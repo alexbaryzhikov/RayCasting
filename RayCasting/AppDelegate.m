@@ -1,10 +1,3 @@
-//
-//  AppDelegate.m
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 30.08.25.
-//
-
 #import "AppDelegate.h"
 
 #import "Config.h"
@@ -76,6 +69,7 @@
     self.window.title = @"Ray Casting";
     MainViewController* viewController = [[MainViewController alloc] init];
     self.window.contentViewController = viewController;
+    [self.window makeFirstResponder:viewController];
     [self.window center];
     [self.window makeKeyAndOrderFront:nil];
 }

@@ -1,10 +1,3 @@
-//
-//  MathUtils.hpp
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 22.09.25.
-//
-
 #ifndef MathUtils_hpp
 #define MathUtils_hpp
 

@@ -1,10 +1,3 @@
-//
-//  Config.h
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 01.09.25.
-//
-
 #ifndef Config_h
 #define Config_h
 
@@ -12,7 +5,7 @@
 #define CANVAS_WIDTH    400
 #define CANVAS_HEIGHT   225
 #define CANVAS_SIZE     (CANVAS_WIDTH * CANVAS_HEIGHT)
-#define VIEW_SCALE      4
+#define VIEW_SCALE      3
 #define VIEW_WIDTH      (CANVAS_WIDTH * VIEW_SCALE)
 #define VIEW_HEIGHT     (CANVAS_HEIGHT * VIEW_SCALE)
 

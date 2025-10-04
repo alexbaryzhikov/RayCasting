@@ -1,15 +1,9 @@
-//
-//  RCBridge.m
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 28.09.25.
-//
-
 #import <Foundation/Foundation.h>
 
 #import "RCBridge.h"
 
 #include "Canvas.hpp"
+#include "Keyboard.hpp"
 #include "Map.hpp"
 #include "Text.hpp"
 #include "World.hpp"
@@ -38,6 +32,14 @@
 
 + (void)updateWorld {
     RC::World::update();
+}
+
++ (void)keyDown:(unsigned short)code {
+    RC::Keyboard::keyDown(code);
+}
+
++ (void)keyUp:(unsigned short)code {
+    RC::Keyboard::keyUp(code);
 }
 
 @end

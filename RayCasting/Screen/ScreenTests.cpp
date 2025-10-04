@@ -1,10 +1,3 @@
-//
-//  ScreenTests.cpp
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 14.09.25.
-//
-
 #include <cmath>
 
 #include "ScreenTests.hpp"

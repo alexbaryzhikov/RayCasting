@@ -1,10 +1,3 @@
-//
-//  RCBridge.h
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 28.09.25.
-//
-
 @interface RCBridge : NSObject
 
 + (const void*)canvasBytes;
@@ -13,5 +6,7 @@
 + (void)startWorld;
 + (void)drawWorld;
 + (void)updateWorld;
++ (void)keyDown:(unsigned short)code;
++ (void)keyUp:(unsigned short)code;
 
 @end

@@ -1,10 +1,3 @@
-//
-//  Canvas.cpp
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 04.09.25.
-//
-
 #include <algorithm>
 #include <array>
 #include <cassert>

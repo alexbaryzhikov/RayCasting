@@ -1,13 +1,7 @@
-//
-//  MainViewController.m
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 30.08.25.
-//
-
 #import "MainViewController.h"
 
 #import "Config.h"
+#import "RCBridge.h"
 #import "Renderer.h"
 
 @implementation MainViewController {
@@ -35,6 +29,18 @@
     _renderer = [[Renderer alloc] initWithMetalKitView:_view];
     [_renderer mtkView:_view drawableSizeWillChange:_view.drawableSize];
     _view.delegate = _renderer;
+}
+
+- (BOOL)acceptsFirstResponder {
+    return YES;
+}
+
+- (void)keyDown:(NSEvent*)event {
+    [RCBridge keyDown:event.keyCode];
+}
+
+- (void)keyUp:(NSEvent*)event {
+    [RCBridge keyUp:event.keyCode];
 }
 
 @end

@@ -1,12 +1,3 @@
-//
-//  Shaders.metal
-//  RayCasting
-//
-//  Created by Aleksei Baryzhikov on 30.08.25.
-//
-
-// File for Metal kernel and shader functions
-
 #include <metal_stdlib>
 #include <simd/simd.h>
 
