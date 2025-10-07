@@ -1,17 +1,16 @@
 #ifndef Geometry_hpp
 #define Geometry_hpp
 
+#include <simd/simd.h>
+
 namespace RC {
 
-struct Point {
-    float x = 0.f;
-    float y = 0.f;
+struct Segment {
+    simd::float3 a;
+    simd::float3 b;
 };
 
-struct Segment {
-    Point a;
-    Point b;
-};
+Segment makeSegment(float ax, float ay, float bx, float by);
 
 } // namespace RC
 

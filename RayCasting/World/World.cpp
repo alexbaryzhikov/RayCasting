@@ -7,7 +7,7 @@
 
 namespace RC::World {
 
-static constexpr uint32_t BG_GRAY = 0xFF202020;
+constexpr uint32_t BG_GRAY = 0xFF202020;
 
 void start() {
     std::printf("Starting world");

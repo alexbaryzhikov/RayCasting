@@ -5,9 +5,6 @@
 
 namespace RC::Player {
 
-extern Point position;
-extern float angle;
-
 void draw();
 
 void update();
