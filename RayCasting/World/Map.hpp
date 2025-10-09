@@ -14,6 +14,10 @@ extern std::vector<std::vector<Tile>> tiles;
 
 void load(const void* bytes, size_t size);
 
+void draw();
+
+void update();
+
 } // namespace RC::Map
 
 #endif /* Map_hpp */

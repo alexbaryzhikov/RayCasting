@@ -40,10 +40,10 @@ void draw() {
 
 void updateAngle() {
     if (Keyboard::keys[Keyboard::KEY_LEFT]) {
-        angle += PLAYER_TURN_SPEED;
+        angle -= PLAYER_TURN_SPEED;
     }
     if (Keyboard::keys[Keyboard::KEY_RIGHT]) {
-        angle -= PLAYER_TURN_SPEED;
+        angle += PLAYER_TURN_SPEED;
     }
 }
 
@@ -52,16 +52,16 @@ void applyAcceleration(float accelerationMagnitude) {
     float dy = 0.0f;
 
     if (Keyboard::keys[Keyboard::KEY_W] || Keyboard::keys[Keyboard::KEY_UP]) {
-        dy += 1.0f;
+        dx += 1.0f;
     }
     if (Keyboard::keys[Keyboard::KEY_S] || Keyboard::keys[Keyboard::KEY_DOWN]) {
-        dy -= 1.0f;
-    }
-    if (Keyboard::keys[Keyboard::KEY_A]) {
         dx -= 1.0f;
     }
+    if (Keyboard::keys[Keyboard::KEY_A]) {
+        dy += 1.0f;
+    }
     if (Keyboard::keys[Keyboard::KEY_D]) {
-        dx += 1.0f;
+        dy -= 1.0f;
     }
 
     simd::float3 direction = matrix_multiply(makeRotationMatrix(angle), makeNormal(dx, dy));
