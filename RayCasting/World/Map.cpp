@@ -13,14 +13,11 @@
 
 namespace RC::Map {
 
-const std::vector<Segment> playerGeometry = {
-    makeSegment(-8.0f, 0.0f, 8.0f, 0.0f),
-    makeSegment(0.0f, -8.0f, 8.0f, 0.0f),
-    makeSegment(0.0f, 8.0f, 8.0f, 0.0f),
-};
+const std::vector<Segment> playerGeometry = Geometry::makePlayer();
+const std::vector<Segment> wallGeometry = Geometry::makeWall();
+std::vector<Segment> gridGeometry;
 
 std::vector<std::vector<Tile>> tiles;
-std::vector<Segment> grid;
 Frame frame = {0.0f, 0.0f, CANVAS_WIDTH, CANVAS_HEIGHT};
 float zoomFactor = MAP_ZOOM_DEFAULT;
 
@@ -42,16 +39,6 @@ bool isValid() {
         }
     }
     return true;
-}
-
-void makeGrid() {
-    float gridWidth = width() * MAP_BLOCK_SIZE;
-    float gridHeight = height() * MAP_BLOCK_SIZE;
-    for (size_t i = 0; i <= width(); ++i) {
-        float offset = i * MAP_BLOCK_SIZE;
-        grid.push_back(makeSegment(offset, 0.0f, offset, gridHeight));
-        grid.push_back(makeSegment(0.0f, offset, gridWidth, offset));
-    }
 }
 
 void load(const void* bytes, size_t size) {
@@ -96,10 +83,19 @@ void load(const void* bytes, size_t size) {
     }
     if (isValid()) {
         std::println("Loaded map of size {} x {}", width(), height());
-        makeGrid();
+        gridGeometry = Geometry::makeGrid(width(), height());
     } else {
         std::println("Invalid map data");
         return;
+    }
+}
+
+void drawGeometry(const std::vector<Segment>& geometry, simd::float3x3 transform, uint32_t color) {
+    Palette::setColor(color);
+    for (Segment segment : geometry) {
+        simd::float3 a = matrix_multiply(transform, segment.a);
+        simd::float3 b = matrix_multiply(transform, segment.b);
+        Canvas::line(a.x, a.y, b.x, b.y);
     }
 }
 
@@ -108,11 +104,27 @@ void drawGrid() {
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    Palette::setColor(Palette::GUNMETAL_GRAY_DARK);
-    for (Segment segment : grid) {
-        simd::float3 a = matrix_multiply(transform, segment.a);
-        simd::float3 b = matrix_multiply(transform, segment.b);
-        Canvas::line(a.x, a.y, b.x, b.y);
+    drawGeometry(gridGeometry, transform, Palette::GUNMETAL_GRAY_DARK);
+}
+
+void drawWall(size_t row, size_t col) {
+    simd::float3 playerPosition = Player::position * zoomFactor;
+    simd::float3 wallPosition = simd::float3{float(col), float(row), 1.0f} * MAP_BLOCK_SIZE * zoomFactor;
+    simd::float3x3 translate = makeTranslationMatrix(
+        frame.centerX() + wallPosition.x - playerPosition.x,
+        frame.centerY() + wallPosition.y - playerPosition.y);
+    simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
+    simd::float3x3 transform = matrix_multiply(translate, scale);
+    drawGeometry(wallGeometry, transform, Palette::GUNMETAL_GRAY_LIGHT);
+}
+
+void drawWalls() {
+    for (size_t row = 0; row < height(); ++row) {
+        for (size_t col = 0; col < width(); ++col) {
+            if (tiles[row][col] == Tile::WALL) {
+                drawWall(row, col);
+            }
+        }
     }
 }
 
@@ -121,16 +133,12 @@ void drawPlayer() {
     simd::float3x3 rotate = makeRotationMatrix(Player::angle);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, -zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, matrix_multiply(rotate, scale));
-    Palette::setColor(Palette::GREEN);
-    for (Segment segment : playerGeometry) {
-        simd::float3 a = matrix_multiply(transform, segment.a);
-        simd::float3 b = matrix_multiply(transform, segment.b);
-        Canvas::line(a.x, a.y, b.x, b.y);
-    }
+    drawGeometry(playerGeometry, transform, Palette::GREEN);
 }
 
 void draw() {
     drawGrid();
+    drawWalls();
     drawPlayer();
 }
 

@@ -10,33 +10,9 @@
 
 namespace RC::Player {
 
-const std::vector<Segment> playerGeometry = {
-    makeSegment(-5, -5, 5, -5),
-    makeSegment(-5, -5, 0, 10),
-    makeSegment(5, -5, 0, 10),
-};
-
-const simd::float3x3 worldTransform = matrix_multiply(
-    makeTranslationMatrix(CANVAS_WIDTH / 2.0f, CANVAS_HEIGHT / 2.0f),
-    makeScaleMatrix(1.0f, -1.0f));
-
 simd::float3 position = {0.0f, 0.0f, 1.0f};
 simd::float3 velocity = {0.0f, 0.0f, 0.0f};
 float angle = 0.0f;
-
-void draw() {
-    simd::float3x3 translation = makeTranslationMatrix(position.x, position.y);
-    simd::float3x3 rotation = makeRotationMatrix(angle);
-    simd::float3x3 geometryTransform = matrix_multiply(translation, rotation);
-    simd::float3x3 transform = matrix_multiply(worldTransform, geometryTransform);
-
-    Palette::setColor(Palette::GREEN);
-    for (Segment segment : playerGeometry) {
-        simd::float3 a = matrix_multiply(transform, segment.a);
-        simd::float3 b = matrix_multiply(transform, segment.b);
-        Canvas::line(a.x, a.y, b.x, b.y);
-    }
-}
 
 void updateAngle() {
     if (Keyboard::keys[Keyboard::KEY_LEFT]) {

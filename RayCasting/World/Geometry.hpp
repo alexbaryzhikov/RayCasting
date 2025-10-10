@@ -2,6 +2,7 @@
 #define Geometry_hpp
 
 #include <simd/simd.h>
+#include <vector>
 
 namespace RC {
 
@@ -10,8 +11,18 @@ struct Segment {
     simd::float3 b;
 };
 
+} // namespace RC
+
+namespace RC::Geometry {
+
 Segment makeSegment(float ax, float ay, float bx, float by);
 
-} // namespace RC
+std::vector<Segment> makeGrid(size_t width, size_t height);
+
+std::vector<Segment> makePlayer();
+
+std::vector<Segment> makeWall();
+
+} // namespace RC::Geometry
 
 #endif /* Geometry_hpp */
