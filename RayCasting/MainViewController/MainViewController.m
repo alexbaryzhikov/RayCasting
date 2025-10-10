@@ -43,4 +43,8 @@
     [RCBridge keyUp:event.keyCode];
 }
 
+- (void)flagsChanged:(NSEvent*)event {
+    [RCBridge flagsChanged:event.modifierFlags];
+}
+
 @end

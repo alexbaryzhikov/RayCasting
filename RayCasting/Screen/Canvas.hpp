@@ -3,9 +3,31 @@
 
 #include <cstdint>
 
+namespace RC {
+
+struct Frame {
+    float x = 0.0f;
+    float y = 0.0f;
+    float w = 0.0f;
+    float h = 0.0f;
+
+    float centerX() { return x + w / 2.0f; }
+    float centerY() { return y + h / 2.0f; }
+    float maxX() { return x + w; }
+    float maxY() { return y + h; }
+
+    bool operator==(const Frame& o) const {
+        return x == o.x && y == o.y && w == o.w && h == o.h;
+    }
+};
+
+} // namespace RC
+
 namespace RC::Canvas {
 
 const void* bytes();
+
+void setClipFrame(Frame frame);
 
 void fill(uint32_t color);
 

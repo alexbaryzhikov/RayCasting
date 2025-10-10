@@ -14,7 +14,7 @@ void start() {
 }
 
 void draw() {
-    Canvas::fill(Palette::GUNMETAL_GRAY_DARKER);
+    Canvas::fill(Palette::GRAY_DARKER);
     Map::draw();
 }
 

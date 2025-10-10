@@ -34,10 +34,10 @@ void applyAcceleration(float accelerationMagnitude) {
         dx -= 1.0f;
     }
     if (Keyboard::keys[Keyboard::KEY_A]) {
-        dy += 1.0f;
+        dy -= 1.0f;
     }
     if (Keyboard::keys[Keyboard::KEY_D]) {
-        dy -= 1.0f;
+        dy += 1.0f;
     }
 
     simd::float3 direction = matrix_multiply(makeRotationMatrix(angle), makeNormal(dx, dy));

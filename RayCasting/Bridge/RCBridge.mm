@@ -42,4 +42,8 @@
     RC::Keyboard::keyUp(code);
 }
 
++ (void)flagsChanged:(unsigned long)flags {
+    RC::Keyboard::flagsChanged(flags);
+}
+
 @end

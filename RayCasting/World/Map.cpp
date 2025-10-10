@@ -4,7 +4,6 @@
 
 #include "Canvas.hpp"
 #include "Config.h"
-#include "Frame.hpp"
 #include "Geometry.hpp"
 #include "Keyboard.hpp"
 #include "MathUtils.hpp"
@@ -13,13 +12,19 @@
 
 namespace RC::Map {
 
+constexpr Frame FULL_FRAME = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
+constexpr Frame MINI_FRAME = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
+constexpr float FULL_FRAME_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT;
+constexpr float MINI_FRAME_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT / 2.0f;
+
 const std::vector<Segment> playerGeometry = Geometry::makePlayer();
 const std::vector<Segment> wallGeometry = Geometry::makeWall();
 std::vector<Segment> gridGeometry;
 
 std::vector<std::vector<Tile>> tiles;
-Frame frame = {0.0f, 0.0f, CANVAS_WIDTH, CANVAS_HEIGHT};
-float zoomFactor = MAP_ZOOM_DEFAULT;
+Frame frame = FULL_FRAME;
+float zoomFactor = FULL_FRAME_DEFAULT_ZOOM;
+bool isVisible = true;
 
 size_t width() {
     return tiles.empty() ? 0 : tiles[0].size();
@@ -137,25 +142,56 @@ void drawPlayer() {
 }
 
 void draw() {
-    drawGrid();
-    drawWalls();
-    drawPlayer();
+    if (isVisible) {
+        Canvas::setClipFrame(frame);
+        Palette::setColor(Palette::GUNMETAL_GRAY_DARKER);
+        Canvas::boxFill(frame.x, frame.y, frame.w, frame.h);
+        drawGrid();
+        drawWalls();
+        drawPlayer();
+    }
+}
+
+void updateVisibility() {
+    static bool updated = false;
+    if (!updated && Keyboard::keys[Keyboard::KEY_M]) {
+        updated = true;
+        isVisible = !isVisible;
+    }
+    if (!Keyboard::keys[Keyboard::KEY_M]) {
+        updated = false;
+    }
+}
+
+void updateFrame() {
+    if (Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_MINUS]) {
+        frame = MINI_FRAME;
+        zoomFactor = MINI_FRAME_DEFAULT_ZOOM;
+    }
+    if (Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_EQUALS]) {
+        frame = FULL_FRAME;
+        zoomFactor = FULL_FRAME_DEFAULT_ZOOM;
+    }
 }
 
 void updateZoom() {
-    if (Keyboard::keys[Keyboard::KEY_EQUALS]) {
+    if (!Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_EQUALS]) {
         zoomFactor *= MAP_ZOOM_SPEED;
     }
-    if (Keyboard::keys[Keyboard::KEY_MINUS]) {
+    if (!Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_MINUS]) {
         zoomFactor /= MAP_ZOOM_SPEED;
     }
     if (Keyboard::keys[Keyboard::KEY_0]) {
-        zoomFactor = MAP_ZOOM_DEFAULT;
+        zoomFactor = frame == FULL_FRAME ? FULL_FRAME_DEFAULT_ZOOM : MINI_FRAME_DEFAULT_ZOOM;
     }
 }
 
 void update() {
-    updateZoom();
+    updateVisibility();
+    if (isVisible) {
+        updateFrame();
+        updateZoom();
+    }
 }
 
 } // namespace RC::Map

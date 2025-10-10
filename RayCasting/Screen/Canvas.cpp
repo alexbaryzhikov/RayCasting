@@ -11,9 +11,14 @@
 namespace RC::Canvas {
 
 std::array<uint32_t, CANVAS_SIZE> canvas;
+Frame clipFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 
 const void* bytes() {
     return canvas.data();
+}
+
+void setClipFrame(Frame frame) {
+    clipFrame = frame;
 }
 
 void fill(uint32_t color) {
@@ -21,7 +26,7 @@ void fill(uint32_t color) {
 }
 
 void point(int x, int y) {
-    if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
+    if (x >= clipFrame.x && x < clipFrame.maxX() && y >= clipFrame.y && y < clipFrame.maxY()) {
         uint32_t& c = canvas[x + y * CANVAS_WIDTH];
         c = Palette::blend(c);
     }

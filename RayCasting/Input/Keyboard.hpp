@@ -78,11 +78,23 @@ constexpr uint16_t KEY_RIGHT = 124;
 constexpr uint16_t KEY_DOWN = 125;
 constexpr uint16_t KEY_UP = 126;
 
+// Modifier flags
+constexpr uint32_t FLAG_CAPSLOCK = 1 << 16;   // Set if Caps Lock key is pressed.
+constexpr uint32_t FLAG_SHIFT = 1 << 17;      // Set if Shift key is pressed.
+constexpr uint32_t FLAG_CONTROL = 1 << 18;    // Set if Control key is pressed.
+constexpr uint32_t FLAG_OPTION = 1 << 19;     // Set if Option or Alternate key is pressed.
+constexpr uint32_t FLAG_COMMAND = 1 << 20;    // Set if Command key is pressed.
+constexpr uint32_t FLAG_NUMERICPAD = 1 << 21; // Set if any key in the numeric keypad is pressed.
+constexpr uint32_t FLAG_HELP = 1 << 22;       // Set if the Help key is pressed.
+constexpr uint32_t FLAG_FUNCTION = 1 << 23;   // Set if any function key is pressed.
+
 extern std::array<bool, 128> keys;
 
 void keyDown(uint16_t code);
 
 void keyUp(uint16_t code);
+
+void flagsChanged(uint64_t flags);
 
 } // namespace RC::Keyboard
 
