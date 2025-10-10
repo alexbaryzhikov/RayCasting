@@ -6,6 +6,7 @@
 #include "Map.hpp"
 #include "Palette.hpp"
 #include "Player.hpp"
+#include "Viewport.hpp"
 
 namespace RC::World {
 
@@ -14,7 +15,7 @@ void start() {
 }
 
 void draw() {
-    Canvas::fill(Palette::GRAY_DARKER);
+    Viewport::draw();
     Map::draw();
 }
 

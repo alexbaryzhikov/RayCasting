@@ -14,16 +14,16 @@ namespace RC::Map {
 
 constexpr Frame FULL_FRAME = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 constexpr Frame MINI_FRAME = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
-constexpr float FULL_FRAME_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT;
-constexpr float MINI_FRAME_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT / 2.0f;
+constexpr float FULL_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT;
+constexpr float MINI_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT / 2.0f;
 
 const std::vector<Segment> playerGeometry = Geometry::makePlayer();
 const std::vector<Segment> wallGeometry = Geometry::makeWall();
 std::vector<Segment> gridGeometry;
 
 std::vector<std::vector<Tile>> tiles;
-Frame frame = FULL_FRAME;
-float zoomFactor = FULL_FRAME_DEFAULT_ZOOM;
+Frame frame = MINI_FRAME;
+float zoomFactor = MINI_DEFAULT_ZOOM;
 bool isVisible = true;
 
 size_t width() {
@@ -166,11 +166,11 @@ void updateVisibility() {
 void updateFrame() {
     if (Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_MINUS]) {
         frame = MINI_FRAME;
-        zoomFactor = MINI_FRAME_DEFAULT_ZOOM;
+        zoomFactor = MINI_DEFAULT_ZOOM;
     }
     if (Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_EQUALS]) {
         frame = FULL_FRAME;
-        zoomFactor = FULL_FRAME_DEFAULT_ZOOM;
+        zoomFactor = FULL_DEFAULT_ZOOM;
     }
 }
 
@@ -182,7 +182,7 @@ void updateZoom() {
         zoomFactor /= MAP_ZOOM_SPEED;
     }
     if (Keyboard::keys[Keyboard::KEY_0]) {
-        zoomFactor = frame == FULL_FRAME ? FULL_FRAME_DEFAULT_ZOOM : MINI_FRAME_DEFAULT_ZOOM;
+        zoomFactor = frame == FULL_FRAME ? FULL_DEFAULT_ZOOM : MINI_DEFAULT_ZOOM;
     }
 }
 
