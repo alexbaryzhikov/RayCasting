@@ -22,8 +22,8 @@ simd::float3x3 makeTranslationMatrix(float tx, float ty) {
 }
 
 simd::float3x3 makeRotationMatrix(float angle) {
-    float cosA = cosf(angle);
-    float sinA = sinf(angle);
+    float cosA = cos(angle);
+    float sinA = sin(angle);
     return simd::float3x3{simd::float3{cosA, sinA, 0.0f},
                           simd::float3{-sinA, cosA, 0.0f},
                           simd::float3{0.0f, 0.0f, 1.0f}};

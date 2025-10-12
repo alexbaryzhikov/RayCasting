@@ -12,6 +12,10 @@ enum class Tile {
 
 extern std::vector<std::vector<Tile>> tiles;
 
+size_t width();
+
+size_t height();
+
 void load(const void* bytes, size_t size);
 
 void draw();

@@ -9,6 +9,7 @@
 #include "MathUtils.hpp"
 #include "Palette.hpp"
 #include "Player.hpp"
+#include "Viewport.hpp"
 
 namespace RC::Map {
 
@@ -22,8 +23,8 @@ const std::vector<Segment> wallGeometry = Geometry::makeWall();
 std::vector<Segment> gridGeometry;
 
 std::vector<std::vector<Tile>> tiles;
-Frame frame = MINI_FRAME;
-float zoomFactor = MINI_DEFAULT_ZOOM;
+Frame frame = FULL_FRAME;
+float zoomFactor = FULL_DEFAULT_ZOOM;
 bool isVisible = true;
 
 size_t width() {
@@ -141,6 +142,19 @@ void drawPlayer() {
     drawGeometry(playerGeometry, transform, Palette::GREEN);
 }
 
+void drawRays() {
+    Segment rayL = Geometry::makeSegment(Player::position.x, Player::position.y, Viewport::rayL.x, Viewport::rayL.y);
+    Segment rayC = Geometry::makeSegment(Player::position.x, Player::position.y, Viewport::rayC.x, Viewport::rayC.y);
+    Segment rayR = Geometry::makeSegment(Player::position.x, Player::position.y, Viewport::rayR.x, Viewport::rayR.y);
+    simd::float3 playerPosition = Player::position * zoomFactor;
+    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
+    simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
+    simd::float3x3 transform = matrix_multiply(translate, scale);
+    drawGeometry({rayL}, transform, Palette::RED);
+    drawGeometry({rayC}, transform, Palette::GREEN);
+    drawGeometry({rayR}, transform, Palette::BLUE);
+}
+
 void draw() {
     if (isVisible) {
         Canvas::setClipFrame(frame);
@@ -148,7 +162,8 @@ void draw() {
         Canvas::boxFill(frame.x, frame.y, frame.w, frame.h);
         drawGrid();
         drawWalls();
-        drawPlayer();
+//        drawPlayer();
+        drawRays();
     }
 }
 

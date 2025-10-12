@@ -48,8 +48,8 @@ void line(float x0, float y0, float x1, float y1) {
             Canvas::point(floor(x1), floor(y1));
             return;
         }
-        int y = round(y0);
-        int yEnd = round(y1);
+        int y = ceil(y0);
+        int yEnd = floor(y1);
         float slope = dx / dy;
         float _x = x0 + (y - y0) * slope + 0.5f;
         int x = round(_x * (1 << 16));
@@ -66,8 +66,8 @@ void line(float x0, float y0, float x1, float y1) {
             Canvas::point(floor(x1), floor(y1));
             return;
         }
-        int x = round(x0);
-        int xEnd = round(x1);
+        int x = ceil(x0);
+        int xEnd = floor(x1);
         float slope = dy / dx;
         float _y = y0 + (x - x0) * slope + 0.5f;
         int y = round(_y * (1 << 16));

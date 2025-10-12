@@ -2,10 +2,10 @@
 #define Config_h
 
 // Display
-#define CANVAS_WIDTH        800
-#define CANVAS_HEIGHT       450
+#define CANVAS_WIDTH        320
+#define CANVAS_HEIGHT       200
 #define CANVAS_SIZE         (CANVAS_WIDTH * CANVAS_HEIGHT)
-#define VIEW_SCALE          2
+#define VIEW_SCALE          4
 #define VIEW_WIDTH          (CANVAS_WIDTH * VIEW_SCALE)
 #define VIEW_HEIGHT         (CANVAS_HEIGHT * VIEW_SCALE)
 
@@ -20,14 +20,18 @@
 // Map
 #define MAP_NAME            "map001"
 #define MAP_TYPE            "map"
-#define MAP_BLOCK_SIZE      64
-#define MAP_ZOOM_DEFAULT    1.0f
+#define MAP_BLOCK_SIZE      64.0f
+#define MAP_ZOOM_DEFAULT    0.33f
 #define MAP_ZOOM_SPEED      1.03124f
 
 // Player
 #define PLAYER_MOVE_SPEED   2.0f
-#define PLAYER_TURN_SPEED   0.1f
+#define PLAYER_TURN_SPEED   0.03125f
 #define PLAYER_ACCELERATION 0.4f
 #define PLAYER_FRICTION     0.1f
+
+// Camera
+#define CAMERA_HEIGHT       32.0f
+#define CAMERA_FOV          1.04719755f
 
 #endif /* Config_h */

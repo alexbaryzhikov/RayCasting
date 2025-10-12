@@ -16,6 +16,9 @@ std::vector<Segment> makeGrid(size_t width, size_t height) {
     for (size_t i = 0; i <= width; ++i) {
         float offset = i * MAP_BLOCK_SIZE;
         grid.push_back(makeSegment(offset, 0, offset, gridHeight));
+    }
+    for (size_t i = 0; i <= height; ++i) {
+        float offset = i * MAP_BLOCK_SIZE;
         grid.push_back(makeSegment(0, offset, gridWidth, offset));
     }
     return grid;

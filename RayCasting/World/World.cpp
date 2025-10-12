@@ -21,6 +21,7 @@ void draw() {
 
 void update() {
     Player::update();
+    Viewport::update();
     Map::update();
 }
 
