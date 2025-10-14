@@ -35,6 +35,7 @@ void drawWalls() {
 }
 
 void draw() {
+    if (Map::isVisible) return;
     fillBackground();
 }
 
