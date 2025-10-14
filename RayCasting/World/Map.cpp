@@ -160,11 +160,9 @@ void drawRays() {
 void draw() {
     if (isVisible) {
         Canvas::setClipFrame(frame);
-        Palette::setColor(Palette::GUNMETAL_GRAY_DARKER);
-        Canvas::boxFill(frame.x, frame.y, frame.w, frame.h);
+        Canvas::fill(Palette::GUNMETAL_GRAY_DARKER);
         drawGrid();
         drawWalls();
-//        drawPlayer();
         drawRays();
     }
 }

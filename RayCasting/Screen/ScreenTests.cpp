@@ -16,8 +16,11 @@ void drawAnimatedBox() {
     static float dy = 1.f;
     static uint32_t color = Palette::RED;
 
-    Palette::setColor(color);
-    Canvas::boxFill(x, y, size, size);
+    Canvas::resetClipFrame();
+    Canvas::fill(Palette::BLACK);
+    Canvas::setClipFrame(x, y, size, size);
+    Canvas::fill(color);
+    Canvas::resetClipFrame();
 
     x += dx;
     y += dy;
@@ -56,7 +59,7 @@ void drawFrame() {
 
 void drawCheckers() {
     Palette::setColor(Palette::CYAN);
-    const float size = 16;
+    const float size = CANVAS_WIDTH / 16.0f;
     const bool oddBoxesPerRow = int(ceil(CANVAS_WIDTH / size)) & 1;
     float x = 0;
     float y = 0;
@@ -64,7 +67,8 @@ void drawCheckers() {
     while (y < CANVAS_HEIGHT) {
         while (x < CANVAS_WIDTH) {
             if (flag) {
-                Canvas::boxFill(x, y, size, size);
+                Canvas::setClipFrame(x, y, size, size);
+                Canvas::fill();
             }
             flag = !flag;
             x += size;
@@ -75,6 +79,7 @@ void drawCheckers() {
         x = 0;
         y += size;
     }
+    Canvas::resetClipFrame();
 }
 
 } // namespace RC

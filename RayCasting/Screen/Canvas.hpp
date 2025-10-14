@@ -15,11 +15,9 @@ struct Frame {
     float centerY() { return y + h / 2.0f; }
     float maxX() { return x + w; }
     float maxY() { return y + h; }
-
-    bool operator==(const Frame& o) const {
-        return x == o.x && y == o.y && w == o.w && h == o.h;
-    }
 };
+
+bool operator==(const Frame& a, const Frame& b);
 
 } // namespace RC
 
@@ -27,7 +25,13 @@ namespace RC::Canvas {
 
 const void* bytes();
 
+void setClipFrame(float x, float y, float w, float h);
+
 void setClipFrame(Frame frame);
+
+void resetClipFrame();
+
+void fill();
 
 void fill(uint32_t color);
 

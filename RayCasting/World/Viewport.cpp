@@ -25,17 +25,17 @@ simd::float2 rayR = {0.0f, 0.0f};
 std::array<float, CANVAS_WIDTH> rays;
 
 void fillBackground() {
-    Palette::setColor(Palette::BEIGE_DARK);
-    Canvas::boxFill(0, 0, CANVAS_WIDTH, HORIZON_HEIGHT);
-    Palette::setColor(Palette::BEIGE_LIGHT);
-    Canvas::boxFill(0, HORIZON_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - HORIZON_HEIGHT);
+    Canvas::setClipFrame(0, 0, CANVAS_WIDTH, HORIZON_HEIGHT);
+    Canvas::fill(Palette::BEIGE_DARKER);
+    Canvas::setClipFrame(0, HORIZON_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - HORIZON_HEIGHT);
+    Canvas::fill(Palette::BEIGE_DARK);
+    Canvas::resetClipFrame();
 }
 
 void drawWalls() {
 }
 
 void draw() {
-    if (Map::isVisible) return;
     fillBackground();
 }
 
