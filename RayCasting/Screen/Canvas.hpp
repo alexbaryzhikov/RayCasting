@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "Palette.hpp"
+
 namespace RC {
 
 struct Frame {
@@ -11,10 +13,11 @@ struct Frame {
     float w = 0.0f;
     float h = 0.0f;
 
-    float centerX() { return x + w / 2.0f; }
-    float centerY() { return y + h / 2.0f; }
-    float maxX() { return x + w; }
-    float maxY() { return y + h; }
+    float centerX() const { return x + w / 2.0f; }
+    float centerY() const { return y + h / 2.0f; }
+    float maxX() const { return x + w; }
+    float maxY() const { return y + h; }
+    bool contains(float px, float py) const { return px >= x && py >= y && px < maxX() && py < maxY(); }
 };
 
 bool operator==(const Frame& a, const Frame& b);
@@ -35,9 +38,9 @@ void fill();
 
 void fill(uint32_t color);
 
-void point(int x, int y);
+void point(int x, int y, uint32_t color = Palette::color);
 
-void point(int x, int y, uint32_t alpha);
+void pointBlend(int x, int y, uint32_t color = Palette::color, BlendMode mode = Palette::blendMode);
 
 void line(float x0, float y0, float x1, float y1);
 

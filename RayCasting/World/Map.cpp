@@ -150,11 +150,9 @@ void drawRays() {
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    Palette::setBlendMode(Palette::BlendMode::add);
     drawGeometry({rayL}, transform, Palette::RED);
     drawGeometry({rayC}, transform, Palette::GREEN);
     drawGeometry({rayR}, transform, Palette::BLUE);
-    Palette::setBlendMode(Palette::BlendMode::normal);
 }
 
 void draw() {

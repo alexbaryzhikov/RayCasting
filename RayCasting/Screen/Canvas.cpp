@@ -6,7 +6,6 @@
 #include "Canvas.hpp"
 
 #include "Config.h"
-#include "Palette.hpp"
 
 namespace RC {
 
@@ -56,16 +55,17 @@ void fill(uint32_t color) {
     }
 }
 
-void point(int x, int y) {
-    if (x >= clipFrame.x && x < clipFrame.maxX() && y >= clipFrame.y && y < clipFrame.maxY()) {
-        uint32_t& c = canvas[x + y * CANVAS_WIDTH];
-        c = Palette::blend(c);
+void point(int x, int y, uint32_t color) {
+    if (clipFrame.contains(x, y)) {
+        canvas[x + y * CANVAS_WIDTH] = color;
     }
 }
 
-void point(int x, int y, uint32_t alpha) {
-    Palette::setAlpha(alpha);
-    point(x, y);
+void pointBlend(int x, int y, uint32_t color, BlendMode mode) {
+    if (clipFrame.contains(x, y)) {
+        uint32_t& canvasColor = canvas[x + y * CANVAS_WIDTH];
+        canvasColor = Palette::blend(canvasColor, color, mode);
+    }
 }
 
 void line(float x0, float y0, float x1, float y1) {

@@ -32,8 +32,8 @@ void drawChar(float x, float y, const char c) {
     for (int j = 0; j < GLYPH_HEIGHT; ++j) {
         for (int i = 0; i < GLYPH_WIDTH; ++i) {
             uint32_t color = font[glyphX + i + (glyphY + j) * FONT_MAP_WIDTH];
-            Palette::setAlpha(color & 0xFF);
-            Canvas::point(canvasX + i, canvasY + j);
+            Palette::setAlpha(color);
+            Canvas::pointBlend(canvasX + i, canvasY + j);
         }
     }
 }

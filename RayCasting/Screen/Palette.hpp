@@ -3,6 +3,15 @@
 
 #include <cstdint>
 
+namespace RC {
+
+enum class BlendMode {
+    normal,
+    add
+};
+
+}
+
 namespace RC::Palette {
 
 constexpr uint32_t BLACK = 0xFF000000;
@@ -15,6 +24,7 @@ constexpr uint32_t CYAN = 0xFF00FFFF;
 constexpr uint32_t MAGENTA = 0xFFFF00FF;
 
 constexpr uint32_t MASK_ALPHA = 0xFF000000;
+constexpr uint32_t MASK_RGB = 0xFFFFFF;
 constexpr uint32_t MASK_RED = 0xFF0000;
 constexpr uint32_t MASK_GREEN = 0xFF00;
 constexpr uint32_t MASK_BLUE = 0xFF;
@@ -34,26 +44,21 @@ constexpr uint32_t GUNMETAL_GRAY_LIGHT = 0xFF628699;
 constexpr uint32_t GUNMETAL_GRAY_DARK = 0xFF353E43;
 constexpr uint32_t GUNMETAL_GRAY_DARKER = 0xFF041E2B;
 
-enum class BlendMode {
-    normal,
-    add
-};
-
 extern uint32_t color;
 
 extern BlendMode blendMode;
 
 void setColor(uint32_t c);
 
-void setRGB(uint32_t c);
+void setRGB(uint32_t rgb);
 
 void setAlpha(uint32_t a);
 
 void setBlendMode(BlendMode mode);
 
-uint32_t rgb(uint32_t bg, uint32_t fg);
+uint32_t withRGB(uint32_t rgb, uint32_t c = color);
 
-uint32_t alpha(uint32_t c, uint32_t a);
+uint32_t withAlpha(uint32_t a, uint32_t c = color);
 
 uint32_t blend(uint32_t bg, uint32_t fg = color, BlendMode mode = blendMode);
 

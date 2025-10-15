@@ -10,15 +10,15 @@ BlendMode blendMode = BlendMode::normal;
 
 void setColor(uint32_t c) { color = c; }
 
-void setRgb(uint32_t c) { color = rgb(color, c); }
+void setRgb(uint32_t rgb) { color = withRGB(rgb, color); }
 
-void setAlpha(uint32_t a) { color = alpha(color, a); }
+void setAlpha(uint32_t a) { color = withAlpha(a, color); }
 
 void setBlendMode(BlendMode mode) { blendMode = mode; }
 
-uint32_t rgb(uint32_t bg, uint32_t fg) { return (fg & ~MASK_ALPHA) | (bg & MASK_ALPHA); }
+uint32_t withRGB(uint32_t rgb, uint32_t c) { return (rgb & MASK_RGB) | (c & MASK_ALPHA); }
 
-uint32_t alpha(uint32_t c, uint32_t a) { return (c & ~MASK_ALPHA) | (a << 24); }
+uint32_t withAlpha(uint32_t a, uint32_t c) { return (c & MASK_RGB) | ((a << 24) & MASK_ALPHA); }
 
 uint32_t blend(uint32_t bg, uint32_t fg, BlendMode mode) {
     constexpr uint32_t FF = 0xFF;
@@ -52,4 +52,4 @@ uint32_t blend(uint32_t bg, uint32_t fg, BlendMode mode) {
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-} // namespace RC
+} // namespace RC::Palette
