@@ -36,7 +36,9 @@ void drawWalls() {
 }
 
 void draw() {
-    fillBackground();
+    if (!Map::isVisible) {
+        fillBackground();
+    }
 }
 
 float sign(float x) {

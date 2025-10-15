@@ -24,11 +24,8 @@ void drawFPS() {
 }
 
 void draw() {
-    if (Map::isVisible) {
-        Map::draw();
-    } else {
-        Viewport::draw();
-    }
+    Viewport::draw();
+    Map::draw();
     drawFPS();
 }
 
