@@ -143,9 +143,9 @@ void drawPlayer() {
 }
 
 void drawRays() {
-    Segment rayL = Geometry::makeSegment(Player::position.x, Player::position.y, Viewport::rayL.x, Viewport::rayL.y);
-    Segment rayC = Geometry::makeSegment(Player::position.x, Player::position.y, Viewport::rayC.x, Viewport::rayC.y);
-    Segment rayR = Geometry::makeSegment(Player::position.x, Player::position.y, Viewport::rayR.x, Viewport::rayR.y);
+    Segment rayL = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayL.x, Player::position.y + Viewport::rayL.y);
+    Segment rayC = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayC.x, Player::position.y + Viewport::rayC.y);
+    Segment rayR = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayR.x, Player::position.y + Viewport::rayR.y);
     simd::float3 playerPosition = Player::position * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);

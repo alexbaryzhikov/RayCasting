@@ -29,16 +29,6 @@ constexpr uint32_t MASK_RED = 0xFF0000;
 constexpr uint32_t MASK_GREEN = 0xFF00;
 constexpr uint32_t MASK_BLUE = 0xFF;
 
-constexpr uint32_t BEIGE_LIGHTER = 0xFFEDE8D0;
-constexpr uint32_t BEIGE_LIGHT = 0xFFC9C5B1;
-constexpr uint32_t BEIGE_DARK = 0xFF787569;
-constexpr uint32_t BEIGE_DARKER = 0xFF4F4D46;
-
-constexpr uint32_t GRAY_LIGHTER = 0xFFD3D3D3;
-constexpr uint32_t GRAY_LIGHT = 0xFF878787;
-constexpr uint32_t GRAY_DARK = 0xFF5E5E5E;
-constexpr uint32_t GRAY_DARKER = 0xFF363636;
-
 constexpr uint32_t GUNMETAL_GRAY_LIGHTER = 0xFFB9D9EB;
 constexpr uint32_t GUNMETAL_GRAY_LIGHT = 0xFF628699;
 constexpr uint32_t GUNMETAL_GRAY_DARK = 0xFF353E43;
