@@ -13,10 +13,10 @@
 
 namespace RC::Viewport {
 
-constexpr float EPSILON = std::numeric_limits<float>::epsilon() * 128;
-constexpr float BIG_FLOAT = 1.0e+6f;
-constexpr float HORIZON_HEIGHT = CANVAS_HEIGHT / 2.0f;
-const float PROJECTION_DISTANCE = CANVAS_WIDTH / (2.0f * tan(CAMERA_FOV / 2.0f));
+constexpr float epsilon = std::numeric_limits<float>::epsilon() * 128;
+constexpr float bigFloat = 1.0e+6f;
+constexpr float horizonHeight = CANVAS_HEIGHT / 2.0f;
+constexpr float projectionDistance = CANVAS_WIDTH / CAMERA_PROJECTION;
 
 simd::float2 rayL = {0.0f, 0.0f};
 simd::float2 rayC = {0.0f, 0.0f};
@@ -30,15 +30,16 @@ enum class RayHit {
 
 struct RayCast {
     simd::float2 ray;
+    float length;
     RayHit hit;
 };
 
 std::array<RayCast, CANVAS_WIDTH> rayCasts;
 
 void fillBackground() {
-    Canvas::setClipFrame(0, 0, CANVAS_WIDTH, HORIZON_HEIGHT);
+    Canvas::setClipFrame(0, 0, CANVAS_WIDTH, horizonHeight);
     Canvas::fill(Palette::GUNMETAL_GRAY_DARKER);
-    Canvas::setClipFrame(0, HORIZON_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - HORIZON_HEIGHT);
+    Canvas::setClipFrame(0, horizonHeight, CANVAS_WIDTH, CANVAS_HEIGHT - horizonHeight);
     Canvas::fill(Palette::GUNMETAL_GRAY_DARK);
     Canvas::resetClipFrame();
 }
@@ -47,10 +48,9 @@ void drawWalls() {
     for (int x = 0; x < rayCasts.size(); ++x) {
         RayCast rayCast = rayCasts[x];
         if (rayCast.hit == RayHit::none) continue;
-        float wallDistance = simd::length(rayCast.ray);
-        float wallHeight = MAP_BLOCK_SIZE * PROJECTION_DISTANCE / wallDistance;
-        int y = ceil((CANVAS_HEIGHT - wallHeight) / 2.0f);
-        int yEnd = floor((CANVAS_HEIGHT + wallHeight) / 2.0f);
+        float wallHeight = MAP_BLOCK_SIZE * projectionDistance / rayCast.length;
+        int y = ceil(horizonHeight - wallHeight / 2.0f);
+        int yEnd = floor(horizonHeight + wallHeight / 2.0f);
         Palette::setColor(rayCast.hit == RayHit::horizontal ? Palette::GUNMETAL_GRAY_LIGHT : Palette::GUNMETAL_GRAY_LIGHTER);
         for (; y <= yEnd; ++y) {
             Canvas::point(x, y);
@@ -74,9 +74,9 @@ RayCast castRay(float angle, float mapWidth, float mapHeight) {
     float cosA = cos(angle);
 
     // Scan columns
-    simd::float2 rayA = {BIG_FLOAT, BIG_FLOAT};
+    simd::float2 rayA = {bigFloat, bigFloat};
     bool hitA = false;
-    if (fabs(cosA) > EPSILON) {
+    if (fabs(cosA) > epsilon) {
         rayA.x = (cosA < 0 ? floor(Player::position.x / MAP_BLOCK_SIZE) : ceil(Player::position.x / MAP_BLOCK_SIZE)) * MAP_BLOCK_SIZE;
         rayA.y = Player::position.y + (rayA.x - Player::position.x) * sinA / cosA;
         simd::float2 d = {MAP_BLOCK_SIZE * sign(cosA), fabs(MAP_BLOCK_SIZE * sinA / cosA) * sign(sinA)};
@@ -92,9 +92,9 @@ RayCast castRay(float angle, float mapWidth, float mapHeight) {
     }
 
     // Scan rows
-    simd::float2 rayB = {BIG_FLOAT, BIG_FLOAT};
+    simd::float2 rayB = {bigFloat, bigFloat};
     bool hitB = false;
-    if (fabs(sinA) > EPSILON) {
+    if (fabs(sinA) > epsilon) {
         rayB.y = (sinA < 0 ? floor(Player::position.y / MAP_BLOCK_SIZE) : ceil(Player::position.y / MAP_BLOCK_SIZE)) * MAP_BLOCK_SIZE;
         rayB.x = Player::position.x + (rayB.y - Player::position.y) * cosA / sinA;
         simd::float2 d = {fabs(MAP_BLOCK_SIZE * cosA / sinA) * sign(cosA), MAP_BLOCK_SIZE * sign(sinA)};
@@ -109,17 +109,12 @@ RayCast castRay(float angle, float mapWidth, float mapHeight) {
         rayB -= Player::position.xy;
     }
 
-    if (hitA != hitB) {
-        if (hitA) {
-            return {rayA, RayHit::vertical};
-        } else {
-            return {rayB, RayHit::horizontal};
-        }
-    }
-    if (simd::length(rayA) < simd::length(rayB)) {
-        return {rayA, hitA ? RayHit::vertical : RayHit::none};
+    float lenA = simd::length(rayA);
+    float lenB = simd::length(rayB);
+    if (lenA < lenB) {
+        return {rayA, lenA, hitA && lenA > CAMERA_NEAR_CLIP ? RayHit::vertical : RayHit::none};
     } else {
-        return {rayB, hitB ? RayHit::horizontal : RayHit::none};
+        return {rayB, lenB, hitB && lenB > CAMERA_NEAR_CLIP ? RayHit::horizontal : RayHit::none};
     }
 }
 

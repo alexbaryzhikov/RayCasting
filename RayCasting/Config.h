@@ -32,6 +32,8 @@
 
 // Camera
 #define CAMERA_HEIGHT       32.0f
-#define CAMERA_FOV          1.04719755f
+#define CAMERA_FOV          1.04719758f
+#define CAMERA_PROJECTION   0.866025448f
+#define CAMERA_NEAR_CLIP    32.0f
 
 #endif /* Config_h */
