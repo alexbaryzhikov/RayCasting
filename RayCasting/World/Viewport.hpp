@@ -5,9 +5,11 @@
 
 namespace RC::Viewport {
 
-extern simd::float2 rayL;
-extern simd::float2 rayC;
 extern simd::float2 rayR;
+extern simd::float2 rayG;
+extern simd::float2 rayB;
+
+void initialize();
 
 void draw();
 

@@ -25,7 +25,7 @@ std::vector<Segment> gridGeometry;
 std::vector<std::vector<Tile>> tiles;
 Frame frame = FULL_FRAME;
 float zoomFactor = FULL_DEFAULT_ZOOM;
-bool isVisible = true;
+bool isVisible = false;
 
 size_t width() {
     return tiles.empty() ? 0 : tiles[0].size();
@@ -33,6 +33,10 @@ size_t width() {
 
 size_t height() {
     return tiles.size();
+}
+
+bool isFullFrame() {
+    return frame == FULL_FRAME;
 }
 
 bool isValid() {
@@ -143,9 +147,9 @@ void drawPlayer() {
 }
 
 void drawRays() {
-    Segment rayL = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayL.x, Player::position.y + Viewport::rayL.y);
-    Segment rayC = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayC.x, Player::position.y + Viewport::rayC.y);
-    Segment rayR = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayR.x, Player::position.y + Viewport::rayR.y);
+    Segment rayL = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayR.x, Player::position.y + Viewport::rayR.y);
+    Segment rayC = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayG.x, Player::position.y + Viewport::rayG.y);
+    Segment rayR = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayB.x, Player::position.y + Viewport::rayB.y);
     simd::float3 playerPosition = Player::position * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);

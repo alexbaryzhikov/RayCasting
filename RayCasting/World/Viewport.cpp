@@ -16,11 +16,11 @@ namespace RC::Viewport {
 constexpr float epsilon = std::numeric_limits<float>::epsilon() * 128;
 constexpr float bigFloat = 1.0e+6f;
 constexpr float horizonHeight = CANVAS_HEIGHT / 2.0f;
-constexpr float projectionDistance = CANVAS_WIDTH / CAMERA_PROJECTION;
+const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 
-simd::float2 rayL = {0.0f, 0.0f};
-simd::float2 rayC = {0.0f, 0.0f};
 simd::float2 rayR = {0.0f, 0.0f};
+simd::float2 rayG = {0.0f, 0.0f};
+simd::float2 rayB = {0.0f, 0.0f};
 
 enum class RayHit {
     none,
@@ -34,7 +34,15 @@ struct RayCast {
     RayHit hit;
 };
 
+std::array<float, CANVAS_WIDTH> rayAngles;
 std::array<RayCast, CANVAS_WIDTH> rayCasts;
+
+void initialize() {
+    for (size_t i = 0; i < rayAngles.size(); ++i) {
+        float x = float(i) - CANVAS_WIDTH / 2.0f;
+        rayAngles[i] = atan(x / projectionDistance);
+    }
+}
 
 void fillBackground() {
     Canvas::setClipFrame(0, 0, CANVAS_WIDTH, horizonHeight);
@@ -48,7 +56,7 @@ void drawWalls() {
     for (int x = 0; x < rayCasts.size(); ++x) {
         RayCast rayCast = rayCasts[x];
         if (rayCast.hit == RayHit::none) continue;
-        float wallHeight = MAP_BLOCK_SIZE * projectionDistance / rayCast.length;
+        float wallHeight = MAP_BLOCK_SIZE * (projectionDistance / rayCast.length);
         int y = ceil(horizonHeight - wallHeight / 2.0f);
         int yEnd = floor(horizonHeight + wallHeight / 2.0f);
         Palette::setColor(rayCast.hit == RayHit::horizontal ? Palette::GUNMETAL_GRAY_LIGHT : Palette::GUNMETAL_GRAY_LIGHTER);
@@ -59,19 +67,19 @@ void drawWalls() {
 }
 
 void draw() {
-    if (!Map::isVisible) {
-        fillBackground();
-        drawWalls();
-    }
+    if (Map::isVisible && Map::isFullFrame()) return;
+    fillBackground();
+    drawWalls();
 }
 
 float sign(float x) {
     return x < 0 ? -1 : 1;
 }
 
-RayCast castRay(float angle, float mapWidth, float mapHeight) {
-    float sinA = sin(angle);
-    float cosA = cos(angle);
+RayCast castRay(float playerSpaceAngle, float mapWidth, float mapHeight) {
+    float mapSpaceAngle = playerSpaceAngle + Player::angle;
+    float sinA = sin(mapSpaceAngle);
+    float cosA = cos(mapSpaceAngle);
 
     // Scan columns
     simd::float2 rayA = {bigFloat, bigFloat};
@@ -109,11 +117,11 @@ RayCast castRay(float angle, float mapWidth, float mapHeight) {
         rayB -= Player::position.xy;
     }
 
-    float lenA = simd::length(rayA);
-    float lenB = simd::length(rayB);
-    if (lenA < lenB) {
+    if (simd::length(rayA) < simd::length(rayB)) {
+        float lenA = simd_dot(rayA, simd::float2{cos(Player::angle), sin(Player::angle)});
         return {rayA, lenA, hitA && lenA > CAMERA_NEAR_CLIP ? RayHit::vertical : RayHit::none};
     } else {
+        float lenB = simd_dot(rayB, simd::float2{cos(Player::angle), sin(Player::angle)});
         return {rayB, lenB, hitB && lenB > CAMERA_NEAR_CLIP ? RayHit::horizontal : RayHit::none};
     }
 }
@@ -122,13 +130,12 @@ void castRays() {
     float mapWidth = Map::width() * MAP_BLOCK_SIZE;
     float mapHeight = Map::height() * MAP_BLOCK_SIZE;
 
-    rayL = castRay(Player::angle - CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
-    rayC = castRay(Player::angle, mapWidth, mapHeight).ray;
-    rayR = castRay(Player::angle + CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
+    rayR = castRay(-CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
+    rayG = castRay(0.0f, mapWidth, mapHeight).ray;
+    rayB = castRay(CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
 
     for (size_t i = 0; i < rayCasts.size(); ++i) {
-        float angle = Player::angle + CAMERA_FOV * (float(i) / rayCasts.size() - 0.5f);
-        rayCasts[i] = castRay(angle, mapWidth, mapHeight);
+        rayCasts[i] = castRay(rayAngles[i], mapWidth, mapHeight);
     }
 }
 

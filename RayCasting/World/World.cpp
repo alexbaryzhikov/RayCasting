@@ -16,6 +16,7 @@ int64_t framesPerSecond = 0;
 
 void start() {
     std::println("Starting world");
+    Viewport::initialize();
 }
 
 void drawFPS() {
