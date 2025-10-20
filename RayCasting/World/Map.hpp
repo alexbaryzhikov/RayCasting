@@ -6,8 +6,8 @@
 namespace RC::Map {
 
 enum class Tile {
-    FLOOR,
-    WALL,
+    floor,
+    wall,
 };
 
 extern std::vector<std::vector<Tile>> tiles;

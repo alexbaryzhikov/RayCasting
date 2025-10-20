@@ -25,7 +25,7 @@ simd::float2 rayB = {0.0f, 0.0f};
 enum class RayHit {
     none,
     horizontal,
-    vertical
+    vertical,
 };
 
 struct RayCast {
@@ -46,9 +46,9 @@ void initialize() {
 
 void fillBackground() {
     Canvas::setClipFrame(0, 0, CANVAS_WIDTH, horizonHeight);
-    Canvas::fill(Palette::GUNMETAL_GRAY_DARKER);
+    Canvas::fill(Palette::gunmetalDarker);
     Canvas::setClipFrame(0, horizonHeight, CANVAS_WIDTH, CANVAS_HEIGHT - horizonHeight);
-    Canvas::fill(Palette::GUNMETAL_GRAY_DARK);
+    Canvas::fill(Palette::gunmetalDark);
     Canvas::resetClipFrame();
 }
 
@@ -59,7 +59,7 @@ void drawWalls() {
         float wallHeight = MAP_BLOCK_SIZE * (projectionDistance / rayCast.length);
         int y = ceil(horizonHeight - wallHeight / 2.0f);
         int yEnd = floor(horizonHeight + wallHeight / 2.0f);
-        Palette::setColor(rayCast.hit == RayHit::horizontal ? Palette::GUNMETAL_GRAY_LIGHT : Palette::GUNMETAL_GRAY_LIGHTER);
+        Palette::setColor(rayCast.hit == RayHit::horizontal ? Palette::gunmetalLight : Palette::gunmetalLighter);
         for (; y <= yEnd; ++y) {
             Canvas::point(x, y);
         }
@@ -91,7 +91,7 @@ RayCast castRay(float playerSpaceAngle, float mapWidth, float mapHeight) {
         for (; rayA.x > 0 && rayA.x < mapWidth && rayA.y > 0 && rayA.y < mapHeight; rayA += d) {
             int row = floor(rayA.y / MAP_BLOCK_SIZE);
             int col = floor(rayA.x / MAP_BLOCK_SIZE) - float(cosA < 0);
-            if (Map::tiles[row][col] == Map::Tile::WALL) {
+            if (Map::tiles[row][col] == Map::Tile::wall) {
                 hitA = true;
                 break;
             }
@@ -109,7 +109,7 @@ RayCast castRay(float playerSpaceAngle, float mapWidth, float mapHeight) {
         for (; rayB.x > 0 && rayB.x < mapWidth && rayB.y > 0 && rayB.y < mapHeight; rayB += d) {
             int row = floor(rayB.y / MAP_BLOCK_SIZE) - float(sinA < 0);
             int col = floor(rayB.x / MAP_BLOCK_SIZE);
-            if (Map::tiles[row][col] == Map::Tile::WALL) {
+            if (Map::tiles[row][col] == Map::Tile::wall) {
                 hitB = true;
                 break;
             }

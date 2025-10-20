@@ -14,10 +14,10 @@ void drawAnimatedBox() {
     static float y = 0.f;
     static float dx = 1.f;
     static float dy = 1.f;
-    static uint32_t color = Palette::RED;
+    static uint32_t color = Palette::red;
 
     Canvas::resetClipFrame();
-    Canvas::fill(Palette::BLACK);
+    Canvas::fill(Palette::black);
     Canvas::setClipFrame(x, y, size, size);
     Canvas::fill(color);
     Canvas::resetClipFrame();
@@ -35,30 +35,30 @@ void drawAnimatedBox() {
     }
     if (bounced) {
         switch (color) {
-            case Palette::RED:
-                color = Palette::GREEN;
+            case Palette::red:
+                color = Palette::green;
                 break;
-            case Palette::GREEN:
-                color = Palette::BLUE;
+            case Palette::green:
+                color = Palette::blue;
                 break;
-            case Palette::BLUE:
-                color = Palette::RED;
+            case Palette::blue:
+                color = Palette::red;
                 break;
         }
     }
 }
 
 void drawFrame() {
-    Palette::setColor(Palette::BLUE);
+    Palette::setColor(Palette::blue);
     Canvas::line(0, 0, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
-    Palette::setColor(Palette::GREEN);
+    Palette::setColor(Palette::green);
     Canvas::line(CANVAS_WIDTH - 1, 0, 0, CANVAS_HEIGHT - 1);
-    Palette::setColor(Palette::RED);
+    Palette::setColor(Palette::red);
     Canvas::box(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
 void drawCheckers() {
-    Palette::setColor(Palette::CYAN);
+    Palette::setColor(Palette::cyan);
     const float size = CANVAS_WIDTH / 16.0f;
     const bool oddBoxesPerRow = int(ceil(CANVAS_WIDTH / size)) & 1;
     float x = 0;

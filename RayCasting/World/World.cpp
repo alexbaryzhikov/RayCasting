@@ -20,7 +20,7 @@ void start() {
 }
 
 void drawFPS() {
-    Palette::setColor(Palette::WHITE);
+    Palette::setColor(Palette::white);
     Text::draw(4, 4, std::to_string(framesPerSecond));
 }
 

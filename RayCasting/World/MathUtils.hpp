@@ -6,15 +6,6 @@
 namespace RC {
 
 /**
- * @brief Calculates the angle in radians of a 2D vector (x, y).
- * The angle is measured counter-clockwise from the positive X-axis.
- * @param x The x-component of the vector.
- * @param y The y-component of the vector.
- * @return float The angle in radians.
- */
-float makeAngle(float x, float y);
-
-/**
  * @brief Creates a normalized 2D direction vector from x and y components.
  * The third component (w) is set to 0.0f to represent a direction, which is unaffected by translations.
  * @param x The x-component of the vector.

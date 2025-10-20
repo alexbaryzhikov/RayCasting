@@ -15,10 +15,10 @@ simd::float3 velocity = {0.0f, 0.0f, 0.0f};
 float angle = 0.0f;
 
 void updateAngle() {
-    if (Keyboard::keys[Keyboard::KEY_LEFT]) {
+    if (Keyboard::keys[Keyboard::keyLeft]) {
         angle -= PLAYER_TURN_SPEED;
     }
-    if (Keyboard::keys[Keyboard::KEY_RIGHT]) {
+    if (Keyboard::keys[Keyboard::keyRight]) {
         angle += PLAYER_TURN_SPEED;
     }
 }
@@ -27,16 +27,16 @@ void applyAcceleration(float accelerationMagnitude) {
     float dx = 0.0f;
     float dy = 0.0f;
 
-    if (Keyboard::keys[Keyboard::KEY_W] || Keyboard::keys[Keyboard::KEY_UP]) {
+    if (Keyboard::keys[Keyboard::keyW] || Keyboard::keys[Keyboard::keyUp]) {
         dx += 1.0f;
     }
-    if (Keyboard::keys[Keyboard::KEY_S] || Keyboard::keys[Keyboard::KEY_DOWN]) {
+    if (Keyboard::keys[Keyboard::keyS] || Keyboard::keys[Keyboard::keyDown]) {
         dx -= 1.0f;
     }
-    if (Keyboard::keys[Keyboard::KEY_A]) {
+    if (Keyboard::keys[Keyboard::keyA]) {
         dy -= 1.0f;
     }
-    if (Keyboard::keys[Keyboard::KEY_D]) {
+    if (Keyboard::keys[Keyboard::keyD]) {
         dy += 1.0f;
     }
 

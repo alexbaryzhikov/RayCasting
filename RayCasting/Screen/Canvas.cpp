@@ -17,10 +17,10 @@ bool operator==(const Frame& a, const Frame& b) {
 
 namespace RC::Canvas {
 
-constexpr Frame FULL_FRAME = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
+constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 
 std::array<uint32_t, CANVAS_SIZE> canvas;
-Frame clipFrame = FULL_FRAME;
+Frame clipFrame = fullFrame;
 
 const void* bytes() {
     return canvas.data();
@@ -37,7 +37,7 @@ void setClipFrame(Frame frame) {
 }
 
 void resetClipFrame() {
-    clipFrame = FULL_FRAME;
+    clipFrame = fullFrame;
 }
 
 void fill() {
@@ -45,7 +45,7 @@ void fill() {
 }
 
 void fill(uint32_t color) {
-    if (clipFrame == FULL_FRAME) {
+    if (clipFrame == fullFrame) {
         canvas.fill(color);
     } else {
         for (size_t i = clipFrame.y; i < clipFrame.maxY(); ++i) {
@@ -76,7 +76,7 @@ void line(float x0, float y0, float x1, float y1) {
             std::swap(x0, x1);
             std::swap(y0, y1);
         } else if (y0 == y1) {
-            Canvas::point(floor(x1), floor(y1));
+            point(floor(x1), floor(y1));
             return;
         }
         int y = ceil(y0);
@@ -86,7 +86,7 @@ void line(float x0, float y0, float x1, float y1) {
         int x = round(_x * (1 << 16));
         int dx = round(slope * (1 << 16));
         do {
-            Canvas::point(x >> 16, y);
+            point(x >> 16, y);
             x += dx;
         } while (++y <= yEnd);
     } else {
@@ -94,7 +94,7 @@ void line(float x0, float y0, float x1, float y1) {
             std::swap(x0, x1);
             std::swap(y0, y1);
         } else if (x0 == x1) {
-            Canvas::point(floor(x1), floor(y1));
+            point(floor(x1), floor(y1));
             return;
         }
         int x = ceil(x0);
@@ -104,7 +104,7 @@ void line(float x0, float y0, float x1, float y1) {
         int y = round(_y * (1 << 16));
         int dy = round(slope * (1 << 16));
         do {
-            Canvas::point(x, y >> 16);
+            point(x, y >> 16);
             y += dy;
         } while (++x <= xEnd);
     }
@@ -120,12 +120,12 @@ void box(float x, float y, float w, float h) {
     int yStart = round(y);
     int yEnd = round(y + h);
     for (int i = xStart; i < xEnd; ++i) {
-        Canvas::point(i, yStart);
-        Canvas::point(i, yEnd - 1);
+        point(i, yStart);
+        point(i, yEnd - 1);
     }
     for (int j = yStart + 1; j < yEnd - 1; ++j) {
-        Canvas::point(xStart, j);
-        Canvas::point(xEnd - 1, j);
+        point(xStart, j);
+        point(xEnd - 1, j);
     }
 }
 
@@ -140,7 +140,7 @@ void boxFill(float x, float y, float w, float h) {
     int yEnd = round(y + h);
     for (int j = yStart; j < yEnd; ++j) {
         for (int i = xStart; i < xEnd; ++i) {
-            Canvas::point(i, j);
+            point(i, j);
         }
     }
 }

@@ -6,93 +6,93 @@
 namespace RC::Keyboard {
 
 // Numbers
-constexpr uint16_t KEY_0 = 29;
-constexpr uint16_t KEY_1 = 18;
-constexpr uint16_t KEY_2 = 19;
-constexpr uint16_t KEY_3 = 20;
-constexpr uint16_t KEY_4 = 21;
-constexpr uint16_t KEY_5 = 23;
-constexpr uint16_t KEY_6 = 22;
-constexpr uint16_t KEY_7 = 26;
-constexpr uint16_t KEY_8 = 28;
-constexpr uint16_t KEY_9 = 25;
+constexpr uint16_t key0 = 29;
+constexpr uint16_t key1 = 18;
+constexpr uint16_t key2 = 19;
+constexpr uint16_t key3 = 20;
+constexpr uint16_t key4 = 21;
+constexpr uint16_t key5 = 23;
+constexpr uint16_t key6 = 22;
+constexpr uint16_t key7 = 26;
+constexpr uint16_t key8 = 28;
+constexpr uint16_t key9 = 25;
 
 // Letters
-constexpr uint16_t KEY_A = 0;
-constexpr uint16_t KEY_B = 11;
-constexpr uint16_t KEY_C = 8;
-constexpr uint16_t KEY_D = 2;
-constexpr uint16_t KEY_E = 14;
-constexpr uint16_t KEY_F = 3;
-constexpr uint16_t KEY_G = 5;
-constexpr uint16_t KEY_H = 4;
-constexpr uint16_t KEY_I = 34;
-constexpr uint16_t KEY_J = 38;
-constexpr uint16_t KEY_K = 40;
-constexpr uint16_t KEY_L = 37;
-constexpr uint16_t KEY_M = 46;
-constexpr uint16_t KEY_N = 45;
-constexpr uint16_t KEY_O = 31;
-constexpr uint16_t KEY_P = 35;
-constexpr uint16_t KEY_Q = 12;
-constexpr uint16_t KEY_R = 15;
-constexpr uint16_t KEY_S = 1;
-constexpr uint16_t KEY_T = 17;
-constexpr uint16_t KEY_U = 32;
-constexpr uint16_t KEY_V = 9;
-constexpr uint16_t KEY_W = 13;
-constexpr uint16_t KEY_X = 7;
-constexpr uint16_t KEY_Y = 16;
-constexpr uint16_t KEY_Z = 6;
+constexpr uint16_t keyA = 0;
+constexpr uint16_t keyB = 11;
+constexpr uint16_t keyC = 8;
+constexpr uint16_t keyD = 2;
+constexpr uint16_t keyE = 14;
+constexpr uint16_t keyF = 3;
+constexpr uint16_t keyG = 5;
+constexpr uint16_t keyH = 4;
+constexpr uint16_t keyI = 34;
+constexpr uint16_t keyJ = 38;
+constexpr uint16_t keyK = 40;
+constexpr uint16_t keyL = 37;
+constexpr uint16_t keyM = 46;
+constexpr uint16_t keyN = 45;
+constexpr uint16_t keyO = 31;
+constexpr uint16_t keyP = 35;
+constexpr uint16_t keyQ = 12;
+constexpr uint16_t keyR = 15;
+constexpr uint16_t keyS = 1;
+constexpr uint16_t keyT = 17;
+constexpr uint16_t keyU = 32;
+constexpr uint16_t keyV = 9;
+constexpr uint16_t keyW = 13;
+constexpr uint16_t keyX = 7;
+constexpr uint16_t keyY = 16;
+constexpr uint16_t keyZ = 6;
 
 // Special symbols
-constexpr uint16_t KEY_EQUALS = 24;
-constexpr uint16_t KEY_MINUS = 27;
-constexpr uint16_t KEY_RIGHTBRACKET = 30;
-constexpr uint16_t KEY_LEFTBRACKET = 33;
-constexpr uint16_t KEY_APOSTROPHE = 39;
-constexpr uint16_t KEY_SEMICOLON = 41;
-constexpr uint16_t KEY_FRONTSLASH = 42;
-constexpr uint16_t KEY_COMMA = 43;
-constexpr uint16_t KEY_BACKSLASH = 44;
-constexpr uint16_t KEY_PERIOD = 47;
-constexpr uint16_t KEY_TAB = 48;
-constexpr uint16_t KEY_SPACE = 49;
-constexpr uint16_t KEY_BACKAPOSTROPHE = 50;
+constexpr uint16_t keyEquals = 24;
+constexpr uint16_t keyMinus = 27;
+constexpr uint16_t keyRightbracket = 30;
+constexpr uint16_t keyLeftbracket = 33;
+constexpr uint16_t keyApostrophe = 39;
+constexpr uint16_t keySemicolon = 41;
+constexpr uint16_t keyFrontslash = 42;
+constexpr uint16_t keyComma = 43;
+constexpr uint16_t keyBackslash = 44;
+constexpr uint16_t keyPeriod = 47;
+constexpr uint16_t keyTab = 48;
+constexpr uint16_t keySpace = 49;
+constexpr uint16_t keyBackapostrophe = 50;
 
 // Modifiers
-constexpr uint16_t KEY_COMMAND = 55;
-constexpr uint16_t KEY_SHIFT = 56;
-constexpr uint16_t KEY_OPTION = 58;
-constexpr uint16_t KEY_CONTROL = 59;
+constexpr uint16_t keyCommand = 55;
+constexpr uint16_t keyShift = 56;
+constexpr uint16_t keyOption = 58;
+constexpr uint16_t keyControl = 59;
 
 // Controls
-constexpr uint16_t KEY_RETURN = 36;
-constexpr uint16_t KEY_DELETE = 51;
-constexpr uint16_t KEY_ESCAPE = 53;
-constexpr uint16_t KEY_CAPSLOCK = 57;
+constexpr uint16_t keyReturn = 36;
+constexpr uint16_t keyDelete = 51;
+constexpr uint16_t keyEscape = 53;
+constexpr uint16_t keyCapslock = 57;
 
 // Arrows
-constexpr uint16_t KEY_LEFT = 123;
-constexpr uint16_t KEY_RIGHT = 124;
-constexpr uint16_t KEY_DOWN = 125;
-constexpr uint16_t KEY_UP = 126;
+constexpr uint16_t keyLeft = 123;
+constexpr uint16_t keyRight = 124;
+constexpr uint16_t keyDown = 125;
+constexpr uint16_t keyUp = 126;
 
 // Modifier flags
-constexpr uint32_t FLAG_CAPSLOCK = 1 << 16;   // Set if Caps Lock key is pressed.
-constexpr uint32_t FLAG_SHIFT = 1 << 17;      // Set if Shift key is pressed.
-constexpr uint32_t FLAG_CONTROL = 1 << 18;    // Set if Control key is pressed.
-constexpr uint32_t FLAG_OPTION = 1 << 19;     // Set if Option or Alternate key is pressed.
-constexpr uint32_t FLAG_COMMAND = 1 << 20;    // Set if Command key is pressed.
-constexpr uint32_t FLAG_NUMERICPAD = 1 << 21; // Set if any key in the numeric keypad is pressed.
-constexpr uint32_t FLAG_HELP = 1 << 22;       // Set if the Help key is pressed.
-constexpr uint32_t FLAG_FUNCTION = 1 << 23;   // Set if any function key is pressed.
+constexpr uint32_t flagCapslock = 1 << 16;   // Set if Caps Lock key is pressed.
+constexpr uint32_t flagShift = 1 << 17;      // Set if Shift key is pressed.
+constexpr uint32_t flagControl = 1 << 18;    // Set if Control key is pressed.
+constexpr uint32_t flagOption = 1 << 19;     // Set if Option or Alternate key is pressed.
+constexpr uint32_t flagCommand = 1 << 20;    // Set if Command key is pressed.
+constexpr uint32_t flagNumericpad = 1 << 21; // Set if any key in the numeric keypad is pressed.
+constexpr uint32_t flagHelp = 1 << 22;       // Set if the Help key is pressed.
+constexpr uint32_t flagFunction = 1 << 23;   // Set if any function key is pressed.
 
 extern std::array<bool, 128> keys;
 
-void keyDown(uint16_t code);
+void keyPressed(uint16_t code);
 
-void keyUp(uint16_t code);
+void keyReleased(uint16_t code);
 
 void flagsChanged(uint64_t flags);
 

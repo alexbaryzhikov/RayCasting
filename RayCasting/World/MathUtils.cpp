@@ -4,10 +4,6 @@
 
 namespace RC {
 
-float makeAngle(float x, float y) {
-    return atan2f(y, x);
-}
-
 simd::float3 makeNormal(float x, float y) {
     if (x == 0.0f && y == 0.0f) {
         return {0.0f, 0.0f, 0.0f};

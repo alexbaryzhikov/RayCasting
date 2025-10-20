@@ -14,25 +14,25 @@ enum class BlendMode {
 
 namespace RC::Palette {
 
-constexpr uint32_t BLACK = 0xFF000000;
-constexpr uint32_t WHITE = 0xFFFFFFFF;
-constexpr uint32_t RED = 0xFFFF0000;
-constexpr uint32_t GREEN = 0xFF00FF00;
-constexpr uint32_t BLUE = 0xFF0000FF;
-constexpr uint32_t YELLOW = 0xFFFFFF00;
-constexpr uint32_t CYAN = 0xFF00FFFF;
-constexpr uint32_t MAGENTA = 0xFFFF00FF;
+constexpr uint32_t black = 0xFF000000;
+constexpr uint32_t white = 0xFFFFFFFF;
+constexpr uint32_t red = 0xFFFF0000;
+constexpr uint32_t green = 0xFF00FF00;
+constexpr uint32_t blue = 0xFF0000FF;
+constexpr uint32_t yellow = 0xFFFFFF00;
+constexpr uint32_t cyan = 0xFF00FFFF;
+constexpr uint32_t magenta = 0xFFFF00FF;
 
-constexpr uint32_t MASK_ALPHA = 0xFF000000;
-constexpr uint32_t MASK_RGB = 0xFFFFFF;
-constexpr uint32_t MASK_RED = 0xFF0000;
-constexpr uint32_t MASK_GREEN = 0xFF00;
-constexpr uint32_t MASK_BLUE = 0xFF;
+constexpr uint32_t maskAlpha = 0xFF000000;
+constexpr uint32_t maskRGB = 0xFFFFFF;
+constexpr uint32_t maskRed = 0xFF0000;
+constexpr uint32_t maskGreen = 0xFF00;
+constexpr uint32_t maskBlue = 0xFF;
 
-constexpr uint32_t GUNMETAL_GRAY_LIGHTER = 0xFFB9D9EB;
-constexpr uint32_t GUNMETAL_GRAY_LIGHT = 0xFF628699;
-constexpr uint32_t GUNMETAL_GRAY_DARK = 0xFF353E43;
-constexpr uint32_t GUNMETAL_GRAY_DARKER = 0xFF041E2B;
+constexpr uint32_t gunmetalLighter = 0xFFB9D9EB;
+constexpr uint32_t gunmetalLight = 0xFF628699;
+constexpr uint32_t gunmetalDark = 0xFF353E43;
+constexpr uint32_t gunmetalDarker = 0xFF041E2B;
 
 extern uint32_t color;
 

@@ -13,18 +13,18 @@
 
 namespace RC::Map {
 
-constexpr Frame FULL_FRAME = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
-constexpr Frame MINI_FRAME = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
-constexpr float FULL_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT;
-constexpr float MINI_DEFAULT_ZOOM = MAP_ZOOM_DEFAULT / 2.0f;
+constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
+constexpr Frame miniFrame = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
+constexpr float fullDefaultZoom = MAP_ZOOM_DEFAULT;
+constexpr float miniDefaultZoom = MAP_ZOOM_DEFAULT / 2.0f;
 
 const std::vector<Segment> playerGeometry = Geometry::makePlayer();
 const std::vector<Segment> wallGeometry = Geometry::makeWall();
 std::vector<Segment> gridGeometry;
 
 std::vector<std::vector<Tile>> tiles;
-Frame frame = FULL_FRAME;
-float zoomFactor = FULL_DEFAULT_ZOOM;
+Frame frame = fullFrame;
+float zoomFactor = fullDefaultZoom;
 bool isVisible = false;
 
 size_t width() {
@@ -36,7 +36,7 @@ size_t height() {
 }
 
 bool isFullFrame() {
-    return frame == FULL_FRAME;
+    return frame == fullFrame;
 }
 
 bool isValid() {
@@ -59,30 +59,30 @@ void load(const void* bytes, size_t size) {
         size_t y = tiles.size();
         switch (chars[i]) {
             case '#':
-                row.push_back(Tile::WALL);
+                row.push_back(Tile::wall);
                 break;
             case '.':
-                row.push_back(Tile::FLOOR);
+                row.push_back(Tile::floor);
                 break;
             case '>':
                 Player::angle = 0.0f;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::FLOOR);
+                row.push_back(Tile::floor);
                 break;
             case '<':
                 Player::angle = M_PI;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::FLOOR);
+                row.push_back(Tile::floor);
                 break;
             case '^':
                 Player::angle = -M_PI_2;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::FLOOR);
+                row.push_back(Tile::floor);
                 break;
             case 'v':
                 Player::angle = M_PI_2;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::FLOOR);
+                row.push_back(Tile::floor);
                 break;
             case '\n':
                 tiles.push_back(std::move(row));
@@ -114,7 +114,7 @@ void drawGrid() {
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry(gridGeometry, transform, Palette::GUNMETAL_GRAY_DARK);
+    drawGeometry(gridGeometry, transform, Palette::gunmetalDark);
 }
 
 void drawWall(size_t row, size_t col) {
@@ -125,13 +125,13 @@ void drawWall(size_t row, size_t col) {
         frame.centerY() + wallPosition.y - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry(wallGeometry, transform, Palette::GUNMETAL_GRAY_LIGHT);
+    drawGeometry(wallGeometry, transform, Palette::gunmetalLight);
 }
 
 void drawWalls() {
     for (size_t row = 0; row < height(); ++row) {
         for (size_t col = 0; col < width(); ++col) {
-            if (tiles[row][col] == Tile::WALL) {
+            if (tiles[row][col] == Tile::wall) {
                 drawWall(row, col);
             }
         }
@@ -143,7 +143,7 @@ void drawPlayer() {
     simd::float3x3 rotate = makeRotationMatrix(Player::angle);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, -zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, matrix_multiply(rotate, scale));
-    drawGeometry(playerGeometry, transform, Palette::GREEN);
+    drawGeometry(playerGeometry, transform, Palette::green);
 }
 
 void drawRays() {
@@ -154,15 +154,15 @@ void drawRays() {
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry({rayL}, transform, Palette::RED);
-    drawGeometry({rayC}, transform, Palette::GREEN);
-    drawGeometry({rayR}, transform, Palette::BLUE);
+    drawGeometry({rayL}, transform, Palette::red);
+    drawGeometry({rayC}, transform, Palette::green);
+    drawGeometry({rayR}, transform, Palette::blue);
 }
 
 void draw() {
     if (isVisible) {
         Canvas::setClipFrame(frame);
-        Canvas::fill(Palette::GUNMETAL_GRAY_DARKER);
+        Canvas::fill(Palette::gunmetalDarker);
         drawGrid();
         drawWalls();
         drawRays();
@@ -171,35 +171,35 @@ void draw() {
 
 void updateVisibility() {
     static bool updated = false;
-    if (!updated && Keyboard::keys[Keyboard::KEY_M]) {
+    if (!updated && Keyboard::keys[Keyboard::keyM]) {
         updated = true;
         isVisible = !isVisible;
     }
-    if (!Keyboard::keys[Keyboard::KEY_M]) {
+    if (!Keyboard::keys[Keyboard::keyM]) {
         updated = false;
     }
 }
 
 void updateFrame() {
-    if (Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_MINUS]) {
-        frame = MINI_FRAME;
-        zoomFactor = MINI_DEFAULT_ZOOM;
+    if (Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyMinus]) {
+        frame = miniFrame;
+        zoomFactor = miniDefaultZoom;
     }
-    if (Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_EQUALS]) {
-        frame = FULL_FRAME;
-        zoomFactor = FULL_DEFAULT_ZOOM;
+    if (Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyEquals]) {
+        frame = fullFrame;
+        zoomFactor = fullDefaultZoom;
     }
 }
 
 void updateZoom() {
-    if (!Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_EQUALS]) {
+    if (!Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyEquals]) {
         zoomFactor *= MAP_ZOOM_SPEED;
     }
-    if (!Keyboard::keys[Keyboard::KEY_SHIFT] && Keyboard::keys[Keyboard::KEY_MINUS]) {
+    if (!Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyMinus]) {
         zoomFactor /= MAP_ZOOM_SPEED;
     }
-    if (Keyboard::keys[Keyboard::KEY_0]) {
-        zoomFactor = frame == FULL_FRAME ? FULL_DEFAULT_ZOOM : MINI_DEFAULT_ZOOM;
+    if (Keyboard::keys[Keyboard::key0]) {
+        zoomFactor = frame == fullFrame ? fullDefaultZoom : miniDefaultZoom;
     }
 }
 

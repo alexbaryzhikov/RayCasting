@@ -35,11 +35,11 @@
 }
 
 + (void)keyDown:(unsigned short)code {
-    RC::Keyboard::keyDown(code);
+    RC::Keyboard::keyPressed(code);
 }
 
 + (void)keyUp:(unsigned short)code {
-    RC::Keyboard::keyUp(code);
+    RC::Keyboard::keyReleased(code);
 }
 
 + (void)flagsChanged:(unsigned long)flags {
