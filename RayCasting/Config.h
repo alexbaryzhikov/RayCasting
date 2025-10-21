@@ -5,7 +5,7 @@
 #define CANVAS_WIDTH                1280
 #define CANVAS_HEIGHT               720
 #define CANVAS_SIZE                 (CANVAS_WIDTH * CANVAS_HEIGHT)
-#define VIEW_SCALE                  1
+#define VIEW_SCALE                  2
 #define VIEW_WIDTH                  (CANVAS_WIDTH * VIEW_SCALE)
 #define VIEW_HEIGHT                 (CANVAS_HEIGHT * VIEW_SCALE)
 

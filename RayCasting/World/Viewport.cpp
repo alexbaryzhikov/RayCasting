@@ -1,6 +1,5 @@
 #include <array>
-#include <cmath>
-#include <print>
+#include <numbers>
 
 #include "Viewport.hpp"
 
@@ -36,6 +35,7 @@ struct RayCast {
 
 std::array<float, CANVAS_WIDTH> rayAngles;
 std::array<RayCast, CANVAS_WIDTH> rayCasts;
+float cameraHeight = MAP_BLOCK_SIZE / 2.0f;
 
 void initialize() {
     for (size_t i = 0; i < rayAngles.size(); ++i) {
@@ -56,9 +56,9 @@ void drawWalls() {
     for (int x = 0; x < rayCasts.size(); ++x) {
         RayCast rayCast = rayCasts[x];
         if (rayCast.hit == RayHit::none) continue;
-        float wallHeight = MAP_BLOCK_SIZE * (projectionDistance / rayCast.length);
-        int y = ceil(horizonHeight - wallHeight / 2.0f);
-        int yEnd = floor(horizonHeight + wallHeight / 2.0f);
+        float projectionCoef = projectionDistance / rayCast.length;
+        int y = ceil(horizonHeight + (cameraHeight - MAP_BLOCK_SIZE) * projectionCoef);
+        int yEnd = floor(horizonHeight + (cameraHeight * projectionCoef));
         Palette::setColor(rayCast.hit == RayHit::horizontal ? Palette::gunmetalLight : Palette::gunmetalLighter);
         for (; y <= yEnd; ++y) {
             Canvas::point(x, y);
@@ -139,8 +139,17 @@ void castRays() {
     }
 }
 
+void bobCamera() {
+    static float phase = 0;
+
+    phase += simd::length(Player::velocity) / 90.0f;
+    if (phase > 1) phase = 0;
+    cameraHeight = MAP_BLOCK_SIZE / 2.0f + 2.0f * sin(-phase * std::numbers::pi);
+}
+
 void update() {
     castRays();
+    bobCamera();
 }
 
 } // namespace RC::Viewport

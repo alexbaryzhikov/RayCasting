@@ -6,6 +6,7 @@
 namespace RC::Player {
 
 extern simd::float3 position;
+extern simd::float3 velocity;
 extern float angle;
 
 void update();
