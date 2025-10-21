@@ -5,7 +5,7 @@
 #define CANVAS_WIDTH                1280
 #define CANVAS_HEIGHT               720
 #define CANVAS_SIZE                 (CANVAS_WIDTH * CANVAS_HEIGHT)
-#define VIEW_SCALE                  2
+#define VIEW_SCALE                  1
 #define VIEW_WIDTH                  (CANVAS_WIDTH * VIEW_SCALE)
 #define VIEW_HEIGHT                 (CANVAS_HEIGHT * VIEW_SCALE)
 
@@ -25,7 +25,7 @@
 #define MAP_ZOOM_SPEED              1.03124f
 
 // Player
-#define PLAYER_MOVE_SPEED           3.0f
+#define PLAYER_MOVE_SPEED           4.0f
 #define PLAYER_TURN_SPEED           0.03125f
 #define PLAYER_ACCELERATION         0.4f
 #define PLAYER_FRICTION             0.1f
@@ -34,5 +34,8 @@
 #define CAMERA_HEIGHT               32.0f
 #define CAMERA_FOV                  1.04719758f
 #define CAMERA_NEAR_CLIP            32.0f
+
+// Mouse
+#define MOUSE_SENSITIVITY           1.0f
 
 #endif /* Config_h */

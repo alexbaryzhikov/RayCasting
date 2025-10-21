@@ -1,4 +1,5 @@
 #include <vector>
+#include <numbers>
 
 #include "Player.hpp"
 
@@ -6,6 +7,7 @@
 #include "Config.h"
 #include "Keyboard.hpp"
 #include "MathUtils.hpp"
+#include "Mouse.hpp"
 #include "Palette.hpp"
 
 namespace RC::Player {

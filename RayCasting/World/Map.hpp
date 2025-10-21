@@ -11,6 +11,7 @@ enum class Tile {
 };
 
 extern std::vector<std::vector<Tile>> tiles;
+extern float zoomFactor;
 extern bool isVisible;
 
 size_t width();
