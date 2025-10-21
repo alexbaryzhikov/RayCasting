@@ -76,7 +76,7 @@ float sign(float x) {
     return x < 0 ? -1 : 1;
 }
 
-RayCast castRay(float playerSpaceAngle, float mapWidth, float mapHeight) {
+RayCast castRay(float playerSpaceAngle, const float mapWidth, const float mapHeight) {
     float mapSpaceAngle = playerSpaceAngle + Player::angle;
     float sinA = sin(mapSpaceAngle);
     float cosA = cos(mapSpaceAngle);
@@ -127,8 +127,8 @@ RayCast castRay(float playerSpaceAngle, float mapWidth, float mapHeight) {
 }
 
 void castRays() {
-    float mapWidth = Map::width() * MAP_BLOCK_SIZE;
-    float mapHeight = Map::height() * MAP_BLOCK_SIZE;
+    const float mapWidth = Map::width() * MAP_BLOCK_SIZE;
+    const float mapHeight = Map::height() * MAP_BLOCK_SIZE;
 
     rayR = castRay(-CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
     rayG = castRay(0.0f, mapWidth, mapHeight).ray;
@@ -139,17 +139,20 @@ void castRays() {
     }
 }
 
-void bobCamera() {
-    static float phase = 0;
+void bounceCamera() {
+    const float freqency = 0.01f;
+    const float amplitude = 2.0f;
 
-    phase += simd::length(Player::velocity) / 90.0f;
+    static float phase = 0;
+    phase += simd::length(Player::velocity) * freqency;
     if (phase > 1) phase = 0;
-    cameraHeight = MAP_BLOCK_SIZE / 2.0f + 2.0f * sin(-phase * std::numbers::pi);
+
+    cameraHeight = MAP_BLOCK_SIZE / 2.0f - sin(phase * std::numbers::pi) * amplitude;
 }
 
 void update() {
     castRays();
-    bobCamera();
+    bounceCamera();
 }
 
 } // namespace RC::Viewport
