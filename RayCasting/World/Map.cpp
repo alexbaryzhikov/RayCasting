@@ -1,3 +1,4 @@
+#include <numbers>
 #include <print>
 
 #include "Map.hpp"
@@ -70,17 +71,17 @@ void load(const void* bytes, size_t size) {
                 row.push_back(Tile::floor);
                 break;
             case '<':
-                Player::angle = M_PI;
+                Player::angle = std::numbers::pi;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
                 row.push_back(Tile::floor);
                 break;
             case '^':
-                Player::angle = -M_PI_2;
+                Player::angle = -std::numbers::pi / 2.0f;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
                 row.push_back(Tile::floor);
                 break;
             case 'v':
-                Player::angle = M_PI_2;
+                Player::angle = std::numbers::pi / 2.0f;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
                 row.push_back(Tile::floor);
                 break;
