@@ -8,7 +8,7 @@ simd::float3 makeNormal(float x, float y) {
     if (x == 0.0f && y == 0.0f) {
         return {0.0f, 0.0f, 0.0f};
     }
-    return simd_normalize(simd::float3{x, y, 0.0f});
+    return simd::normalize(simd::float3{x, y, 0.0f});
 }
 
 simd::float3x3 makeTranslationMatrix(float tx, float ty) {
