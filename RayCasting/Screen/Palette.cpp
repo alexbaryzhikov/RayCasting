@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <simd/simd.h>
 
 #include "Palette.hpp"
 
@@ -24,38 +25,38 @@ uint32_t blend(uint32_t bg, uint32_t fg, BlendMode mode) {
     constexpr uint32_t FF = 0xFF;
 
     uint32_t ab = (bg & maskAlpha) >> 24;
-    uint32_t rb = (bg & maskRed) >> 16;
-    uint32_t gb = (bg & maskGreen) >> 8;
-    uint32_t bb = (bg & maskBlue);
-
     uint32_t af = (fg & maskAlpha) >> 24;
-    uint32_t rf = (fg & maskRed) >> 16;
-    uint32_t gf = (fg & maskGreen) >> 8;
-    uint32_t bf = (fg & maskBlue);
 
-    uint32_t a, r, g, b;
+    simd::uint3 rgbB{
+        (bg & maskRed) >> 16,
+        (bg & maskGreen) >> 8,
+        (bg & maskBlue)
+    };
+    simd::uint3 rgbF{
+        (fg & maskRed) >> 16,
+        (fg & maskGreen) >> 8,
+        (fg & maskBlue)
+    };
+
+    uint32_t a;
+    simd::uint3 rgb;
 
     switch (mode) {
         case BlendMode::normal:
             a = std::min(FF, ab + af);
-            r = (af * rf + (FF - af) * rb) / FF;
-            g = (af * gf + (FF - af) * gb) / FF;
-            b = (af * bf + (FF - af) * bb) / FF;
+            rgb = (rgbF * af + rgbB * (FF - af)) / FF;
             break;
         case BlendMode::add:
             a = std::min(FF, ab + af);
-            r = std::min(FF, af * rf / FF + rb);
-            g = std::min(FF, af * gf / FF + gb);
-            b = std::min(FF, af * bf / FF + bb);
+            rgb = simd::min(simd::uint3{FF, FF, FF}, rgbF * af / FF + rgbB);
             break;
         case BlendMode::multipy:
             a = std::min(FF, ab + af);
-            r = ((FF - (FF - rf) * af / FF) * rb) / FF;
-            g = ((FF - (FF - gf) * af / FF) * gb) / FF;
-            b = ((FF - (FF - bf) * af / FF) * bb) / FF;
+            rgb = (FF - (FF - rgbF) * af / FF) * rgbB / FF;
             break;
     }
-    return (a << 24) | (r << 16) | (g << 8) | b;
+
+    return (a << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
 }
 
 } // namespace RC::Palette

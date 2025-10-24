@@ -26,7 +26,7 @@
 
 // Player
 #define PLAYER_MOVE_SPEED           4.0f
-#define PLAYER_TURN_SPEED           0.03125f
+#define PLAYER_TURN_SPEED           0.02f
 #define PLAYER_ACCELERATION         0.4f
 #define PLAYER_FRICTION             0.1f
 #define PLAYER_RADIUS               16.0f
