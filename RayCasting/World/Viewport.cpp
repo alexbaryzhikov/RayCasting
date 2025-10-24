@@ -9,6 +9,7 @@
 #include "MathUtils.hpp"
 #include "Palette.hpp"
 #include "Player.hpp"
+#include "Textures.hpp"
 
 namespace RC::Viewport {
 
@@ -30,6 +31,7 @@ enum class RayHit {
 struct RayCast {
     simd::float2 ray;
     float length;
+    float textureOffset; // 0 to 1
     RayHit hit;
 };
 
@@ -52,15 +54,28 @@ void fillBackground() {
     Canvas::resetClipFrame();
 }
 
+uint32_t sampleTexture(float x, float y) {
+    using Textures::dimension;
+    float row = round(y * (dimension - 1));
+    float col = round(x * (dimension - 1));
+    return Textures::dungeonWallTopBeam[row * dimension + col];
+}
+
 void drawWalls() {
     for (int x = 0; x < rayCasts.size(); ++x) {
         RayCast rayCast = rayCasts[x];
         if (rayCast.hit == RayHit::none) continue;
         float projectionCoef = projectionDistance / rayCast.length;
-        int y = ceil(horizonHeight + (cameraHeight - MAP_BLOCK_SIZE) * projectionCoef);
-        int yEnd = floor(horizonHeight + (cameraHeight * projectionCoef));
-        Palette::setColor(rayCast.hit == RayHit::horizontal ? Palette::gunmetalLight : Palette::gunmetalLighter);
-        for (; y <= yEnd; ++y) {
+        float yStart = ceil(horizonHeight + (cameraHeight - MAP_BLOCK_SIZE) * projectionCoef);
+        float yEnd = floor(horizonHeight + (cameraHeight * projectionCoef));
+        for (float y = fmax(0, yStart), end = fmin(yEnd + 1, CANVAS_HEIGHT); y < end; ++y) {
+            uint32_t diffuse = sampleTexture(rayCast.textureOffset, (y - yStart) / (yEnd - yStart));
+            if (rayCast.hit == RayHit::horizontal) {
+                Palette::setColor(diffuse);
+            } else {
+                uint32_t color = Palette::blend(diffuse, Palette::withAlpha(0x80, Palette::gunmetalDarker), BlendMode::multipy);
+                Palette::setColor(color);
+            }
             Canvas::point(x, y);
         }
     }
@@ -118,11 +133,15 @@ RayCast castRay(float playerSpaceAngle, const float mapWidth, const float mapHei
     }
 
     if (simd::length(rayA) < simd::length(rayB)) {
-        float lenA = simd_dot(rayA, simd::float2{cos(Player::angle), sin(Player::angle)});
-        return {rayA, lenA, hitA && lenA > CAMERA_NEAR_CLIP ? RayHit::vertical : RayHit::none};
+        float length = simd_dot(rayA, simd::float2{cos(Player::angle), sin(Player::angle)});
+        float offset = fmod(rayA.y + Player::position.y, MAP_BLOCK_SIZE) / MAP_BLOCK_SIZE;
+        RayHit hit = hitA && length > CAMERA_NEAR_CLIP ? RayHit::vertical : RayHit::none;
+        return {rayA, length, offset, hit};
     } else {
-        float lenB = simd_dot(rayB, simd::float2{cos(Player::angle), sin(Player::angle)});
-        return {rayB, lenB, hitB && lenB > CAMERA_NEAR_CLIP ? RayHit::horizontal : RayHit::none};
+        float length = simd_dot(rayB, simd::float2{cos(Player::angle), sin(Player::angle)});
+        float offset = fmod(rayB.x + Player::position.x, MAP_BLOCK_SIZE) / MAP_BLOCK_SIZE;
+        RayHit hit = hitB && length > CAMERA_NEAR_CLIP ? RayHit::horizontal : RayHit::none;
+        return {rayB, length, offset, hit};
     }
 }
 

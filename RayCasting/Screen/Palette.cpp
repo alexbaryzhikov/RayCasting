@@ -48,6 +48,12 @@ uint32_t blend(uint32_t bg, uint32_t fg, BlendMode mode) {
             g = std::min(FF, af * gf / FF + gb);
             b = std::min(FF, af * bf / FF + bb);
             break;
+        case BlendMode::multipy:
+            a = std::min(FF, ab + af);
+            r = ((FF - (FF - rf) * af / FF) * rb) / FF;
+            g = ((FF - (FF - gf) * af / FF) * gb) / FF;
+            b = ((FF - (FF - bf) * af / FF) * bb) / FF;
+            break;
     }
     return (a << 24) | (r << 16) | (g << 8) | b;
 }

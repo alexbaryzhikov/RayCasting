@@ -7,7 +7,8 @@ namespace RC {
 
 enum class BlendMode {
     normal,
-    add
+    add,
+    multipy,
 };
 
 }
