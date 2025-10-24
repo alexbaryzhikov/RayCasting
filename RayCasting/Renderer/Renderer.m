@@ -22,16 +22,17 @@ static os_log_t rendererLog;
     id<MTLDevice> _device;
     id<MTLCommandQueue> _commandQueue;
     id<MTLBuffer> _dynamicUniformBuffer;
-    id<MTLRenderPipelineState> _pipelineState;
+    id<MTLRenderPipelineState> _renderPipelineState;
     id<MTLDepthStencilState> _depthState;
     id<MTLTexture> _canvasTexture;
     MTLVertexDescriptor* _mtlVertexDescriptor;
+    id<MTLComputePipelineState> _computePipelineState;
 
     uint32_t _uniformBufferOffset;
     uint8_t _uniformBufferIndex;
     void* _uniformBufferAddress;
     simd_float4x4 _projectionMatrix;
-    MTKMesh* _mesh;
+    MTKMesh* _canvasMesh;
 }
 
 - (nonnull instancetype)initWithMetalKitView:(nonnull MTKView*)view {
@@ -71,11 +72,9 @@ static os_log_t rendererLog;
     _mtlVertexDescriptor.layouts[BufferIndexMeshGenerics].stepRate = 1;
     _mtlVertexDescriptor.layouts[BufferIndexMeshGenerics].stepFunction = MTLVertexStepFunctionPerVertex;
 
-    id<MTLLibrary> defaultLibrary = [_device newDefaultLibrary];
-
-    id<MTLFunction> vertexFunction = [defaultLibrary newFunctionWithName:@"vertexShader"];
-
-    id<MTLFunction> fragmentFunction = [defaultLibrary newFunctionWithName:@"fragmentShader"];
+    id<MTLLibrary> library = [_device newDefaultLibrary];
+    id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vertexShader"];
+    id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fragmentShader"];
 
     MTLRenderPipelineDescriptor* pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     pipelineStateDescriptor.label = @"RCPipeline";
@@ -87,9 +86,9 @@ static os_log_t rendererLog;
     pipelineStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat;
     pipelineStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat;
 
-    NSError* error = NULL;
-    _pipelineState = [_device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:&error];
-    if (!_pipelineState) {
+    NSError* error = nil;
+    _renderPipelineState = [_device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:&error];
+    if (!_renderPipelineState) {
         NSLog(@"Failed to created pipeline state, error %@", error);
     }
 
@@ -106,14 +105,33 @@ static os_log_t rendererLog;
     _dynamicUniformBuffer.label = @"UniformBuffer";
 
     _commandQueue = [_device newCommandQueue];
+
+    id<MTLFunction> kernelFunction = [library newFunctionWithName:@"transformTexture"];
+
+    _computePipelineState = [_device newComputePipelineStateWithFunction:kernelFunction error:&error];
+    if (!_computePipelineState) {
+        NSLog(@"Failed to create compute pipeline state: %@", error);
+    }
 }
 
 - (void)_loadAssets {
     /// Load textures and initialize world
 
-    // Canvas Mesh
+    [self _createCanvas];
 
-    NSError* error;
+    [self _loadTexture:@(FONT_MAP) to:[RCBridge fontBytes]];
+    [self _loadTexture:@"DungeonWallBase" to:[RCBridge textureBytes_DungeonWallBase]];
+    [self _loadTexture:@"DungeonWallTopBeam" to:[RCBridge textureBytes_DungeonWallTopBeam]];
+    [self _loadTexture:@"DungeonWallTorch" to:[RCBridge textureBytes_DungeonWallTorch]];
+    [self _loadTexture:@"DungeonWallVerticalBeam" to:[RCBridge textureBytes_DungeonWallVerticalBeam]];
+    [self _loadTexture:@"DungeonWallWindow" to:[RCBridge textureBytes_DungeonWallWindow]];
+
+    [self _loadMap];
+
+    [RCBridge startWorld];
+}
+
+- (void)_createCanvas {
     MTKMeshBufferAllocator* metalAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:_device];
 
     MDLMesh* mdlMesh = [MDLMesh newPlaneWithDimensions:(simd_float2){2.f * CANVAS_WIDTH / CANVAS_HEIGHT, 2}
@@ -125,56 +143,15 @@ static os_log_t rendererLog;
     mdlVertexDescriptor.attributes[VertexAttributePosition].name = MDLVertexAttributePosition;
     mdlVertexDescriptor.attributes[VertexAttributeTexcoord].name = MDLVertexAttributeTextureCoordinate;
     mdlMesh.vertexDescriptor = mdlVertexDescriptor;
-    _mesh = [[MTKMesh alloc] initWithMesh:mdlMesh device:_device error:&error];
 
-    if (!_mesh || error) {
-        NSLog(@"Error creating mesh: %@", error.localizedDescription);
-        error = NULL;
+    NSError* error;
+    _canvasMesh = [[MTKMesh alloc] initWithMesh:mdlMesh device:_device error:&error];
+
+    if (!_canvasMesh || error) {
+        NSLog(@"Error creating canvas mesh: %@", error.localizedDescription);
+        return;
     }
 
-    // Canvas Texture
-
-    _canvasTexture = [self _createTexture];
-
-    if (!_canvasTexture || error) {
-        NSLog(@"Error creating canvas texture: %@", error.localizedDescription);
-        error = NULL;
-    }
-
-    // Font Texture
-
-    id<MTLTexture> fontTexture = [self _loadTexture:@(FONT_MAP) error:&error];
-    if (!fontTexture || error) {
-        NSLog(@"Error loading font texture: %@", error.localizedDescription);
-        error = NULL;
-    }
-    void* fontBytes = [RCBridge fontBytes];
-    [fontTexture getBytes:fontBytes
-              bytesPerRow:fontTexture.width * BYTES_PER_PIXEL
-               fromRegion:MTLRegionMake2D(0, 0, fontTexture.width, fontTexture.height)
-              mipmapLevel:0];
-    [self _flipVertically:fontBytes width:fontTexture.width height:fontTexture.height];
-
-    // Map
-
-    NSString* mapName = @(MAP_NAME);
-    NSString* mapType = @(MAP_TYPE);
-    NSString* mapPath = [[NSBundle mainBundle] pathForResource:mapName ofType:mapType];
-    if (!mapPath) {
-        NSLog(@"Map not found: %@.%@", mapName, mapType);
-    }
-    NSData* mapData = [NSData dataWithContentsOfFile:mapPath];
-    if (!mapData) {
-        NSLog(@"Error loading map data: %@", mapPath);
-    }
-    [RCBridge loadMap:[mapData bytes] size:[mapData length]];
-
-    // World
-
-    [RCBridge startWorld];
-}
-
-- (nullable id<MTLTexture>)_createTexture {
     MTLTextureDescriptor* descriptor = [[MTLTextureDescriptor alloc] init];
     [descriptor setWidth:CANVAS_WIDTH];
     [descriptor setHeight:CANVAS_HEIGHT];
@@ -182,7 +159,32 @@ static os_log_t rendererLog;
     [descriptor setTextureType:MTLTextureType2D];
     [descriptor setStorageMode:MTLStorageModeShared];
     [descriptor setUsage:MTLTextureUsageShaderRead];
-    return [_device newTextureWithDescriptor:descriptor];
+    _canvasTexture = [_device newTextureWithDescriptor:descriptor];
+
+    if (!_canvasTexture) {
+        NSLog(@"Error creating canvas texture");
+        return;
+    }
+}
+
+- (void)_loadTexture:(nonnull NSString*)name to:(nonnull void*)bytes {
+    NSError* error = nil;
+    id<MTLTexture> texture = [self _loadTexture:name error:&error];
+    if (!texture || error) {
+        NSLog(@"Error loading texture '%@': %@", name, error.localizedDescription);
+        return;
+    }
+
+    texture = [self createTransformedTextureFrom:texture];
+    if (!texture || error) {
+        NSLog(@"Error converting texture '%@': %@", name, error.localizedDescription);
+        return;
+    }
+
+    [texture getBytes:bytes
+          bytesPerRow:texture.width * BYTES_PER_PIXEL
+           fromRegion:MTLRegionMake2D(0, 0, texture.width, texture.height)
+          mipmapLevel:0];
 }
 
 - (nullable id<MTLTexture>)_loadTexture:(nonnull NSString*)name error:(NSError**)error {
@@ -198,24 +200,56 @@ static os_log_t rendererLog;
                                        error:error];
 }
 
-- (void)_flipVertically:(void*)buffer width:(NSUInteger)width height:(NSUInteger)height {
-    if (!buffer || width == 0 || height == 0) {
-        return;
+- (id<MTLTexture>)createTransformedTextureFrom:(id<MTLTexture>)sourceTexture {
+    MTLTextureDescriptor* descriptor = [MTLTextureDescriptor
+        texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
+                                     width:sourceTexture.width
+                                    height:sourceTexture.height
+                                 mipmapped:NO];
+
+    descriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+
+    id<MTLTexture> destinationTexture = [_device newTextureWithDescriptor:descriptor];
+    if (!destinationTexture) {
+        NSLog(@"Failed to create destination texture");
+        return nil;
     }
 
-    NSUInteger bytesPerRow = BYTES_PER_PIXEL * width;
-    uint8_t tempRow[bytesPerRow];
-    uint8_t* byteBuffer = (uint8_t*)buffer;
+    id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
+    id<MTLComputeCommandEncoder> computeCommandEncoder = [commandBuffer computeCommandEncoder];
 
-    for (NSUInteger i = 0; i < height / 2; ++i) {
-        NSUInteger j = height - 1 - i;
-        uint8_t* topRow = byteBuffer + (i * bytesPerRow);
-        uint8_t* bottomRow = byteBuffer + (j * bytesPerRow);
+    [computeCommandEncoder setComputePipelineState:_computePipelineState];
+    [computeCommandEncoder setTexture:sourceTexture atIndex:0];
+    [computeCommandEncoder setTexture:destinationTexture atIndex:1];
 
-        memcpy(tempRow, topRow, bytesPerRow);
-        memcpy(topRow, bottomRow, bytesPerRow);
-        memcpy(bottomRow, tempRow, bytesPerRow);
+    NSUInteger w = _computePipelineState.threadExecutionWidth;
+    NSUInteger h = _computePipelineState.maxTotalThreadsPerThreadgroup / w;
+    MTLSize threadsPerThreadgroup = MTLSizeMake(w, h, 1);
+    MTLSize threadsPerGrid = MTLSizeMake(sourceTexture.width, sourceTexture.height, 1);
+
+    [computeCommandEncoder dispatchThreads:threadsPerGrid
+                     threadsPerThreadgroup:threadsPerThreadgroup];
+    [computeCommandEncoder endEncoding];
+    [commandBuffer commit];
+    [commandBuffer waitUntilCompleted];
+
+    return destinationTexture;
+}
+
+- (void)_loadMap {
+    NSString* mapPath = [[NSBundle mainBundle] pathForResource:@(MAP_NAME) ofType:@(MAP_TYPE)];
+
+    if (!mapPath) {
+        NSLog(@"Map not found: %@.%@", @(MAP_NAME), @(MAP_TYPE));
     }
+
+    NSData* mapData = [NSData dataWithContentsOfFile:mapPath];
+
+    if (!mapData) {
+        NSLog(@"Error loading map data: %@", mapPath);
+    }
+
+    [RCBridge loadMap:[mapData bytes] size:[mapData length]];
 }
 
 #pragma mark MTRViewDelegate Methods
@@ -250,7 +284,7 @@ static os_log_t rendererLog;
 
         [renderEncoder setFrontFacingWinding:MTLWindingCounterClockwise];
         [renderEncoder setCullMode:MTLCullModeBack];
-        [renderEncoder setRenderPipelineState:_pipelineState];
+        [renderEncoder setRenderPipelineState:_renderPipelineState];
         [renderEncoder setDepthStencilState:_depthState];
 
         [renderEncoder setVertexBuffer:_dynamicUniformBuffer
@@ -261,8 +295,8 @@ static os_log_t rendererLog;
                                   offset:_uniformBufferOffset
                                  atIndex:BufferIndexUniforms];
 
-        for (NSUInteger bufferIndex = 0; bufferIndex < _mesh.vertexBuffers.count; bufferIndex++) {
-            MTKMeshBuffer* vertexBuffer = _mesh.vertexBuffers[bufferIndex];
+        for (NSUInteger bufferIndex = 0; bufferIndex < _canvasMesh.vertexBuffers.count; bufferIndex++) {
+            MTKMeshBuffer* vertexBuffer = _canvasMesh.vertexBuffers[bufferIndex];
             if ((NSNull*)vertexBuffer != [NSNull null]) {
                 [renderEncoder setVertexBuffer:vertexBuffer.buffer
                                         offset:vertexBuffer.offset
@@ -273,7 +307,7 @@ static os_log_t rendererLog;
         [renderEncoder setFragmentTexture:_canvasTexture
                                   atIndex:TextureIndexColor];
 
-        for (MTKSubmesh* submesh in _mesh.submeshes) {
+        for (MTKSubmesh* submesh in _canvasMesh.submeshes) {
             [renderEncoder drawIndexedPrimitives:submesh.primitiveType
                                       indexCount:submesh.indexCount
                                        indexType:submesh.indexType

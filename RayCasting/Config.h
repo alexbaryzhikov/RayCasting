@@ -21,7 +21,7 @@
 #define MAP_NAME                    "map001"
 #define MAP_TYPE                    "map"
 #define MAP_BLOCK_SIZE              64.0f
-#define MAP_ZOOM_DEFAULT            0.35f
+#define MAP_ZOOM_DEFAULT            0.5f
 #define MAP_ZOOM_SPEED              1.03124f
 
 // Player

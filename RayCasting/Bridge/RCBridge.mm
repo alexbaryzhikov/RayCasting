@@ -8,6 +8,7 @@
 #include "Mouse.hpp"
 #include "Text.hpp"
 #include "World.hpp"
+#include "Textures.hpp"
 
 @implementation RCBridge
 
@@ -17,6 +18,26 @@
 
 + (void*)fontBytes {
     return RC::Text::fontBytes();
+}
+
++ (void*)textureBytes_DungeonWallBase {
+    return RC::Textures::dungeonWallBase.data();
+}
+
++ (void*)textureBytes_DungeonWallTopBeam {
+    return RC::Textures::dungeonWallTopBeam.data();
+}
+
++ (void*)textureBytes_DungeonWallTorch {
+    return RC::Textures::dungeonWallTorch.data();
+}
+
++ (void*)textureBytes_DungeonWallVerticalBeam {
+    return RC::Textures::dungeonWallVerticalBeam.data();
+}
+
++ (void*)textureBytes_DungeonWallWindow {
+    return RC::Textures::dungeonWallWindow.data();
 }
 
 + (void)loadMap:(const void*)bytes size:(NSUInteger)size {

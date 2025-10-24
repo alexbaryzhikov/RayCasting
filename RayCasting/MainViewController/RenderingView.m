@@ -72,7 +72,6 @@
 
 - (void)startMouseCapture {
     if (!_isMouseCaptured) {
-        NSLog(@"Mouse captured");
         _isMouseCaptured = YES;
         [NSCursor hide];
         CGAssociateMouseAndMouseCursorPosition(false);
@@ -81,7 +80,6 @@
 
 - (void)stopCapture {
     if (_isMouseCaptured) {
-        NSLog(@"Mouse released");
         _isMouseCaptured = NO;
         [NSCursor unhide];
         CGAssociateMouseAndMouseCursorPosition(true);

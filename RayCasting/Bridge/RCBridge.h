@@ -2,6 +2,11 @@
 
 + (const void*)canvasBytes;
 + (void*)fontBytes;
++ (void*)textureBytes_DungeonWallBase;
++ (void*)textureBytes_DungeonWallTopBeam;
++ (void*)textureBytes_DungeonWallTorch;
++ (void*)textureBytes_DungeonWallVerticalBeam;
++ (void*)textureBytes_DungeonWallWindow;
 + (void)loadMap:(const void*)bytes size:(NSUInteger)size;
 + (void)startWorld;
 + (void)drawWorld;

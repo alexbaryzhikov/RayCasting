@@ -1,0 +1,12 @@
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "levels" : [
+    {
+      "filename" : "dungeon_wall_top_beam_512.png",
+      "mipmap-level" : "base"
+    }
+  ]
+}
