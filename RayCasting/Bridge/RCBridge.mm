@@ -7,17 +7,17 @@
 #include "Map.hpp"
 #include "Mouse.hpp"
 #include "Text.hpp"
-#include "World.hpp"
 #include "Textures.hpp"
+#include "World.hpp"
 
 @implementation RCBridge
 
 + (const void*)canvasBytes {
-    return RC::Canvas::bytes();
+    return RC::Canvas::canvas.data();
 }
 
 + (void*)fontBytes {
-    return RC::Text::fontBytes();
+    return RC::Text::font.data();
 }
 
 + (void*)textureBytes_DungeonWallBase {

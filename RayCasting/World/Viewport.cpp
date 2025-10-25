@@ -71,18 +71,17 @@ void drawWalls() {
         for (float y = fmax(0, yStart), end = fmin(yEnd + 1, CANVAS_HEIGHT); y < end; ++y) {
             uint32_t diffuse = sampleTexture(rayCast.textureOffset, (y - yStart) / (yEnd - yStart));
             if (rayCast.hit == RayHit::horizontal) {
-                Palette::setColor(diffuse);
+                Canvas::point(x, y, diffuse);
             } else {
-                uint32_t color = Palette::blend(diffuse, Palette::withAlpha(0x80, Palette::gunmetalDarker), BlendMode::multipy);
-                Palette::setColor(color);
+                uint32_t color = Palette::blend(diffuse, Palette::gunmetalDarker, 0x80, BlendMode::multipy);
+                Canvas::point(x, y, color);
             }
-            Canvas::point(x, y);
         }
     }
 }
 
 void draw() {
-    if (Map::isVisible && Map::isFullFrame()) return;
+    if (Map::isVisible && Map::isFullScreen()) return;
     fillBackground();
     drawWalls();
 }
@@ -106,7 +105,7 @@ RayCast castRay(float playerSpaceAngle, const float mapWidth, const float mapHei
         for (; rayA.x > 0 && rayA.x < mapWidth && rayA.y > 0 && rayA.y < mapHeight; rayA += d) {
             int row = floor(rayA.y / MAP_BLOCK_SIZE);
             int col = floor(rayA.x / MAP_BLOCK_SIZE) - float(cosA < 0);
-            if (Map::tiles[row][col] == Map::Tile::wall) {
+            if (Map::tiles[row * Map::width + col] == Map::Tile::wall) {
                 hitA = true;
                 break;
             }
@@ -124,7 +123,7 @@ RayCast castRay(float playerSpaceAngle, const float mapWidth, const float mapHei
         for (; rayB.x > 0 && rayB.x < mapWidth && rayB.y > 0 && rayB.y < mapHeight; rayB += d) {
             int row = floor(rayB.y / MAP_BLOCK_SIZE) - float(sinA < 0);
             int col = floor(rayB.x / MAP_BLOCK_SIZE);
-            if (Map::tiles[row][col] == Map::Tile::wall) {
+            if (Map::tiles[row * Map::width + col] == Map::Tile::wall) {
                 hitB = true;
                 break;
             }
@@ -146,8 +145,8 @@ RayCast castRay(float playerSpaceAngle, const float mapWidth, const float mapHei
 }
 
 void castRays() {
-    const float mapWidth = Map::width() * MAP_BLOCK_SIZE;
-    const float mapHeight = Map::height() * MAP_BLOCK_SIZE;
+    const float mapWidth = Map::width * MAP_BLOCK_SIZE;
+    const float mapHeight = Map::height * MAP_BLOCK_SIZE;
 
     rayR = castRay(-CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
     rayG = castRay(0.0f, mapWidth, mapHeight).ray;

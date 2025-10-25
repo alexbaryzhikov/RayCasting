@@ -3,11 +3,13 @@
 
 namespace RC {
 
-void drawAnimatedBox();
-
 void drawFrame();
 
+void drawLines();
+
 void drawCheckers();
+
+void drawAnimatedBox();
 
 } // namespace RC
 

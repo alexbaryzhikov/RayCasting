@@ -10,15 +10,13 @@ enum class Tile {
     wall,
 };
 
-extern std::vector<std::vector<Tile>> tiles;
+extern std::vector<Tile> tiles;
+extern size_t width;
+extern size_t height;
 extern float zoomFactor;
 extern bool isVisible;
 
-size_t width();
-
-size_t height();
-
-bool isFullFrame();
+bool isFullScreen();
 
 void load(const void* bytes, size_t size);
 

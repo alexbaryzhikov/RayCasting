@@ -1,5 +1,4 @@
 #include <numbers>
-#include <print>
 
 #include "Map.hpp"
 
@@ -23,86 +22,72 @@ const std::vector<Segment> playerGeometry = Geometry::makePlayer();
 const std::vector<Segment> wallGeometry = Geometry::makeWall();
 std::vector<Segment> gridGeometry;
 
-std::vector<std::vector<Tile>> tiles;
+std::vector<Tile> tiles;
+size_t width;
+size_t height;
 Frame frame = fullFrame;
 float zoomFactor = fullDefaultZoom;
 bool isVisible = false;
 
-size_t width() {
-    return tiles.empty() ? 0 : tiles[0].size();
-}
-
-size_t height() {
-    return tiles.size();
-}
-
-bool isFullFrame() {
+bool isFullScreen() {
     return frame == fullFrame;
-}
-
-bool isValid() {
-    if (tiles.empty()) {
-        return false;
-    }
-    for (size_t i = 0; i < tiles.size(); ++i) {
-        if (tiles[i].size() != width()) {
-            return false;
-        }
-    }
-    return true;
 }
 
 void load(const void* bytes, size_t size) {
     const char* chars = static_cast<const char*>(bytes);
-    std::vector<Tile> row;
+    width = 0;
+    for (size_t i = 0; i < size && chars[i] != '\n'; ++i) {
+        width += chars[i] != ' ';
+    }
+    if (width == 0) {
+        printf("Invalid map");
+        return;
+    }
     for (size_t i = 0; i < size; ++i) {
-        size_t x = row.size();
-        size_t y = tiles.size();
+        size_t x = tiles.size() % width;
+        size_t y = tiles.size() / width;
         switch (chars[i]) {
             case '#':
-                row.push_back(Tile::wall);
+                tiles.push_back(Tile::wall);
                 break;
             case '.':
-                row.push_back(Tile::floor);
+                tiles.push_back(Tile::floor);
                 break;
             case '>':
                 Player::angle = 0.0f;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::floor);
+                tiles.push_back(Tile::floor);
                 break;
             case '<':
                 Player::angle = std::numbers::pi;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::floor);
+                tiles.push_back(Tile::floor);
                 break;
             case '^':
                 Player::angle = -std::numbers::pi / 2.0f;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::floor);
+                tiles.push_back(Tile::floor);
                 break;
             case 'v':
                 Player::angle = std::numbers::pi / 2.0f;
                 Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
-                row.push_back(Tile::floor);
-                break;
-            case '\n':
-                tiles.push_back(std::move(row));
+                tiles.push_back(Tile::floor);
                 break;
             default:
                 break;
         }
     }
-    if (isValid()) {
-        std::println("Loaded map of size {} x {}", width(), height());
-        gridGeometry = Geometry::makeGrid(width(), height());
-    } else {
-        std::println("Invalid map data");
+    height = tiles.size() / width;
+    if (height == 0 || tiles.size() % width != 0) {
+        printf("Invalid map");
         return;
     }
+    printf("Loaded map of size %lu x %lu", width, height);
+    gridGeometry = Geometry::makeGrid(width, height);
 }
 
 void drawGeometry(const std::vector<Segment>& geometry, simd::float3x3 transform, uint32_t color) {
-    Palette::setColor(color);
+    Palette::color = color;
     for (Segment segment : geometry) {
         simd::float3 a = matrix_multiply(transform, segment.a);
         simd::float3 b = matrix_multiply(transform, segment.b);
@@ -130,9 +115,9 @@ void drawWall(size_t row, size_t col) {
 }
 
 void drawWalls() {
-    for (size_t row = 0; row < height(); ++row) {
-        for (size_t col = 0; col < width(); ++col) {
-            if (tiles[row][col] == Tile::wall) {
+    for (size_t row = 0; row < height; ++row) {
+        for (size_t col = 0; col < width; ++col) {
+            if (tiles[row * width + col] == Tile::wall) {
                 drawWall(row, col);
             }
         }

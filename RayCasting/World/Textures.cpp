@@ -14,8 +14,7 @@ std::array<uint32_t, dimension * dimension> dungeonWallWindow;
 void drawTexture() {
     for (int y = 0; y < dimension; ++y) {
         for (int x = 0; x < dimension; ++x) {
-            Palette::setColor(dungeonWallTopBeam[y * dimension + x]);
-            Canvas::point(x, y);
+            Canvas::point(x, y, dungeonWallTopBeam[y * dimension + x]);
         }
     }
 }

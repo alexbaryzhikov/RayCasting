@@ -74,23 +74,23 @@ void applyWallCollision(float radius) {
     simd::float3 newPosition = position + velocity;
 
     // West
-    if (mapX == 0 || Map::tiles[mapY][mapX - 1] == Map::Tile::wall) {
+    if (mapX == 0 || Map::tiles[mapY * Map::width + mapX - 1] == Map::Tile::wall) {
         newPosition.x = fmax(newPosition.x, mapX * MAP_BLOCK_SIZE + radius);
     }
     // East
-    if (mapX + 1 == Map::width() || Map::tiles[mapY][mapX + 1] == Map::Tile::wall) {
+    if (mapX + 1 == Map::width || Map::tiles[mapY * Map::width + mapX + 1] == Map::Tile::wall) {
         newPosition.x = fmin(newPosition.x, (mapX + 1) * MAP_BLOCK_SIZE - radius);
     }
     // North
-    if (mapY == 0 || Map::tiles[mapY - 1][mapX] == Map::Tile::wall) {
+    if (mapY == 0 || Map::tiles[(mapY - 1) * Map::width + mapX] == Map::Tile::wall) {
         newPosition.y = fmax(newPosition.y, mapY * MAP_BLOCK_SIZE + radius);
     }
     // South
-    if (mapY + 1 == Map::height() || Map::tiles[mapY + 1][mapX] == Map::Tile::wall) {
+    if (mapY + 1 == Map::height || Map::tiles[(mapY + 1) * Map::width + mapX] == Map::Tile::wall) {
         newPosition.y = fmin(newPosition.y, (mapY + 1) * MAP_BLOCK_SIZE - radius);
     }
     // NW
-    if (mapX == 0 || mapY == 0 || Map::tiles[mapY - 1][mapX - 1] == Map::Tile::wall) {
+    if (mapX == 0 || mapY == 0 || Map::tiles[(mapY - 1) * Map::width + mapX - 1] == Map::Tile::wall) {
         simd::float2 corner = simd::float2{float(mapX), float(mapY)} * MAP_BLOCK_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);
@@ -99,7 +99,7 @@ void applyWallCollision(float radius) {
         }
     }
     // SW
-    if (mapX == 0 || mapY + 1 == Map::height() || Map::tiles[mapY + 1][mapX - 1] == Map::Tile::wall) {
+    if (mapX == 0 || mapY + 1 == Map::height || Map::tiles[(mapY + 1) * Map::width + mapX - 1] == Map::Tile::wall) {
         simd::float2 corner = simd::float2{float(mapX), float(mapY + 1)} * MAP_BLOCK_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);
@@ -108,7 +108,7 @@ void applyWallCollision(float radius) {
         }
     }
     // NE
-    if (mapX + 1 == Map::width() || mapY == 0 || Map::tiles[mapY - 1][mapX + 1] == Map::Tile::wall) {
+    if (mapX + 1 == Map::width || mapY == 0 || Map::tiles[(mapY - 1) * Map::width + mapX + 1] == Map::Tile::wall) {
         simd::float2 corner = simd::float2{float(mapX + 1), float(mapY)} * MAP_BLOCK_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);
@@ -117,7 +117,7 @@ void applyWallCollision(float radius) {
         }
     }
     // SE
-    if (mapX + 1 == Map::width() || mapY + 1 == Map::height() || Map::tiles[mapY + 1][mapX + 1] == Map::Tile::wall) {
+    if (mapX + 1 == Map::width || mapY + 1 == Map::height || Map::tiles[(mapY + 1) * Map::width + mapX + 1] == Map::Tile::wall) {
         simd::float2 corner = simd::float2{float(mapX + 1), float(mapY + 1)} * MAP_BLOCK_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);

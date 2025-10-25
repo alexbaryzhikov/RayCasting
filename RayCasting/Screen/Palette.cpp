@@ -5,58 +5,38 @@
 
 namespace RC::Palette {
 
+constexpr uint32_t maskRed = 0xFF0000;
+constexpr uint32_t maskGreen = 0xFF00;
+constexpr uint32_t maskBlue = 0xFF;
+
+constexpr simd::uint3 maxRGB = {0xFF, 0xFF, 0xFF};
+
 uint32_t color = white;
 
-BlendMode blendMode = BlendMode::normal;
+uint32_t blend(uint32_t colorA, uint32_t colorB, uint32_t alpha, BlendMode mode) {
+    simd::uint3 rgbA{(colorA & maskRed) >> 16,
+                     (colorA & maskGreen) >> 8,
+                     (colorA & maskBlue)};
 
-void setColor(uint32_t c) { color = c; }
+    simd::uint3 rgbB{(colorB & maskRed) >> 16,
+                     (colorB & maskGreen) >> 8,
+                     (colorB & maskBlue)};
 
-void setRgb(uint32_t rgb) { color = withRGB(rgb, color); }
-
-void setAlpha(uint32_t a) { color = withAlpha(a, color); }
-
-void setBlendMode(BlendMode mode) { blendMode = mode; }
-
-uint32_t withRGB(uint32_t rgb, uint32_t c) { return (rgb & maskRGB) | (c & maskAlpha); }
-
-uint32_t withAlpha(uint32_t a, uint32_t c) { return (c & maskRGB) | ((a << 24) & maskAlpha); }
-
-uint32_t blend(uint32_t bg, uint32_t fg, BlendMode mode) {
-    constexpr uint32_t FF = 0xFF;
-
-    uint32_t ab = (bg & maskAlpha) >> 24;
-    uint32_t af = (fg & maskAlpha) >> 24;
-
-    simd::uint3 rgbB{
-        (bg & maskRed) >> 16,
-        (bg & maskGreen) >> 8,
-        (bg & maskBlue)
-    };
-    simd::uint3 rgbF{
-        (fg & maskRed) >> 16,
-        (fg & maskGreen) >> 8,
-        (fg & maskBlue)
-    };
-
-    uint32_t a;
     simd::uint3 rgb;
 
     switch (mode) {
         case BlendMode::normal:
-            a = std::min(FF, ab + af);
-            rgb = (rgbF * af + rgbB * (FF - af)) / FF;
+            rgb = (rgbA * (0xFF - alpha) + rgbB * alpha) / 0xFF;
             break;
         case BlendMode::add:
-            a = std::min(FF, ab + af);
-            rgb = simd::min(simd::uint3{FF, FF, FF}, rgbF * af / FF + rgbB);
+            rgb = simd::min(maxRGB, rgbA + rgbB * alpha / 0xFF);
             break;
         case BlendMode::multipy:
-            a = std::min(FF, ab + af);
-            rgb = (FF - (FF - rgbF) * af / FF) * rgbB / FF;
+            rgb = rgbA * (0xFF - (0xFF - rgbB) * alpha / 0xFF) / 0xFF;
             break;
     }
 
-    return (a << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
+    return (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
 }
 
 } // namespace RC::Palette

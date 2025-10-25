@@ -1,13 +1,15 @@
 #ifndef Text_hpp
 #define Text_hpp
 
+#include <array>
 #include <string>
 
+#include "Config.h"
 #include "Palette.hpp"
 
 namespace RC::Text {
 
-void* fontBytes();
+extern std::array<uint32_t, FONT_MAP_SIZE> font;
 
 void drawFontMap();
 
