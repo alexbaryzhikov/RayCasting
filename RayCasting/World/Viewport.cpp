@@ -35,14 +35,24 @@ struct RayCast {
     RayHit hit;
 };
 
-std::array<float, CANVAS_WIDTH> rayAngles;
+std::array<float, CANVAS_WIDTH> rayAnglesWall;
+std::array<float, CANVAS_WIDTH> rayFloorH;
+std::array<float, CANVAS_HEIGHT / 2> rayFloorV;
 std::array<RayCast, CANVAS_WIDTH> rayCasts;
 float cameraHeight = MAP_BLOCK_SIZE / 2.0f;
 
 void initialize() {
-    for (size_t i = 0; i < rayAngles.size(); ++i) {
-        float x = float(i) - CANVAS_WIDTH / 2.0f;
-        rayAngles[i] = atan(x / projectionDistance);
+    for (size_t i = 0; i < rayAnglesWall.size(); ++i) {
+        float x = float(i) + 0.5f - CANVAS_WIDTH / 2.0f;
+        rayAnglesWall[i] = atan(x / projectionDistance);
+    }
+    for (size_t i = 0; i < rayFloorH.size(); ++i) {
+        float x = float(i) + 0.5f - CANVAS_WIDTH / 2.0f;
+        rayFloorH[i] = x / projectionDistance;
+    }
+    for (size_t i = 0; i < rayFloorV.size(); ++i) {
+        float y = float(i) + 0.5f;
+        rayFloorV[i] = y / projectionDistance;
     }
 }
 
@@ -54,11 +64,32 @@ void fillBackground() {
     Canvas::resetClipFrame();
 }
 
-uint32_t sampleTexture(float x, float y) {
+uint32_t sampleTexture(uint32_t* texture, float x, float y) {
     using Textures::dimension;
     float row = round(y * (dimension - 1));
     float col = round(x * (dimension - 1));
-    return Textures::dungeonWallTopBeam[row * dimension + col];
+    return texture[int(row * dimension + col)];
+}
+
+void drawFloor() {
+    const float mapWidth = Map::width * MAP_BLOCK_SIZE;
+    const float mapHeight = Map::height * MAP_BLOCK_SIZE;
+    simd::float3 mapBlock = {MAP_BLOCK_SIZE, MAP_BLOCK_SIZE, 1.0f};
+    simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
+                                                       makeRotationMatrix(Player::angle));
+    for (size_t i = 0; i < rayAnglesWall.size(); ++i) {
+        for (size_t j = 0; j < rayFloorV.size(); ++j) {
+            float hitX = cameraHeight / rayFloorV[j];
+            float hitY = hitX * rayFloorH[i];
+            simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
+            if (hit.x < 0 || hit.x > mapWidth || hit.y < 0 || hit.y > mapHeight) {
+                continue;
+            }
+            simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
+            uint32_t color = sampleTexture(Textures::dungeonFloorDirt.data(), texturePos.x, texturePos.y);
+            Canvas::point(i, j + CANVAS_HEIGHT / 2.0f, color);
+        }
+    }
 }
 
 void drawWalls() {
@@ -69,7 +100,7 @@ void drawWalls() {
         float yStart = ceil(horizonHeight + (cameraHeight - MAP_BLOCK_SIZE) * projectionCoef);
         float yEnd = floor(horizonHeight + (cameraHeight * projectionCoef));
         for (float y = fmax(0, yStart), end = fmin(yEnd + 1, CANVAS_HEIGHT); y < end; ++y) {
-            uint32_t diffuse = sampleTexture(rayCast.textureOffset, (y - yStart) / (yEnd - yStart));
+            uint32_t diffuse = sampleTexture(Textures::dungeonWallTopBeam.data(), rayCast.textureOffset, (y - yStart) / (yEnd - yStart));
             if (rayCast.hit == RayHit::horizontal) {
                 Canvas::point(x, y, diffuse);
             } else {
@@ -83,6 +114,7 @@ void drawWalls() {
 void draw() {
     if (Map::isVisible && Map::isFullScreen()) return;
     fillBackground();
+    drawFloor();
     drawWalls();
 }
 
@@ -144,7 +176,7 @@ RayCast castRay(float playerSpaceAngle, const float mapWidth, const float mapHei
     }
 }
 
-void castRays() {
+void castWallRays() {
     const float mapWidth = Map::width * MAP_BLOCK_SIZE;
     const float mapHeight = Map::height * MAP_BLOCK_SIZE;
 
@@ -153,7 +185,7 @@ void castRays() {
     rayB = castRay(CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
 
     for (size_t i = 0; i < rayCasts.size(); ++i) {
-        rayCasts[i] = castRay(rayAngles[i], mapWidth, mapHeight);
+        rayCasts[i] = castRay(rayAnglesWall[i], mapWidth, mapHeight);
     }
 }
 
@@ -169,7 +201,7 @@ void bounceCamera() {
 }
 
 void update() {
-    castRays();
+    castWallRays();
     bounceCamera();
 }
 

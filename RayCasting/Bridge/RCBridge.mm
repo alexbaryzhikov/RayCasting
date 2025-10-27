@@ -20,6 +20,14 @@
     return RC::Text::font.data();
 }
 
++ (void*)textureBytes_DungeonFloorCobblestone {
+    return RC::Textures::dungeonFloorCobblestone.data();
+}
+
++ (void*)textureBytes_DungeonFloorDirt {
+    return RC::Textures::dungeonFloorDirt.data();
+}
+
 + (void*)textureBytes_DungeonWallBase {
     return RC::Textures::dungeonWallBase.data();
 }

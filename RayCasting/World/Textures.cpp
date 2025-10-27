@@ -5,6 +5,8 @@
 
 namespace RC::Textures {
 
+std::array<uint32_t, dimension * dimension> dungeonFloorCobblestone;
+std::array<uint32_t, dimension * dimension> dungeonFloorDirt;
 std::array<uint32_t, dimension * dimension> dungeonWallBase;
 std::array<uint32_t, dimension * dimension> dungeonWallTopBeam;
 std::array<uint32_t, dimension * dimension> dungeonWallTorch;

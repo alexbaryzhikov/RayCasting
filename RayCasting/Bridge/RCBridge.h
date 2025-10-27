@@ -2,6 +2,8 @@
 
 + (const void*)canvasBytes;
 + (void*)fontBytes;
++ (void*)textureBytes_DungeonFloorCobblestone;
++ (void*)textureBytes_DungeonFloorDirt;
 + (void*)textureBytes_DungeonWallBase;
 + (void*)textureBytes_DungeonWallTopBeam;
 + (void*)textureBytes_DungeonWallTorch;
