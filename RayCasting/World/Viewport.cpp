@@ -16,6 +16,8 @@ namespace RC::Viewport {
 constexpr float epsilon = std::numeric_limits<float>::epsilon() * 128;
 constexpr float bigFloat = 1.0e+6f;
 constexpr float horizonHeight = CANVAS_HEIGHT / 2.0f;
+constexpr size_t floorHeight = horizonHeight;
+constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 
 simd::float2 rayR = {0.0f, 0.0f};
@@ -36,8 +38,9 @@ struct RayCast {
 };
 
 std::array<float, CANVAS_WIDTH> rayAnglesWall;
-std::array<float, CANVAS_WIDTH> rayFloorH;
-std::array<float, CANVAS_HEIGHT / 2> rayFloorV;
+std::array<float, CANVAS_WIDTH> rayHorizontal;
+std::array<float, floorHeight> rayFloor;
+std::array<float, ceilingHeight> rayCeiling;
 std::array<RayCast, CANVAS_WIDTH> rayCasts;
 float cameraHeight = MAP_BLOCK_SIZE / 2.0f;
 
@@ -46,22 +49,18 @@ void initialize() {
         float x = float(i) + 0.5f - CANVAS_WIDTH / 2.0f;
         rayAnglesWall[i] = atan(x / projectionDistance);
     }
-    for (size_t i = 0; i < rayFloorH.size(); ++i) {
+    for (size_t i = 0; i < rayHorizontal.size(); ++i) {
         float x = float(i) + 0.5f - CANVAS_WIDTH / 2.0f;
-        rayFloorH[i] = x / projectionDistance;
+        rayHorizontal[i] = x / projectionDistance;
     }
-    for (size_t i = 0; i < rayFloorV.size(); ++i) {
+    for (size_t i = 0; i < rayFloor.size(); ++i) {
         float y = float(i) + 0.5f;
-        rayFloorV[i] = y / projectionDistance;
+        rayFloor[i] = y / projectionDistance;
     }
-}
-
-void fillBackground() {
-    Canvas::setClipFrame(0, 0, CANVAS_WIDTH, horizonHeight);
-    Canvas::fill(Palette::gunmetalDarker);
-    Canvas::setClipFrame(0, horizonHeight, CANVAS_WIDTH, CANVAS_HEIGHT - horizonHeight);
-    Canvas::fill(Palette::gunmetalDark);
-    Canvas::resetClipFrame();
+    for (size_t i = 0; i < rayCeiling.size(); ++i) {
+        float y = ceilingHeight - (float(i) + 0.5f);
+        rayCeiling[i] = y / projectionDistance;
+    }
 }
 
 uint32_t sampleTexture(uint32_t* texture, float x, float y) {
@@ -71,6 +70,28 @@ uint32_t sampleTexture(uint32_t* texture, float x, float y) {
     return texture[int(row * dimension + col)];
 }
 
+void drawCeiling() {
+    const float cameraDistanceToCeiling = MAP_BLOCK_SIZE - cameraHeight;
+    const float mapWidth = Map::width * MAP_BLOCK_SIZE;
+    const float mapHeight = Map::height * MAP_BLOCK_SIZE;
+    simd::float3 mapBlock = {MAP_BLOCK_SIZE, MAP_BLOCK_SIZE, 1.0f};
+    simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
+                                                       makeRotationMatrix(Player::angle));
+    for (size_t i = 0; i < rayAnglesWall.size(); ++i) {
+        for (size_t j = 0; j < rayFloor.size(); ++j) {
+            float hitX = cameraDistanceToCeiling / rayCeiling[j];
+            float hitY = hitX * rayHorizontal[i];
+            simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
+            if (hit.x < 0 || hit.x > mapWidth || hit.y < 0 || hit.y > mapHeight) {
+                continue;
+            }
+            simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
+            uint32_t color = sampleTexture(Textures::dungeonCeilingRock.data(), texturePos.x, texturePos.y);
+            Canvas::point(i, j, color);
+        }
+    }
+}
+
 void drawFloor() {
     const float mapWidth = Map::width * MAP_BLOCK_SIZE;
     const float mapHeight = Map::height * MAP_BLOCK_SIZE;
@@ -78,16 +99,16 @@ void drawFloor() {
     simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
                                                        makeRotationMatrix(Player::angle));
     for (size_t i = 0; i < rayAnglesWall.size(); ++i) {
-        for (size_t j = 0; j < rayFloorV.size(); ++j) {
-            float hitX = cameraHeight / rayFloorV[j];
-            float hitY = hitX * rayFloorH[i];
+        for (size_t j = 0; j < rayFloor.size(); ++j) {
+            float hitX = cameraHeight / rayFloor[j];
+            float hitY = hitX * rayHorizontal[i];
             simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
             if (hit.x < 0 || hit.x > mapWidth || hit.y < 0 || hit.y > mapHeight) {
                 continue;
             }
             simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
             uint32_t color = sampleTexture(Textures::dungeonFloorDirt.data(), texturePos.x, texturePos.y);
-            Canvas::point(i, j + CANVAS_HEIGHT / 2.0f, color);
+            Canvas::point(i, j + ceilingHeight, color);
         }
     }
 }
@@ -113,7 +134,7 @@ void drawWalls() {
 
 void draw() {
     if (Map::isVisible && Map::isFullScreen()) return;
-    fillBackground();
+    drawCeiling();
     drawFloor();
     drawWalls();
 }

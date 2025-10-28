@@ -20,8 +20,8 @@
     return RC::Text::font.data();
 }
 
-+ (void*)textureBytes_DungeonFloorCobblestone {
-    return RC::Textures::dungeonFloorCobblestone.data();
++ (void*)textureBytes_DungeonCeilingRock {
+    return RC::Textures::dungeonCeilingRock.data();
 }
 
 + (void*)textureBytes_DungeonFloorDirt {
@@ -30,6 +30,10 @@
 
 + (void*)textureBytes_DungeonWallBase {
     return RC::Textures::dungeonWallBase.data();
+}
+
++ (void*)textureBytes_DungeonWallRock {
+    return RC::Textures::dungeonWallRock.data();
 }
 
 + (void*)textureBytes_DungeonWallTopBeam {

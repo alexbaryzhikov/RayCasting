@@ -120,9 +120,10 @@ static os_log_t rendererLog;
     [self _createCanvas];
 
     [self _loadTexture:@(FONT_MAP) to:[RCBridge fontBytes]];
-    [self _loadTexture:@"DungeonFloorCobblestone" to:[RCBridge textureBytes_DungeonFloorCobblestone]];
+    [self _loadTexture:@"DungeonCeilingRock" to:[RCBridge textureBytes_DungeonCeilingRock]];
     [self _loadTexture:@"DungeonFloorDirt" to:[RCBridge textureBytes_DungeonFloorDirt]];
     [self _loadTexture:@"DungeonWallBase" to:[RCBridge textureBytes_DungeonWallBase]];
+    [self _loadTexture:@"DungeonWallRock" to:[RCBridge textureBytes_DungeonWallRock]];
     [self _loadTexture:@"DungeonWallTopBeam" to:[RCBridge textureBytes_DungeonWallTopBeam]];
     [self _loadTexture:@"DungeonWallTorch" to:[RCBridge textureBytes_DungeonWallTorch]];
     [self _loadTexture:@"DungeonWallVerticalBeam" to:[RCBridge textureBytes_DungeonWallVerticalBeam]];
