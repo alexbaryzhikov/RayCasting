@@ -13,6 +13,7 @@
 
 namespace RC::Viewport {
 
+constexpr TileHit tileMiss = {-1};
 constexpr float epsilon = std::numeric_limits<float>::epsilon() * 128;
 constexpr float bigFloat = 1.0e+6f;
 constexpr float horizonHeight = CANVAS_HEIGHT / 2.0f;
@@ -20,46 +21,29 @@ constexpr size_t floorHeight = horizonHeight;
 constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 
-simd::float2 rayR = {0.0f, 0.0f};
-simd::float2 rayG = {0.0f, 0.0f};
-simd::float2 rayB = {0.0f, 0.0f};
+std::array<float, CANVAS_WIDTH> rayAnglesHorizontal;
+std::array<float, CANVAS_WIDTH> rayTansHorizontal;
+std::array<float, floorHeight> rayTansFloor;
+std::array<float, ceilingHeight> rayTansCeiling;
 
-enum class RayHit {
-    none,
-    horizontal,
-    vertical,
-};
-
-struct RayCast {
-    simd::float2 ray;
-    float length;
-    float textureOffset; // 0 to 1
-    RayHit hit;
-};
-
-std::array<float, CANVAS_WIDTH> rayAnglesWall;
-std::array<float, CANVAS_WIDTH> rayHorizontal;
-std::array<float, floorHeight> rayFloor;
-std::array<float, ceilingHeight> rayCeiling;
-std::array<RayCast, CANVAS_WIDTH> rayCasts;
-float cameraHeight = MAP_BLOCK_SIZE / 2.0f;
+float cameraHeight = MAP_TILE_SIZE / 2.0f;
 
 void initialize() {
-    for (size_t i = 0; i < rayAnglesWall.size(); ++i) {
+    for (size_t i = 0; i < rayAnglesHorizontal.size(); ++i) {
         float x = float(i) + 0.5f - CANVAS_WIDTH / 2.0f;
-        rayAnglesWall[i] = atan(x / projectionDistance);
+        rayAnglesHorizontal[i] = atan(x / projectionDistance);
     }
-    for (size_t i = 0; i < rayHorizontal.size(); ++i) {
+    for (size_t i = 0; i < rayTansHorizontal.size(); ++i) {
         float x = float(i) + 0.5f - CANVAS_WIDTH / 2.0f;
-        rayHorizontal[i] = x / projectionDistance;
+        rayTansHorizontal[i] = x / projectionDistance;
     }
-    for (size_t i = 0; i < rayFloor.size(); ++i) {
+    for (size_t i = 0; i < rayTansFloor.size(); ++i) {
         float y = float(i) + 0.5f;
-        rayFloor[i] = y / projectionDistance;
+        rayTansFloor[i] = y / projectionDistance;
     }
-    for (size_t i = 0; i < rayCeiling.size(); ++i) {
+    for (size_t i = 0; i < rayTansCeiling.size(); ++i) {
         float y = ceilingHeight - (float(i) + 0.5f);
-        rayCeiling[i] = y / projectionDistance;
+        rayTansCeiling[i] = y / projectionDistance;
     }
 }
 
@@ -70,40 +54,17 @@ uint32_t sampleTexture(uint32_t* texture, float x, float y) {
     return texture[int(row * dimension + col)];
 }
 
-void drawCeiling() {
-    const float cameraDistanceToCeiling = MAP_BLOCK_SIZE - cameraHeight;
-    const float mapWidth = Map::width * MAP_BLOCK_SIZE;
-    const float mapHeight = Map::height * MAP_BLOCK_SIZE;
-    simd::float3 mapBlock = {MAP_BLOCK_SIZE, MAP_BLOCK_SIZE, 1.0f};
-    simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
-                                                       makeRotationMatrix(Player::angle));
-    for (size_t i = 0; i < rayAnglesWall.size(); ++i) {
-        for (size_t j = 0; j < rayFloor.size(); ++j) {
-            float hitX = cameraDistanceToCeiling / rayCeiling[j];
-            float hitY = hitX * rayHorizontal[i];
-            simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
-            if (hit.x < 0 || hit.x > mapWidth || hit.y < 0 || hit.y > mapHeight) {
-                continue;
-            }
-            simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
-            uint32_t color = sampleTexture(Textures::dungeonCeilingRock.data(), texturePos.x, texturePos.y);
-            Canvas::point(i, j, color);
-        }
-    }
-}
-
 void drawFloor() {
-    const float mapWidth = Map::width * MAP_BLOCK_SIZE;
-    const float mapHeight = Map::height * MAP_BLOCK_SIZE;
-    simd::float3 mapBlock = {MAP_BLOCK_SIZE, MAP_BLOCK_SIZE, 1.0f};
+    const float cameraDistanceToSurface = cameraHeight;
+    simd::float3 mapBlock = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
     simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
                                                        makeRotationMatrix(Player::angle));
-    for (size_t i = 0; i < rayAnglesWall.size(); ++i) {
-        for (size_t j = 0; j < rayFloor.size(); ++j) {
-            float hitX = cameraHeight / rayFloor[j];
-            float hitY = hitX * rayHorizontal[i];
+    for (size_t i = 0; i < rayTansHorizontal.size(); ++i) {
+        for (size_t j = 0; j < rayTansFloor.size(); ++j) {
+            float hitX = cameraDistanceToSurface / rayTansFloor[j];
+            float hitY = hitX * rayTansHorizontal[i];
             simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
-            if (hit.x < 0 || hit.x > mapWidth || hit.y < 0 || hit.y > mapHeight) {
+            if (hit.x < 0 || hit.x > Map::width || hit.y < 0 || hit.y > Map::height) {
                 continue;
             }
             simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
@@ -113,16 +74,114 @@ void drawFloor() {
     }
 }
 
+void drawCeiling() {
+    const float cameraDistanceToSurface = MAP_TILE_SIZE - cameraHeight;
+    simd::float3 mapBlock = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
+    simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
+                                                       makeRotationMatrix(Player::angle));
+    for (size_t i = 0; i < rayTansHorizontal.size(); ++i) {
+        for (size_t j = 0; j < rayTansCeiling.size(); ++j) {
+            float hitX = cameraDistanceToSurface / rayTansCeiling[j];
+            float hitY = hitX * rayTansHorizontal[i];
+            simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
+            if (hit.x < 0 || hit.x > Map::width || hit.y < 0 || hit.y > Map::height) {
+                continue;
+            }
+            simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
+            uint32_t color = sampleTexture(Textures::dungeonCeilingRock.data(), texturePos.x, texturePos.y);
+            Canvas::point(i, j, color);
+        }
+    }
+}
+
+float sign(float x) {
+    return x < 0 ? -1 : 1;
+}
+
+Ray castRay(float playerSpaceAngle) {
+    float mapSpaceAngle = playerSpaceAngle + Player::angle;
+    float sinA = sin(mapSpaceAngle);
+    float cosA = cos(mapSpaceAngle);
+
+    // Scan columns
+    simd::float2 rayCol = {bigFloat, bigFloat};
+    int tileIndexCol = -1;
+    if (fabs(cosA) > epsilon) {
+        rayCol.x = (cosA < 0 ? floor(Player::position.x / MAP_TILE_SIZE) : ceil(Player::position.x / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        rayCol.y = Player::position.y + (rayCol.x - Player::position.x) * sinA / cosA;
+        simd::float2 d = {MAP_TILE_SIZE * sign(cosA), fabs(MAP_TILE_SIZE * sinA / cosA) * sign(sinA)};
+        for (; rayCol.x > 0 && rayCol.x < Map::width && rayCol.y > 0 && rayCol.y < Map::height; rayCol += d) {
+            int row = floor(rayCol.y / MAP_TILE_SIZE);
+            int col = floor(rayCol.x / MAP_TILE_SIZE) - float(cosA < 0);
+            size_t tileIndex = row * Map::tilesWidth + col;
+            if (Map::tiles[tileIndex] == Map::Tile::wall) {
+                tileIndexCol = int(tileIndex);
+                break;
+            }
+        }
+        rayCol -= Player::position.xy;
+    }
+
+    // Scan rows
+    simd::float2 rayRow = {bigFloat, bigFloat};
+    int tileIndexRow = -1;
+    if (fabs(sinA) > epsilon) {
+        rayRow.y = (sinA < 0 ? floor(Player::position.y / MAP_TILE_SIZE) : ceil(Player::position.y / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        rayRow.x = Player::position.x + (rayRow.y - Player::position.y) * cosA / sinA;
+        simd::float2 d = {fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * sign(sinA)};
+        for (; rayRow.x > 0 && rayRow.x < Map::width && rayRow.y > 0 && rayRow.y < Map::height; rayRow += d) {
+            int row = floor(rayRow.y / MAP_TILE_SIZE) - float(sinA < 0);
+            int col = floor(rayRow.x / MAP_TILE_SIZE);
+            size_t tileIndex = row * int(Map::tilesWidth) + col;
+            if (Map::tiles[tileIndex] == Map::Tile::wall) {
+                tileIndexRow = int(tileIndex);
+                break;
+            }
+        }
+        rayRow -= Player::position.xy;
+    }
+
+    if (simd::length(rayCol) < simd::length(rayRow)) {
+        float length = simd_dot(rayCol, simd::float2{cos(Player::angle), sin(Player::angle)});
+        if (tileIndexCol != -1 && length > CAMERA_NEAR_CLIP) {
+            float offset = fmod(rayCol.y + Player::position.y, MAP_TILE_SIZE) / MAP_TILE_SIZE;
+            if (cosA > 0) {
+                TileHit tileHit = {tileIndexCol, TileSide::left, offset};
+                return {rayCol, length, tileHit};
+            } else {
+                TileHit tileHit = {tileIndexCol, TileSide::right, 1 - offset};
+                return {rayCol, length, tileHit};
+            }
+        } else {
+            return {rayCol, length, tileMiss};
+        }
+    } else {
+        float length = simd_dot(rayRow, simd::float2{cos(Player::angle), sin(Player::angle)});
+        if (tileIndexRow != -1 && length > CAMERA_NEAR_CLIP) {
+            float offset = fmod(rayRow.x + Player::position.x, MAP_TILE_SIZE) / MAP_TILE_SIZE;
+            if (sinA > 0) {
+                TileHit tileHit = {tileIndexRow, TileSide::top, 1 - offset};
+                return {rayRow, length, tileHit};
+            } else {
+                TileHit tileHit = {tileIndexRow, TileSide::bottom, offset};
+                return {rayRow, length, tileHit};
+            }
+        } else {
+            return {rayRow, length, tileMiss};
+        }
+    }
+}
+
 void drawWalls() {
-    for (int x = 0; x < rayCasts.size(); ++x) {
-        RayCast rayCast = rayCasts[x];
-        if (rayCast.hit == RayHit::none) continue;
-        float projectionCoef = projectionDistance / rayCast.length;
-        float yStart = ceil(horizonHeight + (cameraHeight - MAP_BLOCK_SIZE) * projectionCoef);
+    for (int x = 0; x < rayAnglesHorizontal.size(); ++x) {
+        Ray ray = castRay(rayAnglesHorizontal[x]);
+        if (ray.isMiss()) continue;
+        float projectionCoef = projectionDistance / ray.length;
+        float yStart = ceil(horizonHeight + (cameraHeight - MAP_TILE_SIZE) * projectionCoef);
         float yEnd = floor(horizonHeight + (cameraHeight * projectionCoef));
         for (float y = fmax(0, yStart), end = fmin(yEnd + 1, CANVAS_HEIGHT); y < end; ++y) {
-            uint32_t diffuse = sampleTexture(Textures::dungeonWallTopBeam.data(), rayCast.textureOffset, (y - yStart) / (yEnd - yStart));
-            if (rayCast.hit == RayHit::horizontal) {
+            uint32_t diffuse = sampleTexture(Textures::dungeonWallTopBeam.data(), ray.hit.offset, (y - yStart) / (yEnd - yStart));
+            if (ray.hit.side == TileSide::top || ray.hit.side == TileSide::bottom) {
                 Canvas::point(x, y, diffuse);
             } else {
                 uint32_t color = Palette::blend(diffuse, Palette::gunmetalDarker, 0x80, BlendMode::multipy);
@@ -134,80 +193,9 @@ void drawWalls() {
 
 void draw() {
     if (Map::isVisible && Map::isFullScreen()) return;
-    drawCeiling();
     drawFloor();
+    drawCeiling();
     drawWalls();
-}
-
-float sign(float x) {
-    return x < 0 ? -1 : 1;
-}
-
-RayCast castRay(float playerSpaceAngle, const float mapWidth, const float mapHeight) {
-    float mapSpaceAngle = playerSpaceAngle + Player::angle;
-    float sinA = sin(mapSpaceAngle);
-    float cosA = cos(mapSpaceAngle);
-
-    // Scan columns
-    simd::float2 rayA = {bigFloat, bigFloat};
-    bool hitA = false;
-    if (fabs(cosA) > epsilon) {
-        rayA.x = (cosA < 0 ? floor(Player::position.x / MAP_BLOCK_SIZE) : ceil(Player::position.x / MAP_BLOCK_SIZE)) * MAP_BLOCK_SIZE;
-        rayA.y = Player::position.y + (rayA.x - Player::position.x) * sinA / cosA;
-        simd::float2 d = {MAP_BLOCK_SIZE * sign(cosA), fabs(MAP_BLOCK_SIZE * sinA / cosA) * sign(sinA)};
-        for (; rayA.x > 0 && rayA.x < mapWidth && rayA.y > 0 && rayA.y < mapHeight; rayA += d) {
-            int row = floor(rayA.y / MAP_BLOCK_SIZE);
-            int col = floor(rayA.x / MAP_BLOCK_SIZE) - float(cosA < 0);
-            if (Map::tiles[row * Map::width + col] == Map::Tile::wall) {
-                hitA = true;
-                break;
-            }
-        }
-        rayA -= Player::position.xy;
-    }
-
-    // Scan rows
-    simd::float2 rayB = {bigFloat, bigFloat};
-    bool hitB = false;
-    if (fabs(sinA) > epsilon) {
-        rayB.y = (sinA < 0 ? floor(Player::position.y / MAP_BLOCK_SIZE) : ceil(Player::position.y / MAP_BLOCK_SIZE)) * MAP_BLOCK_SIZE;
-        rayB.x = Player::position.x + (rayB.y - Player::position.y) * cosA / sinA;
-        simd::float2 d = {fabs(MAP_BLOCK_SIZE * cosA / sinA) * sign(cosA), MAP_BLOCK_SIZE * sign(sinA)};
-        for (; rayB.x > 0 && rayB.x < mapWidth && rayB.y > 0 && rayB.y < mapHeight; rayB += d) {
-            int row = floor(rayB.y / MAP_BLOCK_SIZE) - float(sinA < 0);
-            int col = floor(rayB.x / MAP_BLOCK_SIZE);
-            if (Map::tiles[row * Map::width + col] == Map::Tile::wall) {
-                hitB = true;
-                break;
-            }
-        }
-        rayB -= Player::position.xy;
-    }
-
-    if (simd::length(rayA) < simd::length(rayB)) {
-        float length = simd_dot(rayA, simd::float2{cos(Player::angle), sin(Player::angle)});
-        float offset = fmod(rayA.y + Player::position.y, MAP_BLOCK_SIZE) / MAP_BLOCK_SIZE;
-        RayHit hit = hitA && length > CAMERA_NEAR_CLIP ? RayHit::vertical : RayHit::none;
-        return {rayA, length, offset, hit};
-    } else {
-        float length = simd_dot(rayB, simd::float2{cos(Player::angle), sin(Player::angle)});
-        float offset = fmod(rayB.x + Player::position.x, MAP_BLOCK_SIZE) / MAP_BLOCK_SIZE;
-        RayHit hit = hitB && length > CAMERA_NEAR_CLIP ? RayHit::horizontal : RayHit::none;
-        return {rayB, length, offset, hit};
-    }
-}
-
-void castWallRays() {
-    const float mapWidth = Map::width * MAP_BLOCK_SIZE;
-    const float mapHeight = Map::height * MAP_BLOCK_SIZE;
-
-    rayR = castRay(-CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
-    rayG = castRay(0.0f, mapWidth, mapHeight).ray;
-    rayB = castRay(CAMERA_FOV / 2.0f, mapWidth, mapHeight).ray;
-
-    for (size_t i = 0; i < rayCasts.size(); ++i) {
-        rayCasts[i] = castRay(rayAnglesWall[i], mapWidth, mapHeight);
-    }
 }
 
 void bounceCamera() {
@@ -218,11 +206,39 @@ void bounceCamera() {
     phase += simd::length(Player::velocity) * freqency;
     if (phase > 1) phase = 0;
 
-    cameraHeight = MAP_BLOCK_SIZE / 2.0f - sin(phase * std::numbers::pi) * amplitude;
+    cameraHeight = MAP_TILE_SIZE / 2.0f - sin(phase * std::numbers::pi) * amplitude;
+}
+
+void testRay() {
+    static float lastAngle = 0.123f;
+
+    if (Player::angle == lastAngle) return;
+    lastAngle = Player::angle;
+
+    Ray ray = Viewport::castRay(0.0f);
+    if (ray.isMiss()) return;
+
+    size_t row = ray.hit.index / Map::tilesWidth;
+    size_t col = ray.hit.index % Map::tilesWidth;
+    const char* side;
+    switch (ray.hit.side) {
+        case TileSide::left:
+            side = "left";
+            break;
+        case TileSide::right:
+            side = "right";
+            break;
+        case TileSide::top:
+            side = "top";
+            break;
+        case TileSide::bottom:
+            side = "bottom";
+            break;
+    }
+    printf("row: %zu, col: %zu, side: %s, offset: %f\n", row, col, side, ray.hit.offset);
 }
 
 void update() {
-    castWallRays();
     bounceCamera();
 }
 

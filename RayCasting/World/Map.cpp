@@ -23,8 +23,10 @@ const std::vector<Segment> wallGeometry = Geometry::makeWall();
 std::vector<Segment> gridGeometry;
 
 std::vector<Tile> tiles;
-size_t width;
-size_t height;
+size_t tilesWidth;
+size_t tilesHeight;
+float width;
+float height;
 Frame frame = fullFrame;
 float zoomFactor = fullDefaultZoom;
 bool isVisible = false;
@@ -35,17 +37,17 @@ bool isFullScreen() {
 
 void load(const void* bytes, size_t size) {
     const char* chars = static_cast<const char*>(bytes);
-    width = 0;
+    tilesWidth = 0;
     for (size_t i = 0; i < size && chars[i] != '\n'; ++i) {
-        width += chars[i] != ' ';
+        tilesWidth += chars[i] != ' ';
     }
-    if (width == 0) {
-        printf("Invalid map");
+    if (tilesWidth == 0) {
+        printf("Invalid map\n");
         return;
     }
     for (size_t i = 0; i < size; ++i) {
-        size_t x = tiles.size() % width;
-        size_t y = tiles.size() / width;
+        size_t x = tiles.size() % tilesWidth;
+        size_t y = tiles.size() / tilesWidth;
         switch (chars[i]) {
             case '#':
                 tiles.push_back(Tile::wall);
@@ -55,35 +57,37 @@ void load(const void* bytes, size_t size) {
                 break;
             case '>':
                 Player::angle = 0.0f;
-                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
+                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_TILE_SIZE;
                 tiles.push_back(Tile::floor);
                 break;
             case '<':
                 Player::angle = std::numbers::pi;
-                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
+                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_TILE_SIZE;
                 tiles.push_back(Tile::floor);
                 break;
             case '^':
                 Player::angle = -std::numbers::pi / 2.0f;
-                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
+                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_TILE_SIZE;
                 tiles.push_back(Tile::floor);
                 break;
             case 'v':
                 Player::angle = std::numbers::pi / 2.0f;
-                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_BLOCK_SIZE;
+                Player::position = simd_float3{x + 0.5f, y + 0.5f, 1.0f} * MAP_TILE_SIZE;
                 tiles.push_back(Tile::floor);
                 break;
             default:
                 break;
         }
     }
-    height = tiles.size() / width;
-    if (height == 0 || tiles.size() % width != 0) {
-        printf("Invalid map");
+    tilesHeight = tiles.size() / tilesWidth;
+    if (tilesHeight == 0 || tiles.size() % tilesWidth != 0) {
+        printf("Invalid map\n");
         return;
     }
-    printf("Loaded map of size %lu x %lu", width, height);
-    gridGeometry = Geometry::makeGrid(width, height);
+    printf("Loaded map of size %lu x %lu\n", tilesWidth, tilesHeight);
+    width = tilesWidth * MAP_TILE_SIZE;
+    height = tilesHeight * MAP_TILE_SIZE;
+    gridGeometry = Geometry::makeGrid(tilesWidth, tilesHeight);
 }
 
 void drawGeometry(const std::vector<Segment>& geometry, simd::float3x3 transform, uint32_t color) {
@@ -105,7 +109,7 @@ void drawGrid() {
 
 void drawWall(size_t row, size_t col) {
     simd::float3 playerPosition = Player::position * zoomFactor;
-    simd::float3 wallPosition = simd::float3{float(col), float(row), 1.0f} * MAP_BLOCK_SIZE * zoomFactor;
+    simd::float3 wallPosition = simd::float3{float(col), float(row), 1.0f} * MAP_TILE_SIZE * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(
         frame.centerX() + wallPosition.x - playerPosition.x,
         frame.centerY() + wallPosition.y - playerPosition.y);
@@ -115,9 +119,9 @@ void drawWall(size_t row, size_t col) {
 }
 
 void drawWalls() {
-    for (size_t row = 0; row < height; ++row) {
-        for (size_t col = 0; col < width; ++col) {
-            if (tiles[row * width + col] == Tile::wall) {
+    for (size_t row = 0; row < tilesHeight; ++row) {
+        for (size_t col = 0; col < tilesWidth; ++col) {
+            if (tiles[row * tilesWidth + col] == Tile::wall) {
                 drawWall(row, col);
             }
         }
@@ -133,16 +137,19 @@ void drawPlayer() {
 }
 
 void drawRays() {
-    Segment rayL = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayR.x, Player::position.y + Viewport::rayR.y);
-    Segment rayC = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayG.x, Player::position.y + Viewport::rayG.y);
-    Segment rayR = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + Viewport::rayB.x, Player::position.y + Viewport::rayB.y);
+    simd::float2 rayR = Viewport::castRay(-CAMERA_FOV / 2.0f).xy;
+    simd::float2 rayG = Viewport::castRay(0.0f).xy;
+    simd::float2 rayB = Viewport::castRay(CAMERA_FOV / 2.0f).xy;
+    Segment segR = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayR.x, Player::position.y + rayR.y);
+    Segment segG = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayG.x, Player::position.y + rayG.y);
+    Segment segB = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayB.x, Player::position.y + rayB.y);
     simd::float3 playerPosition = Player::position * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry({rayL}, transform, Palette::red);
-    drawGeometry({rayC}, transform, Palette::green);
-    drawGeometry({rayR}, transform, Palette::blue);
+    drawGeometry({segR}, transform, Palette::red);
+    drawGeometry({segG}, transform, Palette::green);
+    drawGeometry({segB}, transform, Palette::blue);
 }
 
 void draw() {
