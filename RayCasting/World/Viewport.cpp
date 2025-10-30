@@ -5,6 +5,7 @@
 
 #include "Canvas.hpp"
 #include "Config.h"
+#include "Keyboard.hpp"
 #include "Map.hpp"
 #include "MathUtils.hpp"
 #include "Palette.hpp"
@@ -20,6 +21,7 @@ constexpr float horizonHeight = CANVAS_HEIGHT / 2.0f;
 constexpr size_t floorHeight = horizonHeight;
 constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
+constexpr float maxDrawDistance = 800.0f;
 
 std::array<float, CANVAS_WIDTH> rayAnglesHorizontal;
 std::array<float, CANVAS_WIDTH> rayTansHorizontal;
@@ -27,6 +29,7 @@ std::array<float, floorHeight> rayTansFloor;
 std::array<float, ceilingHeight> rayTansCeiling;
 
 float cameraHeight = MAP_TILE_SIZE / 2.0f;
+bool wallsVisible = true;
 
 void initialize() {
     for (size_t i = 0; i < rayAnglesHorizontal.size(); ++i) {
@@ -56,19 +59,25 @@ uint32_t sampleTexture(uint32_t* texture, float x, float y) {
 
 void drawFloor() {
     const float cameraDistanceToSurface = cameraHeight;
-    simd::float3 mapBlock = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
+    simd::float3 mapTile = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
     simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
                                                        makeRotationMatrix(Player::angle));
     for (size_t i = 0; i < rayTansHorizontal.size(); ++i) {
         for (size_t j = 0; j < rayTansFloor.size(); ++j) {
             float hitX = cameraDistanceToSurface / rayTansFloor[j];
+            if (hitX > maxDrawDistance) {
+                Canvas::point(i, j + ceilingHeight, Palette::fogColor);
+                continue;
+            }
             float hitY = hitX * rayTansHorizontal[i];
             simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
             if (hit.x < 0 || hit.x > Map::width || hit.y < 0 || hit.y > Map::height) {
                 continue;
             }
-            simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
+            simd::float3 texturePos = simd::fmod(hit, mapTile) / mapTile;
             uint32_t color = sampleTexture(Textures::dungeonFloorDirt.data(), texturePos.x, texturePos.y);
+            color = Palette::blend(color, Palette::lightColor, (1 - fmin(1, hitX / 400)) * 0xA0, BlendMode::add);
+            color = Palette::blend(color, Palette::fogColor, hitX / maxDrawDistance * 0xFF, BlendMode::normal);
             Canvas::point(i, j + ceilingHeight, color);
         }
     }
@@ -76,19 +85,28 @@ void drawFloor() {
 
 void drawCeiling() {
     const float cameraDistanceToSurface = MAP_TILE_SIZE - cameraHeight;
-    simd::float3 mapBlock = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
+    simd::float3 mapTile = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
     simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
                                                        makeRotationMatrix(Player::angle));
     for (size_t i = 0; i < rayTansHorizontal.size(); ++i) {
         for (size_t j = 0; j < rayTansCeiling.size(); ++j) {
             float hitX = cameraDistanceToSurface / rayTansCeiling[j];
+            if (hitX > maxDrawDistance) {
+                Canvas::point(i, j, Palette::fogColor);
+                continue;
+            }
             float hitY = hitX * rayTansHorizontal[i];
             simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
             if (hit.x < 0 || hit.x > Map::width || hit.y < 0 || hit.y > Map::height) {
                 continue;
             }
-            simd::float3 texturePos = simd::fmod(hit, mapBlock) / mapBlock;
+            simd::float3 texturePos = simd::fmod(hit, mapTile) / mapTile;
             uint32_t color = sampleTexture(Textures::dungeonCeilingRock.data(), texturePos.x, texturePos.y);
+            if (hitX < 200) {
+                color = Palette::blend(color, Palette::lightColor, (1 - hitX / 200) * 0xA0, BlendMode::add);
+            }
+            color = Palette::blend(color, Palette::shadowColor, 0x30, BlendMode::multipy);
+            color = Palette::blend(color, Palette::fogColor, hitX / maxDrawDistance * 0xFF, BlendMode::normal);
             Canvas::point(i, j, color);
         }
     }
@@ -145,11 +163,12 @@ Ray castRay(float playerSpaceAngle) {
         float length = simd_dot(rayCol, simd::float2{cos(Player::angle), sin(Player::angle)});
         if (tileIndexCol != -1 && length > CAMERA_NEAR_CLIP) {
             float offset = fmod(rayCol.y + Player::position.y, MAP_TILE_SIZE) / MAP_TILE_SIZE;
+            float angle = atan(fabs(sinA / cosA)) * 2 / std::numbers::pi;
             if (cosA > 0) {
-                TileHit tileHit = {tileIndexCol, TileSide::left, offset};
+                TileHit tileHit = {tileIndexCol, TileSide::left, offset, angle};
                 return {rayCol, length, tileHit};
             } else {
-                TileHit tileHit = {tileIndexCol, TileSide::right, 1 - offset};
+                TileHit tileHit = {tileIndexCol, TileSide::right, 1 - offset, angle};
                 return {rayCol, length, tileHit};
             }
         } else {
@@ -159,11 +178,12 @@ Ray castRay(float playerSpaceAngle) {
         float length = simd_dot(rayRow, simd::float2{cos(Player::angle), sin(Player::angle)});
         if (tileIndexRow != -1 && length > CAMERA_NEAR_CLIP) {
             float offset = fmod(rayRow.x + Player::position.x, MAP_TILE_SIZE) / MAP_TILE_SIZE;
+            float angle = atan(fabs(cosA / sinA)) * 2 / std::numbers::pi;
             if (sinA > 0) {
-                TileHit tileHit = {tileIndexRow, TileSide::top, 1 - offset};
+                TileHit tileHit = {tileIndexRow, TileSide::top, 1 - offset, angle};
                 return {rayRow, length, tileHit};
             } else {
-                TileHit tileHit = {tileIndexRow, TileSide::bottom, offset};
+                TileHit tileHit = {tileIndexRow, TileSide::bottom, offset, angle};
                 return {rayRow, length, tileHit};
             }
         } else {
@@ -177,16 +197,23 @@ void drawWalls() {
         Ray ray = castRay(rayAnglesHorizontal[x]);
         if (ray.isMiss()) continue;
         float projectionCoef = projectionDistance / ray.length;
-        float yStart = ceil(horizonHeight + (cameraHeight - MAP_TILE_SIZE) * projectionCoef);
-        float yEnd = floor(horizonHeight + (cameraHeight * projectionCoef));
+        float distanceCoef = ray.length * 2 / maxDrawDistance;
+        float angleCoef = 1 - ray.hit.angle / 2;
+        float yStart = ceil(horizonHeight - (MAP_TILE_SIZE - cameraHeight) * projectionCoef);
+        float yEnd = floor(horizonHeight + cameraHeight * projectionCoef);
         for (float y = fmax(0, yStart), end = fmin(yEnd + 1, CANVAS_HEIGHT); y < end; ++y) {
-            uint32_t diffuse = sampleTexture(Textures::dungeonWallTopBeam.data(), ray.hit.offset, (y - yStart) / (yEnd - yStart));
-            if (ray.hit.side == TileSide::top || ray.hit.side == TileSide::bottom) {
-                Canvas::point(x, y, diffuse);
-            } else {
-                uint32_t color = Palette::blend(diffuse, Palette::gunmetalDarker, 0x80, BlendMode::multipy);
-                Canvas::point(x, y, color);
+            if (ray.length > maxDrawDistance) {
+                Canvas::point(x, y, Palette::fogColor);
+                continue;
             }
+            uint32_t color = sampleTexture(Textures::dungeonWallTopBeam.data(), ray.hit.offset, (y - yStart) / (yEnd - yStart));
+            if (distanceCoef < 1) {
+                color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0x90, BlendMode::add);
+            } else {
+                color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
+            }
+            color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
+            Canvas::point(x, y, color);
         }
     }
 }
@@ -195,7 +222,18 @@ void draw() {
     if (Map::isVisible && Map::isFullScreen()) return;
     drawFloor();
     drawCeiling();
-    drawWalls();
+    if (wallsVisible) drawWalls();
+}
+
+void handleInputs() {
+    static bool updatedWallsVisibility = false;
+    if (!updatedWallsVisibility && Keyboard::keys[Keyboard::keyB]) {
+        updatedWallsVisibility = true;
+        wallsVisible = !wallsVisible;
+    }
+    if (!Keyboard::keys[Keyboard::keyB]) {
+        updatedWallsVisibility = false;
+    }
 }
 
 void bounceCamera() {
@@ -235,10 +273,11 @@ void testRay() {
             side = "bottom";
             break;
     }
-    printf("row: %zu, col: %zu, side: %s, offset: %f\n", row, col, side, ray.hit.offset);
+    printf("row: %zu, col: %zu, side: %s, offset: %f, angle: %f\n", row, col, side, ray.hit.offset, ray.hit.angle);
 }
 
 void update() {
+    handleInputs();
     bounceCamera();
 }
 

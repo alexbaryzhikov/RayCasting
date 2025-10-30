@@ -104,7 +104,7 @@ void drawGrid() {
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry(gridGeometry, transform, Palette::gunmetalDark);
+    drawGeometry(gridGeometry, transform, Palette::mapGridColor);
 }
 
 void drawWall(size_t row, size_t col) {
@@ -115,7 +115,7 @@ void drawWall(size_t row, size_t col) {
         frame.centerY() + wallPosition.y - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry(wallGeometry, transform, Palette::gunmetalLight);
+    drawGeometry(wallGeometry, transform, Palette::mapWallColor);
 }
 
 void drawWalls() {
@@ -155,7 +155,7 @@ void drawRays() {
 void draw() {
     if (isVisible) {
         Canvas::setClipFrame(frame);
-        Canvas::fill(Palette::gunmetalDarker);
+        Canvas::fill(Palette::mapBackgroundColor);
         drawGrid();
         drawWalls();
         drawRays();

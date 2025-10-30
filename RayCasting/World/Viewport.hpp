@@ -16,6 +16,7 @@ struct TileHit {
     int index; // -1 for miss
     TileSide side;
     float offset; // 0 to 1
+    float angle; // 0 to 1
 };
 
 struct Ray {
