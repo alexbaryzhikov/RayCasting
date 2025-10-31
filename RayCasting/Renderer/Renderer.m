@@ -129,7 +129,11 @@ static os_log_t rendererLog;
     [self _loadTexture:@"DungeonWallVerticalBeam" to:[RCBridge textureBytes_DungeonWallVerticalBeam]];
     [self _loadTexture:@"DungeonWallWindow" to:[RCBridge textureBytes_DungeonWallWindow]];
 
-    [self _loadMap];
+    if (MAP_LOAD) {
+        [self _loadMap];
+    } else {
+        [RCBridge generateMap];
+    }
 
     [RCBridge startWorld];
 }
@@ -240,10 +244,12 @@ static os_log_t rendererLog;
 }
 
 - (void)_loadMap {
-    NSString* mapPath = [[NSBundle mainBundle] pathForResource:@(MAP_NAME) ofType:@(MAP_TYPE)];
+    NSString* mapName = @"map001";
+    NSString* mapType = @"map";
+    NSString* mapPath = [[NSBundle mainBundle] pathForResource:mapName ofType:mapType];
 
     if (!mapPath) {
-        NSLog(@"Map not found: %@.%@", @(MAP_NAME), @(MAP_TYPE));
+        NSLog(@"Map not found: %@.%@", mapName, mapType);
     }
 
     NSData* mapData = [NSData dataWithContentsOfFile:mapPath];

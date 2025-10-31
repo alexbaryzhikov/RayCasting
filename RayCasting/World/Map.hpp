@@ -20,7 +20,7 @@ extern bool isVisible;
 
 bool isFullScreen();
 
-void load(const void* bytes, size_t size);
+void initialize();
 
 void draw();
 

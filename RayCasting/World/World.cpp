@@ -14,6 +14,7 @@ namespace RC::World {
 int64_t fps = 0;
 
 void start() {
+    Map::initialize();
     Viewport::initialize();
 }
 

@@ -5,6 +5,8 @@
 #include "Canvas.hpp"
 #include "Keyboard.hpp"
 #include "Map.hpp"
+#include "MapGenerator.hpp"
+#include "MapLoader.hpp"
 #include "Mouse.hpp"
 #include "Text.hpp"
 #include "Textures.hpp"
@@ -54,6 +56,10 @@
 
 + (void)loadMap:(const void*)bytes size:(NSUInteger)size {
     RC::Map::load(bytes, size);
+}
+
++ (void)generateMap {
+    RC::Map::generate();
 }
 
 + (void)startWorld {

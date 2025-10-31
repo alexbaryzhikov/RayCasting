@@ -11,6 +11,7 @@
 + (void*)textureBytes_DungeonWallVerticalBeam;
 + (void*)textureBytes_DungeonWallWindow;
 + (void)loadMap:(const void*)bytes size:(NSUInteger)size;
++ (void)generateMap;
 + (void)startWorld;
 + (void)drawWorld;
 + (void)updateWorld;
