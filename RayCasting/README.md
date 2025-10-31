@@ -15,8 +15,10 @@
 
 ## Next Steps
 
-* Generalized ligth source and wall torches
-* Map generator
++ Map generator
+
+* Various wall textures
 * Doors
+* Generalized ligth source and wall torches
 * Destructible walls
 * GPU ray casting

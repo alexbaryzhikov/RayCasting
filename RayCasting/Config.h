@@ -2,10 +2,10 @@
 #define Config_h
 
 // Display
-#define CANVAS_WIDTH                1280
-#define CANVAS_HEIGHT               720
+#define CANVAS_WIDTH                1168
+#define CANVAS_HEIGHT               755
 #define CANVAS_SIZE                 (CANVAS_WIDTH * CANVAS_HEIGHT)
-#define VIEW_SCALE                  2
+#define VIEW_SCALE                  1
 #define VIEW_WIDTH                  (CANVAS_WIDTH * VIEW_SCALE)
 #define VIEW_HEIGHT                 (CANVAS_HEIGHT * VIEW_SCALE)
 
@@ -22,9 +22,9 @@
 #define MAP_TILE_SIZE               64.0f
 #define MAP_ZOOM_DEFAULT            0.5f
 #define MAP_ZOOM_SPEED              1.03124f
-#define MAP_WIDTH                   41
-#define MAP_HEIGHT                  41
-#define MAP_SEED                    10048
+#define MAP_WIDTH                   101
+#define MAP_HEIGHT                  21
+#define MAP_SEED                    1982
 #define FLOOR_COVERAGE_TARGET       0.8f
 #define ROOM_MIN_SIZE               3
 #define ROOM_MAX_SIZE               15
