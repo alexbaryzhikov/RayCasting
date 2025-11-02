@@ -132,7 +132,7 @@ Ray castRay(float playerSpaceAngle) {
             int row = floor(rayCol.y / MAP_TILE_SIZE);
             int col = floor(rayCol.x / MAP_TILE_SIZE) - float(cosA < 0);
             size_t tileIndex = row * Map::tilesWidth + col;
-            if (Map::tiles[tileIndex] == Map::Tile::wall) {
+            if (Map::tiles[tileIndex] != Map::Tile::floor) {
                 tileIndexCol = int(tileIndex);
                 break;
             }
@@ -151,7 +151,7 @@ Ray castRay(float playerSpaceAngle) {
             int row = floor(rayRow.y / MAP_TILE_SIZE) - float(sinA < 0);
             int col = floor(rayRow.x / MAP_TILE_SIZE);
             size_t tileIndex = row * int(Map::tilesWidth) + col;
-            if (Map::tiles[tileIndex] == Map::Tile::wall) {
+            if (Map::tiles[tileIndex] != Map::Tile::floor) {
                 tileIndexRow = int(tileIndex);
                 break;
             }
@@ -206,7 +206,28 @@ void drawWalls() {
                 Canvas::point(x, y, Palette::fogColor);
                 continue;
             }
-            uint32_t color = sampleTexture(Textures::dungeonWallTopBeam.data(), ray.hit.offset, (y - yStart) / (yEnd - yStart));
+            uint32_t* texture;
+            switch (Map::tiles[ray.hit.index]) {
+                case Map::Tile::floor:
+                    texture = nullptr;
+                    break;
+                case Map::Tile::wall:
+                    texture = Textures::dungeonWallBase.data();
+                    break;
+                case Map::Tile::wallTopBeam:
+                    texture = Textures::dungeonWallTopBeam.data();
+                    break;
+                case Map::Tile::wallVerticalBeam:
+                    texture = Textures::dungeonWallVerticalBeam.data();
+                    break;
+                case Map::Tile::wallWindow:
+                    texture = Textures::dungeonWallWindow.data();
+                    break;
+                case Map::Tile::wallRock:
+                    texture = Textures::dungeonWallRock.data();
+                    break;
+            }
+            uint32_t color = sampleTexture(texture, ray.hit.offset, (y - yStart) / (yEnd - yStart));
             if (distanceCoef < 1) {
                 color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0x90, BlendMode::add);
             } else {

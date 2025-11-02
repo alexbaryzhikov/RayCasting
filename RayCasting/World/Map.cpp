@@ -68,7 +68,7 @@ void drawWall(size_t row, size_t col) {
 void drawWalls() {
     for (size_t row = 0; row < tilesHeight; ++row) {
         for (size_t col = 0; col < tilesWidth; ++col) {
-            if (tiles[row * tilesWidth + col] == Tile::wall) {
+            if (tiles[row * tilesWidth + col] != Tile::floor) {
                 drawWall(row, col);
             }
         }

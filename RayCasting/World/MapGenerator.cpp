@@ -58,6 +58,21 @@ int getRandomOdd(int min, int max) {
     return min + dist(rng) * 2;
 }
 
+std::vector<Tile> generateWalls() {
+    std::vector<Tile> walls(MAP_WIDTH * MAP_HEIGHT);
+    for (int y = 0; y < MAP_HEIGHT; ++y) {
+        for (int x = 0; x < MAP_WIDTH; ++x) {
+            int idx = y * MAP_WIDTH + x;
+            if (x == 0 || x == MAP_WIDTH - 1 || y == 0 || y == MAP_HEIGHT - 1) {
+                walls[idx] = Tile::wallRock;
+            } else {
+                walls[idx] = Tile::wall;
+            }
+        }
+    }
+    return walls;
+}
+
 void carveRoom(const Rect& room, int& floorTiles) {
     for (int y = room.y; y < room.y + room.h; ++y) {
         for (int x = room.x; x < room.x + room.w; ++x) {
@@ -67,10 +82,11 @@ void carveRoom(const Rect& room, int& floorTiles) {
             }
         }
     }
+}
 
-    // --- Add internal structures (islands/peninsulas) ---
+void generateIslands(const Rect& room, int& floorTiles) {
     int roomArea = room.w * room.h;
-    if (roomArea <= 25) return;
+    if (roomArea < ISLAND_MIN_ROOM_AREA) return;
 
     // Probability of adding structures increases with size
     float structureChance = fmin(0.4f, (roomArea - 25) / 200.0f);
@@ -98,11 +114,10 @@ void carveRoom(const Rect& room, int& floorTiles) {
             continue;
         }
 
-        // Build the island
         for (int y = newIsland.y; y < newIsland.y + newIsland.h; ++y) {
             for (int x = newIsland.x; x < newIsland.x + newIsland.w; ++x) {
                 if (tiles[y * MAP_WIDTH + x] == Tile::floor) {
-                    tiles[y * MAP_WIDTH + x] = Tile::wall;
+                    tiles[y * MAP_WIDTH + x] = Tile::wallTopBeam;
                     floorTiles--;
                 }
             }
@@ -110,26 +125,111 @@ void carveRoom(const Rect& room, int& floorTiles) {
     }
 }
 
-void carveHTunnel(int x1, int x2, int y, int& floorTiles) {
+void safeSetWallTile(int x, int y, Tile newTile) {
+    if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) {
+        return;
+    }
+    if (tiles[y * MAP_WIDTH + x] == Tile::wall) {
+        tiles[y * MAP_WIDTH + x] = newTile;
+    }
+}
+
+void decorateRoomWalls(const Rect& room) {
+    // Decorate horizontal walls (top/bottom)
+    for (int x = room.x; x < room.x + room.w; ++x) {
+        if ((x - 1) % 8 == 0) {
+            safeSetWallTile(x, room.y - 1, Tile::wallVerticalBeam);
+            safeSetWallTile(x, room.y + room.h, Tile::wallVerticalBeam);
+        } else if ((x - 1) % 4 == 0) {
+            safeSetWallTile(x, room.y - 1, Tile::wallWindow);
+            safeSetWallTile(x, room.y + room.h, Tile::wallWindow);
+        } else {
+            safeSetWallTile(x, room.y - 1, Tile::wallTopBeam);
+            safeSetWallTile(x, room.y + room.h, Tile::wallTopBeam);
+        }
+    }
+    // Decorate vertical walls (left/right)
+    for (int y = room.y; y < room.y + room.h; ++y) {
+        if ((y - 1) % 8 == 0) {
+            safeSetWallTile(room.x - 1, y, Tile::wallVerticalBeam);
+            safeSetWallTile(room.x + room.w, y, Tile::wallVerticalBeam);
+        } else if ((y - 1) % 4 == 0) {
+            safeSetWallTile(room.x - 1, y, Tile::wallWindow);
+            safeSetWallTile(room.x + room.w, y, Tile::wallWindow);
+        } else {
+            safeSetWallTile(room.x - 1, y, Tile::wallTopBeam);
+            safeSetWallTile(room.x + room.w, y, Tile::wallTopBeam);
+        }
+    }
+}
+
+void carveTunnelH(int x1, int x2, int y, int& floorTiles) {
     if (x1 > x2) std::swap(x1, x2);
     for (int x = x1; x <= x2; ++x) {
         if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
-            if (tiles[y * MAP_WIDTH + x] == Tile::wall) {
+            if (tiles[y * MAP_WIDTH + x] != Tile::floor) {
                 tiles[y * MAP_WIDTH + x] = Tile::floor;
                 floorTiles++;
+            }
+            if (tiles[(y - 1) * MAP_WIDTH + x] == Tile::wall) {
+                tiles[(y - 1) * MAP_WIDTH + x] = Tile::wallTopBeam;
+            }
+            if (tiles[(y + 1) * MAP_WIDTH + x] == Tile::wall) {
+                tiles[(y + 1) * MAP_WIDTH + x] = Tile::wallTopBeam;
             }
         }
     }
 }
 
-void carveVTunnel(int y1, int y2, int x, int& floorTiles) {
+void carveTunnelV(int y1, int y2, int x, int& floorTiles) {
     if (y1 > y2) std::swap(y1, y2);
     for (int y = y1; y <= y2; ++y) {
         if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
-            if (tiles[y * MAP_WIDTH + x] == Tile::wall) {
+            if (tiles[y * MAP_WIDTH + x] != Tile::floor) {
                 tiles[y * MAP_WIDTH + x] = Tile::floor;
                 floorTiles++;
             }
+            if (tiles[y * MAP_WIDTH + x - 1] == Tile::wall) {
+                tiles[y * MAP_WIDTH + x - 1] = Tile::wallTopBeam;
+            }
+            if (tiles[y * MAP_WIDTH + x + 1] == Tile::wall) {
+                tiles[y * MAP_WIDTH + x + 1] = Tile::wallTopBeam;
+            }
+        }
+    }
+}
+
+void carveTunnels(const std::vector<Rect>& rooms, const Rect& room, int& floorTiles) {
+    // Connect the new room to the closest previous room
+    auto center = room.center();
+
+    const Rect* closestRoom = nullptr;
+    int minDistanceSq = std::numeric_limits<int>::max();
+
+    for (const auto& otherRoom : rooms) {
+        if (otherRoom == room) continue;
+
+        auto otherCenter = otherRoom.center();
+        int dx = center.x - otherCenter.x;
+        int dy = center.y - otherCenter.y;
+        int distanceSq = dx * dx + dy * dy; // Use squared distance for efficiency
+
+        if (distanceSq < minDistanceSq) {
+            minDistanceSq = distanceSq;
+            closestRoom = &otherRoom;
+        }
+    }
+
+    if (closestRoom) {
+        auto closestCenter = closestRoom->center();
+
+        // Randomly decide to carve horizontal or vertical tunnel first
+        if (getRandomInt(0, 1) == 0) {
+            carveTunnelH(closestCenter.x, center.x, closestCenter.y, floorTiles);
+            carveTunnelV(closestCenter.y, center.y, center.x, floorTiles);
+        } else {
+            carveTunnelV(closestCenter.y, center.y, closestCenter.x, floorTiles);
+            carveTunnelH(closestCenter.x, center.x, center.y, floorTiles);
         }
     }
 }
@@ -158,40 +258,10 @@ std::vector<Rect> generateRooms() {
         if (overlaps) continue;
 
         carveRoom(newRoom, floorTiles);
+        decorateRoomWalls(newRoom);
+        generateIslands(newRoom, floorTiles);
+        carveTunnels(rooms, newRoom, floorTiles);
         rooms.push_back(newRoom);
-
-        // Connect the new room to the closest previous room
-        auto newCenter = newRoom.center();
-
-        const Rect* closestRoom = nullptr;
-        int minDistanceSq = std::numeric_limits<int>::max();
-
-        for (const auto& room : rooms) {
-            if (room == newRoom) continue;
-
-            auto prevCenter = room.center();
-            int dx = newCenter.x - prevCenter.x;
-            int dy = newCenter.y - prevCenter.y;
-            int distanceSq = dx * dx + dy * dy; // Use squared distance for efficiency
-
-            if (distanceSq < minDistanceSq) {
-                minDistanceSq = distanceSq;
-                closestRoom = &room;
-            }
-        }
-
-        if (closestRoom) {
-            auto prevCenter = closestRoom->center();
-
-            // Randomly decide to carve horizontal or vertical tunnel first
-            if (getRandomInt(0, 1) == 0) {
-                carveHTunnel(prevCenter.x, newCenter.x, prevCenter.y, floorTiles);
-                carveVTunnel(prevCenter.y, newCenter.y, newCenter.x, floorTiles);
-            } else {
-                carveVTunnel(prevCenter.y, newCenter.y, prevCenter.x, floorTiles);
-                carveHTunnel(prevCenter.x, newCenter.x, newCenter.y, floorTiles);
-            }
-        }
     }
     return rooms;
 }
@@ -266,8 +336,8 @@ void placePlayer(const std::vector<Rect>& rooms) {
 
 void generate() {
     printf("Generating %dx%d map with seed %d...", MAP_WIDTH, MAP_HEIGHT, MAP_SEED);
-    tiles.assign(MAP_WIDTH * MAP_HEIGHT, Tile::wall);
-    std::vector<Rect> rooms = generateRooms();
+    tiles = generateWalls();
+    auto rooms = generateRooms();
     placePlayer(rooms);
     tilesWidth = MAP_WIDTH;
     tilesHeight = MAP_HEIGHT;
