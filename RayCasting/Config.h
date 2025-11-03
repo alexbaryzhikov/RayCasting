@@ -25,7 +25,7 @@
 #define MAP_WIDTH                   81
 #define MAP_HEIGHT                  41
 #define MAP_SEED                    1982
-#define FLOOR_COVERAGE_TARGET       0.8f
+#define FLOOR_COVERAGE_TARGET       0.5f
 #define ROOM_MIN_SIZE               4
 #define ROOM_MAX_SIZE               16
 #define ROOM_MAX_LOOPS              10000

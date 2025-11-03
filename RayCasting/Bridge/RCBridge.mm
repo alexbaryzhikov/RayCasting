@@ -22,36 +22,36 @@
     return RC::Text::font.data();
 }
 
-+ (void*)textureBytes_DungeonCeilingRock {
-    return RC::Textures::dungeonCeilingRock.data();
++ (void*)textureBytes_ceiling {
+    return RC::Textures::ceiling.data();
 }
 
-+ (void*)textureBytes_DungeonFloorDirt {
-    return RC::Textures::dungeonFloorDirt.data();
++ (void*)textureBytes_floor {
+    return RC::Textures::floor.data();
 }
 
-+ (void*)textureBytes_DungeonWallBase {
-    return RC::Textures::dungeonWallBase.data();
++ (void*)textureBytes_wall {
+    return RC::Textures::wall.data();
 }
 
-+ (void*)textureBytes_DungeonWallRock {
-    return RC::Textures::dungeonWallRock.data();
++ (void*)textureBytes_wallFortified {
+    return RC::Textures::wallFortified.data();
 }
 
-+ (void*)textureBytes_DungeonWallTopBeam {
-    return RC::Textures::dungeonWallTopBeam.data();
++ (void*)textureBytes_wallFortifiedDecal1 {
+    return RC::Textures::wallFortifiedDecal1.data();
 }
 
-+ (void*)textureBytes_DungeonWallTorch {
-    return RC::Textures::dungeonWallTorch.data();
++ (void*)textureBytes_wallFortifiedDecal2 {
+    return RC::Textures::wallFortifiedDecal2.data();
 }
 
-+ (void*)textureBytes_DungeonWallVerticalBeam {
-    return RC::Textures::dungeonWallVerticalBeam.data();
++ (void*)textureBytes_wallFortifiedTorch {
+    return RC::Textures::wallFortifiedTorch.data();
 }
 
-+ (void*)textureBytes_DungeonWallWindow {
-    return RC::Textures::dungeonWallWindow.data();
++ (void*)textureBytes_wallIndestructible {
+    return RC::Textures::wallIndestructible.data();
 }
 
 + (void)loadMap:(const void*)bytes size:(NSUInteger)size {

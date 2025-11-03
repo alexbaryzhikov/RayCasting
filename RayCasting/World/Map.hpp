@@ -3,16 +3,18 @@
 
 #include <vector>
 
-namespace RC::Map {
+namespace RC {
 
 enum class Tile {
     floor,
     wall,
-    wallTopBeam,
-    wallVerticalBeam,
-    wallWindow,
-    wallRock
+    wallFortified,
+    wallIndestructible,
 };
+
+}
+
+namespace RC::Map {
 
 extern std::vector<Tile> tiles;
 extern size_t tilesWidth;

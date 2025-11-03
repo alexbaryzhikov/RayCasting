@@ -15,10 +15,10 @@
 
 ## Next Steps
 
-+ Map generator
-
-* Various wall textures
-* Doors
-* Generalized ligth source and wall torches
-* Destructible walls
-* GPU ray casting
+- Map follow/detached modes
+- Fortified walls on map
+- Fortified walls with decorations (wall edge, support beam, window)
+- Doors
+- Generalized ligth source and wall torches
+- Destructible walls
+- GPU ray casting

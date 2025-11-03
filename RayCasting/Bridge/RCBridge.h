@@ -2,14 +2,14 @@
 
 + (const void*)canvasBytes;
 + (void*)fontBytes;
-+ (void*)textureBytes_DungeonCeilingRock;
-+ (void*)textureBytes_DungeonFloorDirt;
-+ (void*)textureBytes_DungeonWallBase;
-+ (void*)textureBytes_DungeonWallRock;
-+ (void*)textureBytes_DungeonWallTopBeam;
-+ (void*)textureBytes_DungeonWallTorch;
-+ (void*)textureBytes_DungeonWallVerticalBeam;
-+ (void*)textureBytes_DungeonWallWindow;
++ (void*)textureBytes_ceiling;
++ (void*)textureBytes_floor;
++ (void*)textureBytes_wall;
++ (void*)textureBytes_wallFortified;
++ (void*)textureBytes_wallFortifiedDecal1;
++ (void*)textureBytes_wallFortifiedDecal2;
++ (void*)textureBytes_wallFortifiedTorch;
++ (void*)textureBytes_wallIndestructible;
 + (void)loadMap:(const void*)bytes size:(NSUInteger)size;
 + (void)generateMap;
 + (void)startWorld;

@@ -7,14 +7,14 @@ namespace RC::Textures {
 
 constexpr size_t dimension = 512;
 
-extern std::array<uint32_t, dimension * dimension> dungeonCeilingRock;
-extern std::array<uint32_t, dimension * dimension> dungeonFloorDirt;
-extern std::array<uint32_t, dimension * dimension> dungeonWallBase;
-extern std::array<uint32_t, dimension * dimension> dungeonWallRock;
-extern std::array<uint32_t, dimension * dimension> dungeonWallTopBeam;
-extern std::array<uint32_t, dimension * dimension> dungeonWallTorch;
-extern std::array<uint32_t, dimension * dimension> dungeonWallVerticalBeam;
-extern std::array<uint32_t, dimension * dimension> dungeonWallWindow;
+extern std::array<uint32_t, dimension * dimension> ceiling;
+extern std::array<uint32_t, dimension * dimension> floor;
+extern std::array<uint32_t, dimension * dimension> wall;
+extern std::array<uint32_t, dimension * dimension> wallFortified;
+extern std::array<uint32_t, dimension * dimension> wallFortifiedDecal1;
+extern std::array<uint32_t, dimension * dimension> wallFortifiedDecal2;
+extern std::array<uint32_t, dimension * dimension> wallFortifiedTorch;
+extern std::array<uint32_t, dimension * dimension> wallIndestructible;
 
 void drawTexture();
 

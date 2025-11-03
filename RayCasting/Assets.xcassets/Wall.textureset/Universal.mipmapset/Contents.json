@@ -5,7 +5,7 @@
   },
   "levels" : [
     {
-      "filename" : "dungeon_wall_rock_512.png",
+      "filename" : "wall_basalt.png",
       "mipmap-level" : "base"
     }
   ]

@@ -120,14 +120,14 @@ static os_log_t rendererLog;
     [self _createCanvas];
 
     [self _loadTexture:@(FONT_MAP) to:[RCBridge fontBytes]];
-    [self _loadTexture:@"DungeonCeilingRock" to:[RCBridge textureBytes_DungeonCeilingRock]];
-    [self _loadTexture:@"DungeonFloorDirt" to:[RCBridge textureBytes_DungeonFloorDirt]];
-    [self _loadTexture:@"DungeonWallBase" to:[RCBridge textureBytes_DungeonWallBase]];
-    [self _loadTexture:@"DungeonWallRock" to:[RCBridge textureBytes_DungeonWallRock]];
-    [self _loadTexture:@"DungeonWallTopBeam" to:[RCBridge textureBytes_DungeonWallTopBeam]];
-    [self _loadTexture:@"DungeonWallTorch" to:[RCBridge textureBytes_DungeonWallTorch]];
-    [self _loadTexture:@"DungeonWallVerticalBeam" to:[RCBridge textureBytes_DungeonWallVerticalBeam]];
-    [self _loadTexture:@"DungeonWallWindow" to:[RCBridge textureBytes_DungeonWallWindow]];
+    [self _loadTexture:@"Ceiling" to:[RCBridge textureBytes_ceiling]];
+    [self _loadTexture:@"Floor" to:[RCBridge textureBytes_floor]];
+    [self _loadTexture:@"Wall" to:[RCBridge textureBytes_wall]];
+    [self _loadTexture:@"WallFortified" to:[RCBridge textureBytes_wallFortified]];
+    [self _loadTexture:@"WallFortifiedDecal1" to:[RCBridge textureBytes_wallFortifiedDecal1]];
+    [self _loadTexture:@"WallFortifiedDecal2" to:[RCBridge textureBytes_wallFortifiedDecal2]];
+    [self _loadTexture:@"WallFortifiedTorch" to:[RCBridge textureBytes_wallFortifiedTorch]];
+    [self _loadTexture:@"WallIndestructible" to:[RCBridge textureBytes_wallIndestructible]];
 
     if (MAP_LOAD) {
         [self _loadMap];

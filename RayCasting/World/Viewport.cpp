@@ -75,8 +75,13 @@ void drawFloor() {
                 continue;
             }
             simd::float3 texturePos = simd::fmod(hit, mapTile) / mapTile;
-            uint32_t color = sampleTexture(Textures::dungeonFloorDirt.data(), texturePos.x, texturePos.y);
-            color = Palette::blend(color, Palette::lightColor, (1 - fmin(1, hitX / 400)) * 0xA0, BlendMode::add);
+            uint32_t color = sampleTexture(Textures::floor.data(), texturePos.x, texturePos.y);
+            float distanceCoef = hitX * 2 / maxDrawDistance;
+            if (distanceCoef < 1) {
+                color = Palette::blend(color, Palette::lightColor, (1 - distanceCoef) * 0x70, BlendMode::add);
+            } else {
+                color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
+            }
             color = Palette::blend(color, Palette::fogColor, hitX / maxDrawDistance * 0xFF, BlendMode::normal);
             Canvas::point(i, j + ceilingHeight, color);
         }
@@ -101,11 +106,13 @@ void drawCeiling() {
                 continue;
             }
             simd::float3 texturePos = simd::fmod(hit, mapTile) / mapTile;
-            uint32_t color = sampleTexture(Textures::dungeonCeilingRock.data(), texturePos.x, texturePos.y);
-            if (hitX < 200) {
-                color = Palette::blend(color, Palette::lightColor, (1 - hitX / 200) * 0xA0, BlendMode::add);
+            uint32_t color = sampleTexture(Textures::ceiling.data(), texturePos.x, texturePos.y);
+            float distanceCoef = hitX * 2 / maxDrawDistance;
+            if (distanceCoef < 1) {
+                color = Palette::blend(color, Palette::lightColor, (1 - distanceCoef) * 0x70, BlendMode::add);
+            } else {
+                color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
             }
-            color = Palette::blend(color, Palette::shadowColor, 0x30, BlendMode::multipy);
             color = Palette::blend(color, Palette::fogColor, hitX / maxDrawDistance * 0xFF, BlendMode::normal);
             Canvas::point(i, j, color);
         }
@@ -132,7 +139,7 @@ Ray castRay(float playerSpaceAngle) {
             int row = floor(rayCol.y / MAP_TILE_SIZE);
             int col = floor(rayCol.x / MAP_TILE_SIZE) - float(cosA < 0);
             size_t tileIndex = row * Map::tilesWidth + col;
-            if (Map::tiles[tileIndex] != Map::Tile::floor) {
+            if (Map::tiles[tileIndex] != Tile::floor) {
                 tileIndexCol = int(tileIndex);
                 break;
             }
@@ -151,7 +158,7 @@ Ray castRay(float playerSpaceAngle) {
             int row = floor(rayRow.y / MAP_TILE_SIZE) - float(sinA < 0);
             int col = floor(rayRow.x / MAP_TILE_SIZE);
             size_t tileIndex = row * int(Map::tilesWidth) + col;
-            if (Map::tiles[tileIndex] != Map::Tile::floor) {
+            if (Map::tiles[tileIndex] != Tile::floor) {
                 tileIndexRow = int(tileIndex);
                 break;
             }
@@ -208,28 +215,22 @@ void drawWalls() {
             }
             uint32_t* texture;
             switch (Map::tiles[ray.hit.index]) {
-                case Map::Tile::floor:
+                case Tile::floor:
                     texture = nullptr;
                     break;
-                case Map::Tile::wall:
-                    texture = Textures::dungeonWallBase.data();
+                case Tile::wall:
+                    texture = Textures::wall.data();
                     break;
-                case Map::Tile::wallTopBeam:
-                    texture = Textures::dungeonWallTopBeam.data();
+                case Tile::wallFortified:
+                    texture = Textures::wallFortified.data();
                     break;
-                case Map::Tile::wallVerticalBeam:
-                    texture = Textures::dungeonWallVerticalBeam.data();
-                    break;
-                case Map::Tile::wallWindow:
-                    texture = Textures::dungeonWallWindow.data();
-                    break;
-                case Map::Tile::wallRock:
-                    texture = Textures::dungeonWallRock.data();
+                case Tile::wallIndestructible:
+                    texture = Textures::wallIndestructible.data();
                     break;
             }
             uint32_t color = sampleTexture(texture, ray.hit.offset, (y - yStart) / (yEnd - yStart));
             if (distanceCoef < 1) {
-                color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0x90, BlendMode::add);
+                color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0xA0, BlendMode::add);
             } else {
                 color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
             }

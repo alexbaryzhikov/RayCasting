@@ -5,19 +5,19 @@
 
 namespace RC::Textures {
 
-std::array<uint32_t, dimension * dimension> dungeonCeilingRock;
-std::array<uint32_t, dimension * dimension> dungeonFloorDirt;
-std::array<uint32_t, dimension * dimension> dungeonWallBase;
-std::array<uint32_t, dimension * dimension> dungeonWallRock;
-std::array<uint32_t, dimension * dimension> dungeonWallTopBeam;
-std::array<uint32_t, dimension * dimension> dungeonWallTorch;
-std::array<uint32_t, dimension * dimension> dungeonWallVerticalBeam;
-std::array<uint32_t, dimension * dimension> dungeonWallWindow;
+std::array<uint32_t, dimension * dimension> ceiling;
+std::array<uint32_t, dimension * dimension> floor;
+std::array<uint32_t, dimension * dimension> wall;
+std::array<uint32_t, dimension * dimension> wallFortified;
+std::array<uint32_t, dimension * dimension> wallFortifiedDecal1;
+std::array<uint32_t, dimension * dimension> wallFortifiedDecal2;
+std::array<uint32_t, dimension * dimension> wallFortifiedTorch;
+std::array<uint32_t, dimension * dimension> wallIndestructible;
 
 void drawTexture() {
     for (int y = 0; y < dimension; ++y) {
         for (int x = 0; x < dimension; ++x) {
-            Canvas::point(x, y, dungeonWallTopBeam[y * dimension + x]);
+            Canvas::point(x, y, wall[y * dimension + x]);
         }
     }
 }
