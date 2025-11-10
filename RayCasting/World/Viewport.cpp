@@ -241,7 +241,7 @@ void drawWalls() {
 }
 
 void draw() {
-    if (Map::isVisible && Map::isFullScreen()) return;
+    if (Map::isVisible() && Map::isFullScreen()) return;
     drawFloor();
     drawCeiling();
     if (wallsVisible) drawWalls();

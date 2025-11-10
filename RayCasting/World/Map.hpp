@@ -22,7 +22,8 @@ extern size_t tilesHeight;
 extern float width;
 extern float height;
 extern float zoomFactor;
-extern bool isVisible;
+
+bool isVisible();
 
 bool isFullScreen();
 

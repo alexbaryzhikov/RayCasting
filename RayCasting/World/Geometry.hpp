@@ -23,6 +23,10 @@ std::vector<Segment> makePlayer();
 
 std::vector<Segment> makeWall();
 
+std::vector<Segment> makeWallFortified();
+
+std::vector<Segment> makeWallIndestuctible();
+
 } // namespace RC::Geometry
 
 #endif /* Geometry_hpp */

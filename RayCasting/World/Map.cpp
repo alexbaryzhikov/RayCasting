@@ -13,11 +13,11 @@ namespace RC::Map {
 
 constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 constexpr Frame miniFrame = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
-constexpr float fullDefaultZoom = MAP_ZOOM_DEFAULT;
-constexpr float miniDefaultZoom = MAP_ZOOM_DEFAULT / 2.0f;
 
 const std::vector<Segment> playerGeometry = Geometry::makePlayer();
 const std::vector<Segment> wallGeometry = Geometry::makeWall();
+const std::vector<Segment> fortifiedWallGeometry = Geometry::makeWallFortified();
+const std::vector<Segment> indestructibleWallGeometry = Geometry::makeWallIndestuctible();
 
 std::vector<Segment> gridGeometry;
 std::vector<Tile> tiles;
@@ -26,8 +26,12 @@ size_t tilesHeight;
 float width;
 float height;
 Frame frame = fullFrame;
-float zoomFactor = fullDefaultZoom;
-bool isVisible = false;
+float zoomFactor = MAP_ZOOM_DEFAULT;
+bool visible = false;
+
+bool isVisible() {
+    return visible;
+}
 
 bool isFullScreen() {
     return frame == fullFrame;
@@ -62,7 +66,19 @@ void drawWall(size_t row, size_t col) {
         frame.centerY() + wallPosition.y - playerPosition.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry(wallGeometry, transform, Palette::mapWallColor);
+    switch (tiles[row * MAP_WIDTH + col]) {
+        case Tile::wall:
+            drawGeometry(wallGeometry, transform, Palette::mapWallColor);
+            break;
+        case Tile::wallFortified:
+            drawGeometry(fortifiedWallGeometry, transform, Palette::mapWallColor);
+            break;
+        case Tile::wallIndestructible:
+            drawGeometry(indestructibleWallGeometry, transform, Palette::mapWallColor);
+            break;
+        default:
+            break;
+    }
 }
 
 void drawWalls() {
@@ -100,12 +116,13 @@ void drawRays() {
 }
 
 void draw() {
-    if (isVisible) {
+    if (visible) {
         Canvas::setClipFrame(frame);
         Canvas::fill(Palette::mapBackgroundColor);
         drawGrid();
         drawWalls();
         drawRays();
+        Canvas::resetClipFrame();
     }
 }
 
@@ -113,40 +130,34 @@ void updateVisibility() {
     static bool updated = false;
     if (!updated && Keyboard::keys[Keyboard::keyM]) {
         updated = true;
-        isVisible = !isVisible;
+        Frame targetFrame = Keyboard::keys[Keyboard::keyShift] ? miniFrame : fullFrame;
+        if (visible && frame == targetFrame) {
+            visible = false;
+        } else {
+            visible = true;
+            frame = targetFrame;
+        }
     }
     if (!Keyboard::keys[Keyboard::keyM]) {
         updated = false;
     }
 }
 
-void updateFrame() {
-    if (Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyMinus]) {
-        frame = miniFrame;
-        zoomFactor = miniDefaultZoom;
-    }
-    if (Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyEquals]) {
-        frame = fullFrame;
-        zoomFactor = fullDefaultZoom;
-    }
-}
-
 void updateZoom() {
-    if (!Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyEquals]) {
+    if (Keyboard::keys[Keyboard::keyEquals]) {
         zoomFactor *= MAP_ZOOM_SPEED;
     }
-    if (!Keyboard::keys[Keyboard::keyShift] && Keyboard::keys[Keyboard::keyMinus]) {
+    if (Keyboard::keys[Keyboard::keyMinus]) {
         zoomFactor /= MAP_ZOOM_SPEED;
     }
     if (Keyboard::keys[Keyboard::key0]) {
-        zoomFactor = frame == fullFrame ? fullDefaultZoom : miniDefaultZoom;
+        zoomFactor = MAP_ZOOM_DEFAULT;
     }
 }
 
 void update() {
     updateVisibility();
-    if (isVisible) {
-        updateFrame();
+    if (visible) {
         updateZoom();
     }
 }

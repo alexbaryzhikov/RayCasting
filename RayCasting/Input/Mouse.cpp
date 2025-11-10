@@ -26,11 +26,11 @@ void rightButtonReleased() {
 }
 
 void moved(float dx, float dy) {
-    Player::angle += dx * MOUSE_SENSITIVITY / 1024.f;
+    Player::angle += dx * MOUSE_SENSITIVITY / 1024.0f;
 }
 
 void scrolled(float dx, float dy) {
-    if (!Map::isVisible) return;
+    if (!Map::isVisible()) return;
     if (dy < 0) {
         Map::zoomFactor *= MAP_ZOOM_SPEED;
     } else if (dy > 0) {
