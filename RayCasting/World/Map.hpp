@@ -27,6 +27,8 @@ bool isVisible();
 
 bool isFullScreen();
 
+bool isFollowing();
+
 void initialize();
 
 void draw();

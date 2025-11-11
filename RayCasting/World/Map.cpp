@@ -27,7 +27,9 @@ float width;
 float height;
 Frame frame = fullFrame;
 float zoomFactor = MAP_ZOOM_DEFAULT;
+simd::float2 positionOffset = -Player::position.xy;
 bool visible = false;
+bool follow = true;
 
 bool isVisible() {
     return visible;
@@ -35,6 +37,10 @@ bool isVisible() {
 
 bool isFullScreen() {
     return frame == fullFrame;
+}
+
+bool isFollowing() {
+    return follow;
 }
 
 void initialize() {
@@ -51,19 +57,19 @@ void drawGeometry(const std::vector<Segment>& geometry, simd::float3x3 transform
 }
 
 void drawGrid() {
-    simd::float3 playerPosition = Player::position * zoomFactor;
-    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
+    simd::float2 offset = positionOffset * zoomFactor;
+    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
     drawGeometry(gridGeometry, transform, Palette::mapGridColor);
 }
 
 void drawWall(size_t row, size_t col) {
-    simd::float3 playerPosition = Player::position * zoomFactor;
+    simd::float2 offset = positionOffset * zoomFactor;
     simd::float3 wallPosition = simd::float3{float(col), float(row), 1.0f} * MAP_TILE_SIZE * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(
-        frame.centerX() + wallPosition.x - playerPosition.x,
-        frame.centerY() + wallPosition.y - playerPosition.y);
+        frame.centerX() + wallPosition.x + offset.x,
+        frame.centerY() + wallPosition.y + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
     switch (tiles[row * MAP_WIDTH + col]) {
@@ -106,8 +112,8 @@ void drawRays() {
     Segment segR = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayR.x, Player::position.y + rayR.y);
     Segment segG = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayG.x, Player::position.y + rayG.y);
     Segment segB = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayB.x, Player::position.y + rayB.y);
-    simd::float3 playerPosition = Player::position * zoomFactor;
-    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() - playerPosition.x, frame.centerY() - playerPosition.y);
+    simd::float2 offset = positionOffset * zoomFactor;
+    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
     drawGeometry({segR}, transform, Palette::red);
@@ -143,6 +149,36 @@ void updateVisibility() {
     }
 }
 
+void updateFollowMode() {
+    static bool updated = false;
+    if (!updated && Keyboard::keys[Keyboard::keyF]) {
+        updated = true;
+        follow = !follow;
+    }
+    if (!Keyboard::keys[Keyboard::keyF]) {
+        updated = false;
+    }
+}
+
+void updatePositionOffset() {
+    if (follow) {
+        positionOffset = -Player::position.xy;
+    } else {
+        if (Keyboard::keys[Keyboard::keyLeft]) {
+            positionOffset.x += MAP_SCROLL_SPEED / zoomFactor;
+        }
+        if (Keyboard::keys[Keyboard::keyRight]) {
+            positionOffset.x -= MAP_SCROLL_SPEED / zoomFactor;
+        }
+        if (Keyboard::keys[Keyboard::keyUp]) {
+            positionOffset.y += MAP_SCROLL_SPEED / zoomFactor;
+        }
+        if (Keyboard::keys[Keyboard::keyDown]) {
+            positionOffset.y -= MAP_SCROLL_SPEED / zoomFactor;
+        }
+    }
+}
+
 void updateZoom() {
     if (Keyboard::keys[Keyboard::keyEquals]) {
         zoomFactor *= MAP_ZOOM_SPEED;
@@ -158,6 +194,8 @@ void updateZoom() {
 void update() {
     updateVisibility();
     if (visible) {
+        updateFollowMode();
+        updatePositionOffset();
         updateZoom();
     }
 }

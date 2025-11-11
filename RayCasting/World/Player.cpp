@@ -27,10 +27,10 @@ void updateWallCollision() {
 }
 
 void updateAngle() {
-    if (Keyboard::keys[Keyboard::keyLeft]) {
+    if (Map::isFollowing() && Keyboard::keys[Keyboard::keyLeft]) {
         angle -= PLAYER_TURN_SPEED;
     }
-    if (Keyboard::keys[Keyboard::keyRight]) {
+    if (Map::isFollowing() && Keyboard::keys[Keyboard::keyRight]) {
         angle += PLAYER_TURN_SPEED;
     }
 }
@@ -39,10 +39,10 @@ void applyAcceleration(float accelerationMagnitude) {
     float dx = 0.0f;
     float dy = 0.0f;
 
-    if (Keyboard::keys[Keyboard::keyW] || Keyboard::keys[Keyboard::keyUp]) {
+    if (Keyboard::keys[Keyboard::keyW] || (Map::isFollowing() && Keyboard::keys[Keyboard::keyUp])) {
         dx += 1.0f;
     }
-    if (Keyboard::keys[Keyboard::keyS] || Keyboard::keys[Keyboard::keyDown]) {
+    if (Keyboard::keys[Keyboard::keyS] || (Map::isFollowing() && Keyboard::keys[Keyboard::keyDown])) {
         dx -= 1.0f;
     }
     if (Keyboard::keys[Keyboard::keyA]) {

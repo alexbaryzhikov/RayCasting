@@ -20,18 +20,16 @@
 // Map
 #define MAP_LOAD                    false
 #define MAP_TILE_SIZE               64.0f
+#define MAP_SCROLL_SPEED            10.0f
 #define MAP_ZOOM_DEFAULT            0.5f
 #define MAP_ZOOM_SPEED              1.03124f
-#define MAP_WIDTH                   81
+#define MAP_WIDTH                   41
 #define MAP_HEIGHT                  41
-#define MAP_SEED                    1982
+#define MAP_SEED                    80386
 #define FLOOR_COVERAGE_TARGET       0.5f
-#define ROOM_MIN_SIZE               4
-#define ROOM_MAX_SIZE               16
+#define ROOM_MIN_SIZE               2
+#define ROOM_MAX_SIZE               10
 #define ROOM_MAX_LOOPS              10000
-#define ISLAND_MIN_ROOM_AREA        35
-#define ISLAND_MAX_SIZE_RATIO       0.4f
-#define ISLAND_MAX_LOOPS            6
 
 // Player
 #define PLAYER_MOVE_SPEED           4.0f
