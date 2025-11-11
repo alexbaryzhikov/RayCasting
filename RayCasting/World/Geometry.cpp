@@ -27,8 +27,8 @@ std::vector<Segment> makeGrid(size_t width, size_t height) {
 std::vector<Segment> makePlayer() {
     return {
         makeSegment(-16, 0, 16, 0),
-        makeSegment(8, -8, 16, 0),
-        makeSegment(8, 8, 16, 0),
+        makeSegment(4, -12, 16, 0),
+        makeSegment(4, 12, 16, 0),
     };
 }
 

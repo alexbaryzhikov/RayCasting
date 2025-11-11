@@ -30,6 +30,7 @@ float zoomFactor = MAP_ZOOM_DEFAULT;
 simd::float2 positionOffset = -Player::position.xy;
 bool visible = false;
 bool follow = true;
+bool playerAsRays = true;
 
 bool isVisible() {
     return visible;
@@ -65,11 +66,9 @@ void drawGrid() {
 }
 
 void drawWall(size_t row, size_t col) {
-    simd::float2 offset = positionOffset * zoomFactor;
-    simd::float3 wallPosition = simd::float3{float(col), float(row), 1.0f} * MAP_TILE_SIZE * zoomFactor;
-    simd::float3x3 translate = makeTranslationMatrix(
-        frame.centerX() + wallPosition.x + offset.x,
-        frame.centerY() + wallPosition.y + offset.y);
+    simd::float2 wallPosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
+    simd::float2 offset = (wallPosition + positionOffset) * zoomFactor;
+    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
     switch (tiles[row * MAP_WIDTH + col]) {
@@ -98,7 +97,8 @@ void drawWalls() {
 }
 
 void drawPlayer() {
-    simd::float3x3 translate = makeTranslationMatrix(frame.centerX(), frame.centerY());
+    simd::float2 offset = (Player::position.xy + positionOffset) * zoomFactor;
+    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 rotate = makeRotationMatrix(Player::angle);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, -zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, matrix_multiply(rotate, scale));
@@ -109,10 +109,10 @@ void drawRays() {
     simd::float2 rayR = Viewport::castRay(-CAMERA_FOV / 2.0f).xy;
     simd::float2 rayG = Viewport::castRay(0.0f).xy;
     simd::float2 rayB = Viewport::castRay(CAMERA_FOV / 2.0f).xy;
-    Segment segR = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayR.x, Player::position.y + rayR.y);
-    Segment segG = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayG.x, Player::position.y + rayG.y);
-    Segment segB = Geometry::makeSegment(Player::position.x, Player::position.y, Player::position.x + rayB.x, Player::position.y + rayB.y);
-    simd::float2 offset = positionOffset * zoomFactor;
+    Segment segR = Geometry::makeSegment(0, 0, rayR.x, rayR.y);
+    Segment segG = Geometry::makeSegment(0, 0, rayG.x, rayG.y);
+    Segment segB = Geometry::makeSegment(0, 0, rayB.x, rayB.y);
+    simd::float2 offset = (Player::position.xy + positionOffset) * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
@@ -127,7 +127,11 @@ void draw() {
         Canvas::fill(Palette::mapBackgroundColor);
         drawGrid();
         drawWalls();
-        drawRays();
+        if (playerAsRays) {
+            drawRays();
+        } else {
+            drawPlayer();
+        }
         Canvas::resetClipFrame();
     }
 }
@@ -191,12 +195,24 @@ void updateZoom() {
     }
 }
 
+void updatePlayerPresentation() {
+    static bool updated = false;
+    if (!updated && Keyboard::keys[Keyboard::keyG]) {
+        updated = true;
+        playerAsRays = !playerAsRays;
+    }
+    if (!Keyboard::keys[Keyboard::keyG]) {
+        updated = false;
+    }
+}
+
 void update() {
     updateVisibility();
     if (visible) {
         updateFollowMode();
         updatePositionOffset();
         updateZoom();
+        updatePlayerPresentation();
     }
 }
 
