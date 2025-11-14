@@ -37,7 +37,7 @@ void draw();
 
 void update();
 
-Ray castRay(float playerSpaceAngle);
+Ray castRay(float playerSpaceAngle, bool tracer = false);
 
 } // namespace RC::Viewport
 

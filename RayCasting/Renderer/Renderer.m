@@ -121,6 +121,7 @@ static os_log_t rendererLog;
 
     [self _loadTexture:@(FONT_MAP) to:[RCBridge fontBytes]];
     [self _loadTexture:@"Ceiling" to:[RCBridge textureBytes_ceiling]];
+    [self _loadTexture:@"Door" to:[RCBridge textureBytes_door]];
     [self _loadTexture:@"Floor" to:[RCBridge textureBytes_floor]];
     [self _loadTexture:@"Wall" to:[RCBridge textureBytes_wall]];
     [self _loadTexture:@"WallFortified" to:[RCBridge textureBytes_wallFortified]];

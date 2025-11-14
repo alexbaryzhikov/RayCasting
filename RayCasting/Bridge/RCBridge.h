@@ -3,6 +3,7 @@
 + (const void*)canvasBytes;
 + (void*)fontBytes;
 + (void*)textureBytes_ceiling;
++ (void*)textureBytes_door;
 + (void*)textureBytes_floor;
 + (void*)textureBytes_wall;
 + (void*)textureBytes_wallFortified;

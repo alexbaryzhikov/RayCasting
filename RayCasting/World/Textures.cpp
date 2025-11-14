@@ -6,6 +6,7 @@
 namespace RC::Textures {
 
 std::array<uint32_t, dimension * dimension> ceiling;
+std::array<uint32_t, dimension * dimension> door;
 std::array<uint32_t, dimension * dimension> floor;
 std::array<uint32_t, dimension * dimension> wall;
 std::array<uint32_t, dimension * dimension> wallFortified;

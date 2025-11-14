@@ -30,6 +30,7 @@
 #define ROOM_MIN_SIZE               2
 #define ROOM_MAX_SIZE               10
 #define ROOM_MAX_LOOPS              10000
+#define DOOR_DEPTH                  16.0f
 
 // Player
 #define PLAYER_MOVE_SPEED           4.0f

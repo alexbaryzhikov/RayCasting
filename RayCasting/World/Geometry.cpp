@@ -32,6 +32,28 @@ std::vector<Segment> makePlayer() {
     };
 }
 
+std::vector<Segment> makeDoorH() {
+    float i0 = 0;
+    float i1 = (MAP_TILE_SIZE - DOOR_DEPTH) / 2;
+    float i2 = (MAP_TILE_SIZE + DOOR_DEPTH) / 2;
+    float i3 = MAP_TILE_SIZE;
+    return {
+        makeSegment(i0, i1, i3, i1),
+        makeSegment(i0, i2, i3, i2),
+    };
+}
+
+std::vector<Segment> makeDoorV() {
+    float i0 = 0;
+    float i1 = (MAP_TILE_SIZE - DOOR_DEPTH) / 2;
+    float i2 = (MAP_TILE_SIZE + DOOR_DEPTH) / 2;
+    float i3 = MAP_TILE_SIZE;
+    return {
+        makeSegment(i1, i0, i1, i3),
+        makeSegment(i2, i0, i2, i3),
+    };
+}
+
 std::vector<Segment> makeWall() {
     float i0 = 0;
     float i1 = MAP_TILE_SIZE / 8;

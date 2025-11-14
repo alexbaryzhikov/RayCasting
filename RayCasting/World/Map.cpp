@@ -15,6 +15,8 @@ constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 constexpr Frame miniFrame = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
 
 const std::vector<Segment> playerGeometry = Geometry::makePlayer();
+const std::vector<Segment> doorHGeometry = Geometry::makeDoorH();
+const std::vector<Segment> doorVGeometry = Geometry::makeDoorV();
 const std::vector<Segment> wallGeometry = Geometry::makeWall();
 const std::vector<Segment> fortifiedWallGeometry = Geometry::makeWallFortified();
 const std::vector<Segment> indestructibleWallGeometry = Geometry::makeWallIndestuctible();
@@ -65,13 +67,21 @@ void drawGrid() {
     drawGeometry(gridGeometry, transform, Palette::mapGridColor);
 }
 
-void drawWall(size_t row, size_t col) {
+void drawTile(Tile tile, size_t row, size_t col) {
     simd::float2 wallPosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
     simd::float2 offset = (wallPosition + positionOffset) * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    switch (tiles[row * MAP_WIDTH + col]) {
+    switch (tile) {
+        case Tile::doorH:
+            drawGeometry(doorHGeometry, transform, Palette::mapWallColor);
+            break;
+        case Tile::doorV:
+            drawGeometry(doorVGeometry, transform, Palette::mapWallColor);
+            break;
+        case Tile::floor:
+            break;
         case Tile::wall:
             drawGeometry(wallGeometry, transform, Palette::mapWallColor);
             break;
@@ -81,17 +91,13 @@ void drawWall(size_t row, size_t col) {
         case Tile::wallIndestructible:
             drawGeometry(indestructibleWallGeometry, transform, Palette::mapWallColor);
             break;
-        default:
-            break;
     }
 }
 
-void drawWalls() {
+void drawTiles() {
     for (size_t row = 0; row < tilesHeight; ++row) {
         for (size_t col = 0; col < tilesWidth; ++col) {
-            if (tiles[row * tilesWidth + col] != Tile::floor) {
-                drawWall(row, col);
-            }
+            drawTile(tiles[row * tilesWidth + col], row, col);
         }
     }
 }
@@ -107,7 +113,7 @@ void drawPlayer() {
 
 void drawRays() {
     simd::float2 rayR = Viewport::castRay(-CAMERA_FOV / 2.0f).xy;
-    simd::float2 rayG = Viewport::castRay(0.0f).xy;
+    simd::float2 rayG = Viewport::castRay(0.0f, true).xy;
     simd::float2 rayB = Viewport::castRay(CAMERA_FOV / 2.0f).xy;
     Segment segR = Geometry::makeSegment(0, 0, rayR.x, rayR.y);
     Segment segG = Geometry::makeSegment(0, 0, rayG.x, rayG.y);
@@ -126,7 +132,7 @@ void draw() {
         Canvas::setClipFrame(frame);
         Canvas::fill(Palette::mapBackgroundColor);
         drawGrid();
-        drawWalls();
+        drawTiles();
         if (playerAsRays) {
             drawRays();
         } else {

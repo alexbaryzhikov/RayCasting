@@ -6,6 +6,8 @@
 namespace RC {
 
 enum class Tile {
+    doorH,
+    doorV,
     floor,
     wall,
     wallFortified,

@@ -143,7 +143,17 @@ void carveTunnelH(int x1, int x2, int y) {
     if (x1 > x2) std::swap(x1, x2);
     for (int x = x1; x <= x2; ++x) {
         if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
-            tiles[y * MAP_WIDTH + x] = Tile::floor;
+            Tile& tile = tiles[y * MAP_WIDTH + x];
+            switch (tile) {
+                case Tile::wall:
+                    tile = Tile::floor;
+                    break;
+                case Tile::wallFortified:
+                    tile = Tile::doorV;
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
@@ -152,7 +162,17 @@ void carveTunnelV(int y1, int y2, int x) {
     if (y1 > y2) std::swap(y1, y2);
     for (int y = y1; y <= y2; ++y) {
         if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
-            tiles[y * MAP_WIDTH + x] = Tile::floor;
+            Tile& tile = tiles[y * MAP_WIDTH + x];
+            switch (tile) {
+                case Tile::wall:
+                    tile = Tile::floor;
+                    break;
+                case Tile::wallFortified:
+                    tile = Tile::doorH;
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }

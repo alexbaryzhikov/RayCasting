@@ -21,6 +21,10 @@ std::vector<Segment> makeGrid(size_t width, size_t height);
 
 std::vector<Segment> makePlayer();
 
+std::vector<Segment> makeDoorH();
+
+std::vector<Segment> makeDoorV();
+
 std::vector<Segment> makeWall();
 
 std::vector<Segment> makeWallFortified();

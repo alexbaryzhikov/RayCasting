@@ -22,6 +22,7 @@ constexpr size_t floorHeight = horizonHeight;
 constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 constexpr float maxDrawDistance = 800.0f;
+constexpr float distanceToDoor = (MAP_TILE_SIZE - DOOR_DEPTH) / 2;
 
 std::array<float, CANVAS_WIDTH> rayAnglesHorizontal;
 std::array<float, CANVAS_WIDTH> rayTansHorizontal;
@@ -123,7 +124,13 @@ float sign(float x) {
     return x < 0 ? -1 : 1;
 }
 
-Ray castRay(float playerSpaceAngle) {
+simd::float2 getExitH(float dx, float sinA, float cosA) {
+    simd::float2 rowExit = {dx + fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * float(sinA >= 0)};
+    simd::float2 colExit = {MAP_TILE_SIZE * float(cosA >= 0), MAP_TILE_SIZE * float(sinA < 0) + fabs((cosA < 0 ? dx : MAP_TILE_SIZE - dx) * sinA / cosA) * sign(sinA)};
+    return rowExit.x >= 0 && rowExit.x <= MAP_TILE_SIZE ? rowExit : colExit;
+}
+
+Ray castRay(float playerSpaceAngle, bool tracer) {
     float mapSpaceAngle = playerSpaceAngle + Player::angle;
     float sinA = sin(mapSpaceAngle);
     float cosA = cos(mapSpaceAngle);
@@ -139,7 +146,18 @@ Ray castRay(float playerSpaceAngle) {
             int row = floor(rayCol.y / MAP_TILE_SIZE);
             int col = floor(rayCol.x / MAP_TILE_SIZE) - float(cosA < 0);
             size_t tileIndex = row * Map::tilesWidth + col;
-            if (Map::tiles[tileIndex] != Tile::floor) {
+            Tile tile = Map::tiles[tileIndex];
+            if (tile == Tile::doorH) {
+                continue;
+            } else if (tile == Tile::doorV) {
+                float tileY = rayCol.y - row * MAP_TILE_SIZE;
+                float doorY = tileY + fabs(distanceToDoor * sinA / cosA) * sign(sinA);
+                if (doorY >= 0 && doorY <= 64) {
+                    rayCol += {distanceToDoor * sign(cosA), doorY - tileY};
+                    tileIndexCol = int(tileIndex);
+                    break;
+                }
+            } else if (tile != Tile::floor) {
                 tileIndexCol = int(tileIndex);
                 break;
             }
@@ -158,7 +176,18 @@ Ray castRay(float playerSpaceAngle) {
             int row = floor(rayRow.y / MAP_TILE_SIZE) - float(sinA < 0);
             int col = floor(rayRow.x / MAP_TILE_SIZE);
             size_t tileIndex = row * int(Map::tilesWidth) + col;
-            if (Map::tiles[tileIndex] != Tile::floor) {
+            Tile tile = Map::tiles[tileIndex];
+            if (tile == Tile::doorH) {
+                float tileX = rayRow.x - col * MAP_TILE_SIZE;
+                float doorX = tileX + fabs(distanceToDoor * cosA / sinA) * sign(cosA);
+                if (doorX >= 0 && doorX <= 64) {
+                    rayRow += {doorX - tileX, distanceToDoor * sign(sinA)};
+                    tileIndexRow = int(tileIndex);
+                    break;
+                }
+            } else if (tile == Tile::doorV) {
+                continue;
+            } else if (tile != Tile::floor) {
                 tileIndexRow = int(tileIndex);
                 break;
             }
@@ -215,6 +244,10 @@ void drawWalls() {
             }
             uint32_t* texture;
             switch (Map::tiles[ray.hit.index]) {
+                case Tile::doorH:
+                case Tile::doorV:
+                    texture = Textures::door.data();
+                    break;
                 case Tile::floor:
                     texture = nullptr;
                     break;

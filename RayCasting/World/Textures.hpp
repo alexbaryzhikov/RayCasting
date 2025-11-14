@@ -8,6 +8,7 @@ namespace RC::Textures {
 constexpr size_t dimension = 512;
 
 extern std::array<uint32_t, dimension * dimension> ceiling;
+extern std::array<uint32_t, dimension * dimension> door;
 extern std::array<uint32_t, dimension * dimension> floor;
 extern std::array<uint32_t, dimension * dimension> wall;
 extern std::array<uint32_t, dimension * dimension> wallFortified;

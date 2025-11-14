@@ -26,6 +26,10 @@
     return RC::Textures::ceiling.data();
 }
 
++ (void*)textureBytes_door {
+    return RC::Textures::door.data();
+}
+
 + (void*)textureBytes_floor {
     return RC::Textures::floor.data();
 }

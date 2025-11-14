@@ -29,7 +29,7 @@ constexpr uint32_t mapGridColor = 0xFF353E43;
 constexpr uint32_t mapBackgroundColor = 0xFF041E2B;
 
 constexpr uint32_t fogColor = 0xFF070016;
-constexpr uint32_t lightColor = 0xFFDE2728;
+constexpr uint32_t lightColor = 0xFFB74640;
 constexpr uint32_t shadowColor = 0xFF015A00;
 
 extern uint32_t color;
