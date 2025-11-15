@@ -302,7 +302,6 @@ void placePlayer(const std::vector<Rect>& rooms) {
 }
 
 void generate() {
-    printf("Generating %dx%d map with seed %d...", MAP_WIDTH, MAP_HEIGHT, MAP_SEED);
     tiles = generateWalls();
     auto rooms = generateRooms();
     carveTunnels(rooms);
@@ -311,6 +310,7 @@ void generate() {
     tilesHeight = MAP_HEIGHT;
     width = MAP_WIDTH * MAP_TILE_SIZE;
     height = MAP_HEIGHT * MAP_TILE_SIZE;
+    printf("Generated %dx%d map with seed %d", MAP_WIDTH, MAP_HEIGHT, MAP_SEED);
 }
 
 } // namespace RC::Map

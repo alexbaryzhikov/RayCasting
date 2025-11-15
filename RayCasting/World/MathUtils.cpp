@@ -1,8 +1,20 @@
+#include <numbers>
 #include <print>
 
 #include "MathUtils.hpp"
 
 namespace RC {
+
+float normalizeAngle(float angle) {
+    using std::numbers::pi;
+    angle = fmod(angle, pi * 2);
+    if (angle <= -pi) {
+        angle += pi * 2;
+    } else if (angle > pi) {
+        angle -= pi * 2;
+    }
+    return angle;
+}
 
 simd::float3 makeNormal(float x, float y) {
     if (x == 0.0f && y == 0.0f) {

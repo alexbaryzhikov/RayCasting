@@ -6,6 +6,11 @@
 namespace RC {
 
 /**
+ * @brief Force angle to (-pi, pi] range.
+ */
+float normalizeAngle(float angle);
+
+/**
  * @brief Creates a normalized 2D direction vector from x and y components.
  * The third component (w) is set to 0.0f to represent a direction, which is unaffected by translations.
  */

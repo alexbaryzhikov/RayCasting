@@ -7,6 +7,7 @@
 #include "MathUtils.hpp"
 #include "Mouse.hpp"
 #include "Palette.hpp"
+#include "Viewport.hpp"
 
 namespace RC::Player {
 
@@ -28,10 +29,10 @@ void updateWallCollision() {
 
 void updateAngle() {
     if (Map::isFollowing() && Keyboard::keys[Keyboard::keyLeft]) {
-        angle -= PLAYER_TURN_SPEED;
+        angle = normalizeAngle(angle - PLAYER_TURN_SPEED);
     }
     if (Map::isFollowing() && Keyboard::keys[Keyboard::keyRight]) {
-        angle += PLAYER_TURN_SPEED;
+        angle = normalizeAngle(angle + PLAYER_TURN_SPEED);
     }
 }
 
@@ -147,11 +148,49 @@ void updatePosition() {
     position += velocity;
 }
 
+void updateActions() {
+    // Destroy tile
+    static bool mouseRightUpdated = false;
+    if (!mouseRightUpdated && Mouse::buttonRight) {
+        mouseRightUpdated = true;
+        Ray ray = Viewport::castRay(0);
+        if (!ray.isMiss() && ray.length < PLAYER_ACTION_RANGE) {
+            Tile& tile = Map::tiles[ray.hit.index];
+            if (tile != Tile::wallIndestructible) {
+                tile = Tile::floor;
+            }
+        }
+    }
+    if (!Mouse::buttonRight) {
+        mouseRightUpdated = false;
+    }
+
+    // Create tile
+    static bool mouseLeftUpdated = false;
+    if (!mouseLeftUpdated && Mouse::buttonLeft) {
+        mouseLeftUpdated = true;
+        Ray ray = Viewport::castRay(0);
+        if (ray.isMiss() || ray.length > PLAYER_ACTION_RANGE) {
+            simd::float2 tilePosition = (position.xy + simd::float2{cos(angle), sin(angle)} * PLAYER_ACTION_RANGE) / MAP_TILE_SIZE;
+            int col = floor(tilePosition.x);
+            int row = floor(tilePosition.y);
+            Tile& tile = Map::tiles[row * Map::tilesWidth + col];
+            if (tile == Tile::floor) {
+                tile = Tile::wallFortified;
+            }
+        }
+    }
+    if (!Mouse::buttonLeft) {
+        mouseLeftUpdated = false;
+    }
+}
+
 void update() {
     updateWallCollision();
     updateAngle();
     updateVelocity();
     updatePosition();
+    updateActions();
 }
 
 } // namespace RC::Player

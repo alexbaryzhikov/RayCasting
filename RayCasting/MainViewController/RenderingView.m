@@ -109,8 +109,11 @@
 }
 
 - (void)mouseDown:(NSEvent*)event {
-    [self startMouseCapture];
-    [RCBridge mouseDown];
+    if (_isMouseCaptured) {
+        [RCBridge mouseDown];
+    } else {
+        [self startMouseCapture];
+    }
 }
 
 - (void)mouseUp:(NSEvent*)event {
@@ -118,8 +121,11 @@
 }
 
 - (void)rightMouseDown:(NSEvent*)event {
-    [self startMouseCapture];
-    [RCBridge rightMouseUp];
+    if (_isMouseCaptured) {
+        [RCBridge rightMouseDown];
+    } else {
+        [self startMouseCapture];
+    }
 }
 
 - (void)rightMouseUp:(NSEvent*)event {
