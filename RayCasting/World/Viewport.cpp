@@ -16,13 +16,16 @@ namespace RC::Viewport {
 
 constexpr TileHit tileMiss = {-1};
 constexpr float epsilon = std::numeric_limits<float>::epsilon() * 128;
-constexpr float bigFloat = 1.0e+6f;
+constexpr float bigFloat = 1e6;
 constexpr float horizonHeight = CANVAS_HEIGHT / 2.0f;
 constexpr size_t floorHeight = horizonHeight;
 constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 constexpr float maxDrawDistance = 800.0f;
 constexpr float distanceToDoor = (MAP_TILE_SIZE - DOOR_DEPTH) / 2;
+
+const std::vector<Segment> doorHGeometry = Geometry::makeDoorH();
+const std::vector<Segment> doorVGeometry = Geometry::makeDoorV();
 
 std::array<float, CANVAS_WIDTH> rayAnglesHorizontal;
 std::array<float, CANVAS_WIDTH> rayTansHorizontal;
@@ -120,14 +123,93 @@ void drawCeiling() {
     }
 }
 
-float sign(float x) {
-    return x < 0 ? -1 : 1;
+/**
+ * @param x     Normalized tile space x coordinate of the point where ray enters the tile.
+ * @param sinA  Sine of the tile space ray angle.
+ * @param cosA  Cosine of the tile space ray angle.
+ * @return      Normalized tile space coordinates of the point where ray exits the tile.
+ */
+simd::float2 getRayExitH(float x, float sinA, float cosA) {
+    simd::float2 oppositeSide = {x + cosA / fabs(sinA), float(sinA > 0)};
+    if (oppositeSide.x > -epsilon && oppositeSide.x < 1 + epsilon) {
+        return oppositeSide;
+    }
+    return {float(cosA > 0), invertIf(sinA < 0, invertIf(cosA > 0, x) * fabs(sinA / cosA))};
 }
 
-simd::float2 getExitH(float dx, float sinA, float cosA) {
-    simd::float2 rowExit = {dx + fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * float(sinA >= 0)};
-    simd::float2 colExit = {MAP_TILE_SIZE * float(cosA >= 0), MAP_TILE_SIZE * float(sinA < 0) + fabs((cosA < 0 ? dx : MAP_TILE_SIZE - dx) * sinA / cosA) * sign(sinA)};
-    return rowExit.x >= 0 && rowExit.x <= MAP_TILE_SIZE ? rowExit : colExit;
+/**
+ * @param y     Normalized tile space y coordinate of the point where ray enters the tile.
+ * @param sinA  Sine of the tile space ray angle.
+ * @param cosA  Cosine of the tile space ray angle.
+ * @return      Normalized tile space coordinates of the point where ray exits the tile.
+ */
+simd::float2 getRayExitV(float y, float sinA, float cosA) {
+    simd::float2 oppositeSide = {float(cosA > 0), y + sinA / fabs(cosA)};
+    if (oppositeSide.y > -epsilon && oppositeSide.y < 1 + epsilon) {
+        return oppositeSide;
+    }
+    return {invertIf(cosA < 0, invertIf(sinA > 0, y) * fabs(cosA / sinA)), float(sinA > 0)};
+}
+
+/**
+ * Find intersection point between two line segments.
+ */
+bool findIntersection(Segment s1, Segment s2, simd::float2& intersection) {
+    simd::float2 a1 = s1.a.xy;
+    simd::float2 b1 = s1.b.xy;
+    simd::float2 a2 = s2.a.xy;
+    simd::float2 b2 = s2.b.xy;
+
+    // Solve parametric equation
+    // 't' is the parameter for the first line segment (a1, b1)
+    // 'u' is the parameter for the second line segment (a2, b2)
+    // a1 + t(b1 - a1) = a2 + u(b2 - a2)
+    // Rearrange and separate by component:
+    // t(b1.x - a1.x) - u(b2.x - a2.x) = a2.x - a1.x
+    // t(b1.y - a1.y) - u(b2.y - a2.y) = a2.y - a1.y
+
+    // Calculate coefficients
+    simd::float2 d1 = b1 - a1;
+    simd::float2 d2 = b2 - a2;
+    simd::float2 delta = a2 - a1;
+
+    // Determinant of the main system:
+    float determinant = d2.x * d1.y - d2.y * d1.x;
+
+    if (fabs(determinant) < epsilon) {
+        // Lines are parallel
+        return false;
+    }
+
+    // Calculate 't' and 'u'
+    double t = (d2.x * delta.y - d2.y * delta.x) / determinant;
+    double u = (d1.x * delta.y - d1.y * delta.x) / determinant;
+
+    // Check if the intersection point lies on both line segments
+    // The parameters 't' and 'u' must be in the range [0, 1]
+    if (t > -epsilon && t < 1 + epsilon && u > -epsilon && u < 1 + epsilon) {
+        intersection = a1 + d1 * t;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Find intersection point between ray and geometry that is closest to the ray segment start.
+ */
+bool findClosestIntersection(Segment ray, std::vector<Segment> geometry, simd::float2& intersection) {
+    float minLength = bigFloat;
+    simd::float2 candidate;
+    for (Segment& segment : geometry) {
+        if (findIntersection(ray, segment, candidate)) {
+            float length = simd_length(candidate - ray.a.xy);
+            if (length < minLength) {
+                minLength = length;
+                intersection = candidate;
+            }
+        }
+    }
+    return minLength < bigFloat;
 }
 
 Ray castRay(float playerSpaceAngle, bool tracer) {
@@ -136,94 +218,109 @@ Ray castRay(float playerSpaceAngle, bool tracer) {
     float cosA = cos(mapSpaceAngle);
 
     // Scan columns
-    simd::float2 rayCol = {bigFloat, bigFloat};
-    int tileIndexCol = -1;
+    simd::float2 rayH = {bigFloat, bigFloat};
+    int tileIndexH = -1;
+    float tileOffsetH = 0;
+    float angleH = 0;
     if (fabs(cosA) > epsilon) {
-        rayCol.x = (cosA < 0 ? floor(Player::position.x / MAP_TILE_SIZE) : ceil(Player::position.x / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
-        rayCol.y = Player::position.y + (rayCol.x - Player::position.x) * sinA / cosA;
+        rayH.x = (cosA < 0 ? floor(Player::position.x / MAP_TILE_SIZE) : ceil(Player::position.x / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        rayH.y = Player::position.y + (rayH.x - Player::position.x) * sinA / cosA;
         simd::float2 d = {MAP_TILE_SIZE * sign(cosA), fabs(MAP_TILE_SIZE * sinA / cosA) * sign(sinA)};
-        for (; rayCol.x > 0 && rayCol.x < Map::width && rayCol.y > 0 && rayCol.y < Map::height; rayCol += d) {
-            int row = floor(rayCol.y / MAP_TILE_SIZE);
-            int col = floor(rayCol.x / MAP_TILE_SIZE) - float(cosA < 0);
-            size_t tileIndex = row * Map::tilesWidth + col;
+        for (; rayH.x > 0 && rayH.x < Map::width && rayH.y > 0 && rayH.y < Map::height; rayH += d) {
+            int row = floor(rayH.y / MAP_TILE_SIZE);
+            int col = floor(rayH.x / MAP_TILE_SIZE) - float(cosA < 0);
+            int tileIndex = row * MAP_WIDTH + col;
             Tile tile = Map::tiles[tileIndex];
-            if (tile == Tile::doorH) {
-                continue;
-            } else if (tile == Tile::doorV) {
-                float tileY = rayCol.y - row * MAP_TILE_SIZE;
-                float doorY = tileY + fabs(distanceToDoor * sinA / cosA) * sign(sinA);
-                if (doorY >= 0 && doorY <= 64) {
-                    rayCol += {distanceToDoor * sign(cosA), doorY - tileY};
-                    tileIndexCol = int(tileIndex);
+            if (tile == Tile::doorH || tile == Tile::doorV) {
+                simd::float2 tilePosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
+                Segment ray = {
+                    .a = simd::make_float3(rayH - tilePosition, 1),
+                    .b = simd::make_float3(rayH - tilePosition + d, 1),
+                };
+                std::vector<Segment> door = tile == Tile::doorH ? doorHGeometry : doorVGeometry;
+                simd::float2 intersection;
+                if (findClosestIntersection(ray, door, intersection)) {
+                    rayH += intersection - ray.a.xy;
+                    tileIndexH = int(tileIndex);
+                    tileOffsetH = (tile == Tile::doorH ? MAP_TILE_SIZE - intersection.x : intersection.y) / MAP_TILE_SIZE;
+                    angleH = atan(fabs(tile == Tile::doorH ? cosA / sinA : sinA / cosA)) * 2 / std::numbers::pi;
                     break;
                 }
             } else if (tile != Tile::floor) {
-                tileIndexCol = int(tileIndex);
+                tileIndexH = int(tileIndex);
+                tileOffsetH = (rayH.y - row * MAP_TILE_SIZE) / MAP_TILE_SIZE;
+                angleH = atan(fabs(sinA / cosA)) * 2 / std::numbers::pi;
                 break;
             }
         }
-        rayCol -= Player::position.xy;
+        rayH -= Player::position.xy;
     }
 
     // Scan rows
-    simd::float2 rayRow = {bigFloat, bigFloat};
-    int tileIndexRow = -1;
+    simd::float2 rayV = {bigFloat, bigFloat};
+    int tileIndexV = -1;
+    float tileOffsetV = 0;
+    float angleV = 0;
     if (fabs(sinA) > epsilon) {
-        rayRow.y = (sinA < 0 ? floor(Player::position.y / MAP_TILE_SIZE) : ceil(Player::position.y / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
-        rayRow.x = Player::position.x + (rayRow.y - Player::position.y) * cosA / sinA;
+        rayV.y = (sinA < 0 ? floor(Player::position.y / MAP_TILE_SIZE) : ceil(Player::position.y / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        rayV.x = Player::position.x + (rayV.y - Player::position.y) * cosA / sinA;
         simd::float2 d = {fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * sign(sinA)};
-        for (; rayRow.x > 0 && rayRow.x < Map::width && rayRow.y > 0 && rayRow.y < Map::height; rayRow += d) {
-            int row = floor(rayRow.y / MAP_TILE_SIZE) - float(sinA < 0);
-            int col = floor(rayRow.x / MAP_TILE_SIZE);
-            size_t tileIndex = row * int(Map::tilesWidth) + col;
+        for (; rayV.x > 0 && rayV.x < Map::width && rayV.y > 0 && rayV.y < Map::height; rayV += d) {
+            int row = floor(rayV.y / MAP_TILE_SIZE) - float(sinA < 0);
+            int col = floor(rayV.x / MAP_TILE_SIZE);
+            int tileIndex = row * MAP_WIDTH + col;
             Tile tile = Map::tiles[tileIndex];
-            if (tile == Tile::doorH) {
-                float tileX = rayRow.x - col * MAP_TILE_SIZE;
-                float doorX = tileX + fabs(distanceToDoor * cosA / sinA) * sign(cosA);
-                if (doorX >= 0 && doorX <= 64) {
-                    rayRow += {doorX - tileX, distanceToDoor * sign(sinA)};
-                    tileIndexRow = int(tileIndex);
+            if (tile == Tile::doorH || tile == Tile::doorV) {
+                simd::float2 tilePosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
+                Segment ray = {
+                    .a = simd::make_float3(rayV - tilePosition, 1),
+                    .b = simd::make_float3(rayV - tilePosition + d, 1),
+                };
+                std::vector<Segment> door = tile == Tile::doorH ? doorHGeometry : doorVGeometry;
+                simd::float2 intersection;
+                if (findClosestIntersection(ray, door, intersection)) {
+                    rayV += intersection - ray.a.xy;
+                    tileIndexV = int(tileIndex);
+                    tileOffsetV = (tile == Tile::doorH ? intersection.x : MAP_TILE_SIZE - intersection.y) / MAP_TILE_SIZE;
+                    angleV = atan(fabs(tile == Tile::doorH ? cosA / sinA : sinA / cosA)) * 2 / std::numbers::pi;
                     break;
                 }
-            } else if (tile == Tile::doorV) {
-                continue;
             } else if (tile != Tile::floor) {
-                tileIndexRow = int(tileIndex);
+                tileIndexV = int(tileIndex);
+                tileOffsetV = (rayV.x - col * MAP_TILE_SIZE) / MAP_TILE_SIZE;
+                angleV = atan(fabs(cosA / sinA)) * 2 / std::numbers::pi;
                 break;
             }
         }
-        rayRow -= Player::position.xy;
+        rayV -= Player::position.xy;
     }
 
-    if (simd::length(rayCol) < simd::length(rayRow)) {
-        float length = simd_dot(rayCol, simd::float2{cos(Player::angle), sin(Player::angle)});
-        if (tileIndexCol != -1 && length > CAMERA_NEAR_CLIP) {
-            float offset = fmod(rayCol.y + Player::position.y, MAP_TILE_SIZE) / MAP_TILE_SIZE;
-            float angle = atan(fabs(sinA / cosA)) * 2 / std::numbers::pi;
+    // Choose the shortest ray
+    if (simd::length(rayH) < simd::length(rayV)) {
+        float length = simd_dot(rayH, simd::float2{cos(Player::angle), sin(Player::angle)});
+        if (tileIndexH != -1 && length > CAMERA_NEAR_CLIP) {
             if (cosA > 0) {
-                TileHit tileHit = {tileIndexCol, TileSide::left, offset, angle};
-                return {rayCol, length, tileHit};
+                TileHit tileHit = {tileIndexH, TileSide::left, tileOffsetH, angleH};
+                return {rayH, length, tileHit};
             } else {
-                TileHit tileHit = {tileIndexCol, TileSide::right, 1 - offset, angle};
-                return {rayCol, length, tileHit};
+                TileHit tileHit = {tileIndexH, TileSide::right, 1 - tileOffsetH, angleH};
+                return {rayH, length, tileHit};
             }
         } else {
-            return {rayCol, length, tileMiss};
+            return {rayH, length, tileMiss};
         }
     } else {
-        float length = simd_dot(rayRow, simd::float2{cos(Player::angle), sin(Player::angle)});
-        if (tileIndexRow != -1 && length > CAMERA_NEAR_CLIP) {
-            float offset = fmod(rayRow.x + Player::position.x, MAP_TILE_SIZE) / MAP_TILE_SIZE;
-            float angle = atan(fabs(cosA / sinA)) * 2 / std::numbers::pi;
+        float length = simd_dot(rayV, simd::float2{cos(Player::angle), sin(Player::angle)});
+        if (tileIndexV != -1 && length > CAMERA_NEAR_CLIP) {
             if (sinA > 0) {
-                TileHit tileHit = {tileIndexRow, TileSide::top, 1 - offset, angle};
-                return {rayRow, length, tileHit};
+                TileHit tileHit = {tileIndexV, TileSide::top, 1 - tileOffsetV, angleV};
+                return {rayV, length, tileHit};
             } else {
-                TileHit tileHit = {tileIndexRow, TileSide::bottom, offset, angle};
-                return {rayRow, length, tileHit};
+                TileHit tileHit = {tileIndexV, TileSide::bottom, tileOffsetV, angleV};
+                return {rayV, length, tileHit};
             }
         } else {
-            return {rayRow, length, tileMiss};
+            return {rayV, length, tileMiss};
         }
     }
 }
@@ -300,35 +397,6 @@ void bounceCamera() {
     if (phase > 1) phase = 0;
 
     cameraHeight = MAP_TILE_SIZE / 2.0f - sin(phase * std::numbers::pi) * amplitude;
-}
-
-void testRay() {
-    static float lastAngle = 0.123f;
-
-    if (Player::angle == lastAngle) return;
-    lastAngle = Player::angle;
-
-    Ray ray = Viewport::castRay(0.0f);
-    if (ray.isMiss()) return;
-
-    size_t row = ray.hit.index / Map::tilesWidth;
-    size_t col = ray.hit.index % Map::tilesWidth;
-    const char* side;
-    switch (ray.hit.side) {
-        case TileSide::left:
-            side = "left";
-            break;
-        case TileSide::right:
-            side = "right";
-            break;
-        case TileSide::top:
-            side = "top";
-            break;
-        case TileSide::bottom:
-            side = "bottom";
-            break;
-    }
-    printf("row: %zu, col: %zu, side: %s, offset: %f, angle: %f\n", row, col, side, ray.hit.offset, ray.hit.angle);
 }
 
 void update() {

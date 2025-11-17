@@ -10,22 +10,9 @@
 		EACA21412E635739004132EC /* RayCasting.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RayCasting.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		EAB6244F2E802630003C85B4 /* Exceptions for "RayCasting" folder in "Copy Bundle Resources" phase from "RayCasting" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = EACA213F2E635739004132EC /* Resources */;
-			membershipExceptions = (
-				Resoruces/map001.map,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EACA21432E635739004132EC /* RayCasting */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				EAB6244F2E802630003C85B4 /* Exceptions for "RayCasting" folder in "Copy Bundle Resources" phase from "RayCasting" target */,
-			);
 			path = RayCasting;
 			sourceTree = "<group>";
 		};

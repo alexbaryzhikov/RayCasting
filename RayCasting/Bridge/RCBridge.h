@@ -11,7 +11,6 @@
 + (void*)textureBytes_wallFortifiedDecal2;
 + (void*)textureBytes_wallFortifiedTorch;
 + (void*)textureBytes_wallIndestructible;
-+ (void)loadMap:(const void*)bytes size:(NSUInteger)size;
 + (void)generateMap;
 + (void)startWorld;
 + (void)drawWorld;

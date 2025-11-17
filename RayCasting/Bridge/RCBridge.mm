@@ -6,7 +6,6 @@
 #include "Keyboard.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
-#include "MapLoader.hpp"
 #include "Mouse.hpp"
 #include "Text.hpp"
 #include "Textures.hpp"
@@ -56,10 +55,6 @@
 
 + (void*)textureBytes_wallIndestructible {
     return RC::Textures::wallIndestructible.data();
-}
-
-+ (void)loadMap:(const void*)bytes size:(NSUInteger)size {
-    RC::Map::load(bytes, size);
 }
 
 + (void)generateMap {

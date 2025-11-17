@@ -40,6 +40,8 @@ std::vector<Segment> makeDoorH() {
     return {
         makeSegment(i0, i1, i3, i1),
         makeSegment(i0, i2, i3, i2),
+        makeSegment(i0, i1, i0, i2),
+        makeSegment(i3, i1, i3, i2),
     };
 }
 
@@ -51,6 +53,8 @@ std::vector<Segment> makeDoorV() {
     return {
         makeSegment(i1, i0, i1, i3),
         makeSegment(i2, i0, i2, i3),
+        makeSegment(i1, i0, i2, i0),
+        makeSegment(i1, i3, i2, i3),
     };
 }
 

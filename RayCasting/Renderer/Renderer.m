@@ -130,12 +130,7 @@ static os_log_t rendererLog;
     [self _loadTexture:@"WallFortifiedTorch" to:[RCBridge textureBytes_wallFortifiedTorch]];
     [self _loadTexture:@"WallIndestructible" to:[RCBridge textureBytes_wallIndestructible]];
 
-    if (MAP_LOAD) {
-        [self _loadMap];
-    } else {
-        [RCBridge generateMap];
-    }
-
+    [RCBridge generateMap];
     [RCBridge startWorld];
 }
 
@@ -242,24 +237,6 @@ static os_log_t rendererLog;
     [commandBuffer waitUntilCompleted];
 
     return destinationTexture;
-}
-
-- (void)_loadMap {
-    NSString* mapName = @"map001";
-    NSString* mapType = @"map";
-    NSString* mapPath = [[NSBundle mainBundle] pathForResource:mapName ofType:mapType];
-
-    if (!mapPath) {
-        NSLog(@"Map not found: %@.%@", mapName, mapType);
-    }
-
-    NSData* mapData = [NSData dataWithContentsOfFile:mapPath];
-
-    if (!mapData) {
-        NSLog(@"Error loading map data: %@", mapPath);
-    }
-
-    [RCBridge loadMap:[mapData bytes] size:[mapData length]];
 }
 
 #pragma mark MTRViewDelegate Methods

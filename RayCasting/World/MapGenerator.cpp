@@ -306,10 +306,6 @@ void generate() {
     auto rooms = generateRooms();
     carveTunnels(rooms);
     placePlayer(rooms);
-    tilesWidth = MAP_WIDTH;
-    tilesHeight = MAP_HEIGHT;
-    width = MAP_WIDTH * MAP_TILE_SIZE;
-    height = MAP_HEIGHT * MAP_TILE_SIZE;
     printf("Generated %dx%d map with seed %d", MAP_WIDTH, MAP_HEIGHT, MAP_SEED);
 }
 

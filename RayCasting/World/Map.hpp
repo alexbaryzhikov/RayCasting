@@ -19,8 +19,6 @@ enum class Tile {
 namespace RC::Map {
 
 extern std::vector<Tile> tiles;
-extern size_t tilesWidth;
-extern size_t tilesHeight;
 extern float width;
 extern float height;
 extern float zoomFactor;

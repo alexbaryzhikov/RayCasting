@@ -16,7 +16,7 @@ struct TileHit {
     int index; // -1 for miss
     TileSide side;
     float offset; // 0 to 1
-    float angle; // 0 to 1
+    float angle;  // 0 to 1
 };
 
 struct Ray {
@@ -31,6 +31,9 @@ struct Ray {
 
 namespace RC::Viewport {
 
+extern simd::float2 rayA;
+extern simd::float2 rayB;
+
 void initialize();
 
 void draw();
@@ -38,6 +41,9 @@ void draw();
 void update();
 
 Ray castRay(float playerSpaceAngle, bool tracer = false);
+
+simd::float2 getRayExitH(float x, float sinA, float cosA);
+simd::float2 getRayExitV(float y, float sinA, float cosA);
 
 } // namespace RC::Viewport
 

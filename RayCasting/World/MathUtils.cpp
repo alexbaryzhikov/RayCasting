@@ -5,6 +5,14 @@
 
 namespace RC {
 
+float sign(float value) {
+    return value < 0 ? -1 : 1;
+}
+
+float invertIf(bool condition, float value) {
+    return condition ? 1 - value : value;
+}
+
 float normalizeAngle(float angle) {
     using std::numbers::pi;
     angle = fmod(angle, pi * 2);
