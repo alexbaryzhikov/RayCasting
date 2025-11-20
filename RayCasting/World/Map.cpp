@@ -125,31 +125,6 @@ void drawRays() {
     drawGeometry({segB}, transform, Palette::blue);
 }
 
-void drawXRay() {
-    Ray ray = Viewport::castRay(0);
-    if (ray.isMiss() || tiles[ray.hit.index] == Tile::doorH || tiles[ray.hit.index] == Tile::doorV) {
-        return;
-    }
-    simd::float2 normal = simd_normalize(ray.xy);
-    simd::float2 segmentBegin;
-    simd::float2 segmentEnd;
-    if (ray.hit.side == TileSide::top || ray.hit.side == TileSide::bottom) {
-        segmentBegin = {invertIf(normal.y > 0, ray.hit.offset), float(normal.y < 0)};
-        segmentEnd = Viewport::getRayExitH(segmentBegin.x, normal.y, normal.x);
-    } else {
-        segmentBegin = {float(normal.x < 0), invertIf(normal.x < 0, ray.hit.offset)};
-        segmentEnd = Viewport::getRayExitV(segmentBegin.y, normal.y, normal.x);
-    }
-    simd::float2 a = ray.xy;
-    simd::float2 b = ray.xy + (segmentEnd - segmentBegin) * MAP_TILE_SIZE;
-    Segment seg = Geometry::makeSegment(a.x, a.y, b.x, b.y);
-    simd::float2 offset = (Player::position.xy + positionOffset) * zoomFactor;
-    simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
-    simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
-    simd::float3x3 transform = matrix_multiply(translate, scale);
-    drawGeometry({seg}, transform, Palette::magenta);
-}
-
 void draw() {
     if (visible) {
         Canvas::setClipFrame(frame);
@@ -161,7 +136,6 @@ void draw() {
         } else {
             drawPlayer();
         }
-        drawXRay();
         Canvas::resetClipFrame();
     }
 }
