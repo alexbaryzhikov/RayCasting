@@ -1,7 +1,6 @@
 #include "Map.hpp"
 
 #include "Canvas.hpp"
-#include "Config.h"
 #include "Geometry.hpp"
 #include "Keyboard.hpp"
 #include "MathUtils.hpp"
@@ -14,6 +13,7 @@ namespace RC::Map {
 constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 constexpr Frame miniFrame = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
 
+const std::vector<Segment> gridGeometry = Geometry::makeGrid(MAP_WIDTH, MAP_HEIGHT);
 const std::vector<Segment> playerGeometry = Geometry::makePlayer();
 const std::vector<Segment> doorHGeometry = Geometry::makeDoorH();
 const std::vector<Segment> doorVGeometry = Geometry::makeDoorV();
@@ -21,8 +21,7 @@ const std::vector<Segment> wallGeometry = Geometry::makeWall();
 const std::vector<Segment> fortifiedWallGeometry = Geometry::makeWallFortified();
 const std::vector<Segment> indestructibleWallGeometry = Geometry::makeWallIndestuctible();
 
-std::vector<Segment> gridGeometry;
-std::vector<Tile> tiles;
+std::array<Tile, MAP_WIDTH * MAP_HEIGHT> tiles;
 float width = MAP_WIDTH * MAP_TILE_SIZE;
 float height = MAP_HEIGHT * MAP_TILE_SIZE;
 float zoomFactor = MAP_ZOOM_DEFAULT;
@@ -45,7 +44,6 @@ bool isFollowing() {
 }
 
 void initialize() {
-    gridGeometry = Geometry::makeGrid(MAP_WIDTH, MAP_HEIGHT);
 }
 
 void drawGeometry(const std::vector<Segment>& geometry, simd::float3x3 transform, uint32_t color) {

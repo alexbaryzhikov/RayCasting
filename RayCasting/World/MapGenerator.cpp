@@ -58,19 +58,17 @@ int getRandomOdd(int min, int max) {
     return min + dist(rng) * 2;
 }
 
-std::vector<Tile> generateWalls() {
-    std::vector<Tile> walls(MAP_WIDTH * MAP_HEIGHT);
+void generateWalls() {
     for (int y = 0; y < MAP_HEIGHT; ++y) {
         for (int x = 0; x < MAP_WIDTH; ++x) {
             int idx = y * MAP_WIDTH + x;
             if (x == 0 || x == MAP_WIDTH - 1 || y == 0 || y == MAP_HEIGHT - 1) {
-                walls[idx] = Tile::wallIndestructible;
+                tiles[idx] = Tile::wallIndestructible;
             } else {
-                walls[idx] = Tile::wall;
+                tiles[idx] = Tile::wall;
             }
         }
     }
-    return walls;
 }
 
 void carveRoom(const Rect& room, int& floorTiles) {
@@ -302,7 +300,7 @@ void placePlayer(const std::vector<Rect>& rooms) {
 }
 
 void generate() {
-    tiles = generateWalls();
+    generateWalls();
     auto rooms = generateRooms();
     carveTunnels(rooms);
     placePlayer(rooms);

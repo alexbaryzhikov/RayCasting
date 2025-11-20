@@ -1,7 +1,9 @@
 #ifndef Map_hpp
 #define Map_hpp
 
-#include <vector>
+#include <array>
+
+#include "Config.h"
 
 namespace RC {
 
@@ -18,7 +20,7 @@ enum class Tile {
 
 namespace RC::Map {
 
-extern std::vector<Tile> tiles;
+extern std::array<Tile, MAP_WIDTH * MAP_HEIGHT> tiles;
 extern float width;
 extern float height;
 extern float zoomFactor;
