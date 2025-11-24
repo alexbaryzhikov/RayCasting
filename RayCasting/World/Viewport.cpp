@@ -23,7 +23,6 @@ constexpr size_t floorHeight = horizonHeight;
 constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 constexpr float maxDrawDistance = 800.0f;
-constexpr float distanceToDoor = (MAP_TILE_SIZE - DOOR_DEPTH) / 2;
 
 std::array<float, CANVAS_WIDTH> rayAnglesHorizontal;
 std::array<float, CANVAS_WIDTH> rayTansHorizontal;

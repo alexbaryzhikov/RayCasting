@@ -1,7 +1,7 @@
 #ifndef Player_hpp
 #define Player_hpp
 
-#include "Geometry.hpp"
+#include <simd/simd.h>
 
 namespace RC::Player {
 

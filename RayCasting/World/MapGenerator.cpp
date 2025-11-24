@@ -1,6 +1,7 @@
 #include <cassert>
 #include <numbers>
 #include <random>
+#include <vector>
 
 #include "Config.h"
 #include "MapGenerator.hpp"

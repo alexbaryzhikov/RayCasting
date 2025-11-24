@@ -30,11 +30,12 @@ void draw() {
 }
 
 void updateFPS() {
-    static std::chrono::time_point lastTime = std::chrono::steady_clock::now();
-    std::chrono::time_point currentTime = std::chrono::steady_clock::now();
+    using namespace std::chrono;
+    static time_point lastTime = steady_clock::now();
+    time_point currentTime = steady_clock::now();
     if (currentTime != lastTime) {
-        std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastTime);
-        fps = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::seconds(1)).count() / duration.count();
+        microseconds duration = duration_cast<microseconds>(currentTime - lastTime);
+        fps = duration_cast<microseconds>(seconds(1)).count() / duration.count();
         lastTime = currentTime;
     }
 }

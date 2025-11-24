@@ -1,8 +1,8 @@
-#include "Geometry.hpp"
+#include "MapGeometry.hpp"
 
 #include "Config.h"
 
-namespace RC::Geometry {
+namespace RC::MapGeometry {
 
 Segment makeSegment(float ax, float ay, float bx, float by) {
     return {simd::float3{ax, ay, 1.0f},
@@ -117,4 +117,4 @@ std::vector<Segment> makeWallIndestuctible() {
     };
 }
 
-} // namespace RC::Geometry
+} // namespace RC::MapGeometry

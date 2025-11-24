@@ -1,7 +1,7 @@
 #include "Map.hpp"
 
 #include "Canvas.hpp"
-#include "Geometry.hpp"
+#include "MapGeometry.hpp"
 #include "Keyboard.hpp"
 #include "MathUtils.hpp"
 #include "Palette.hpp"
@@ -10,20 +10,20 @@
 
 namespace RC::Map {
 
+constexpr float width = MAP_WIDTH * MAP_TILE_SIZE;
+constexpr float height = MAP_HEIGHT * MAP_TILE_SIZE;
 constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 constexpr Frame miniFrame = {CANVAS_WIDTH - CANVAS_HEIGHT / 3.0f, 0, CANVAS_HEIGHT / 3.0f, CANVAS_HEIGHT / 3.0f};
 
-const std::vector<Segment> gridGeometry = Geometry::makeGrid(MAP_WIDTH, MAP_HEIGHT);
-const std::vector<Segment> playerGeometry = Geometry::makePlayer();
-const std::vector<Segment> doorHGeometry = Geometry::makeDoorH();
-const std::vector<Segment> doorVGeometry = Geometry::makeDoorV();
-const std::vector<Segment> wallGeometry = Geometry::makeWall();
-const std::vector<Segment> fortifiedWallGeometry = Geometry::makeWallFortified();
-const std::vector<Segment> indestructibleWallGeometry = Geometry::makeWallIndestuctible();
+const std::vector<Segment> gridGeometry = MapGeometry::makeGrid(MAP_WIDTH, MAP_HEIGHT);
+const std::vector<Segment> playerGeometry = MapGeometry::makePlayer();
+const std::vector<Segment> doorHGeometry = MapGeometry::makeDoorH();
+const std::vector<Segment> doorVGeometry = MapGeometry::makeDoorV();
+const std::vector<Segment> wallGeometry = MapGeometry::makeWall();
+const std::vector<Segment> fortifiedWallGeometry = MapGeometry::makeWallFortified();
+const std::vector<Segment> indestructibleWallGeometry = MapGeometry::makeWallIndestuctible();
 
 std::array<Tile, MAP_WIDTH * MAP_HEIGHT> tiles;
-float width = MAP_WIDTH * MAP_TILE_SIZE;
-float height = MAP_HEIGHT * MAP_TILE_SIZE;
 float zoomFactor = MAP_ZOOM_DEFAULT;
 Frame frame = fullFrame;
 simd::float2 positionOffset = -Player::position.xy;
@@ -111,9 +111,9 @@ void drawRays() {
     simd::float2 rayR = Viewport::castRay(-CAMERA_FOV / 2.0f).xy;
     simd::float2 rayG = Viewport::castRay(0.0f, true).xy;
     simd::float2 rayB = Viewport::castRay(CAMERA_FOV / 2.0f).xy;
-    Segment segR = Geometry::makeSegment(0, 0, rayR.x, rayR.y);
-    Segment segG = Geometry::makeSegment(0, 0, rayG.x, rayG.y);
-    Segment segB = Geometry::makeSegment(0, 0, rayB.x, rayB.y);
+    Segment segR = MapGeometry::makeSegment(0, 0, rayR.x, rayR.y);
+    Segment segG = MapGeometry::makeSegment(0, 0, rayG.x, rayG.y);
+    Segment segB = MapGeometry::makeSegment(0, 0, rayB.x, rayB.y);
     simd::float2 offset = (Player::position.xy + positionOffset) * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);

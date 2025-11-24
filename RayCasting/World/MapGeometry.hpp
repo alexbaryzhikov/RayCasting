@@ -1,5 +1,5 @@
-#ifndef Geometry_hpp
-#define Geometry_hpp
+#ifndef MapGeometry_hpp
+#define MapGeometry_hpp
 
 #include <simd/simd.h>
 #include <vector>
@@ -13,7 +13,7 @@ struct Segment {
 
 } // namespace RC
 
-namespace RC::Geometry {
+namespace RC::MapGeometry {
 
 Segment makeSegment(float ax, float ay, float bx, float by);
 
@@ -33,4 +33,4 @@ std::vector<Segment> makeWallIndestuctible();
 
 } // namespace RC::Geometry
 
-#endif /* Geometry_hpp */
+#endif /* MapGeometry_hpp */

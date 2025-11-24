@@ -1,5 +1,4 @@
 #include <numbers>
-#include <print>
 
 #include "MathUtils.hpp"
 
@@ -58,16 +57,6 @@ simd::float3x3 makeScaleMatrix(float sx, float sy) {
     return simd::float3x3{simd::float3{sx, 0.0f, 0.0f},
                           simd::float3{0.0f, sy, 0.0f},
                           simd::float3{0.0f, 0.0f, 1.0f}};
-}
-
-void printVector(const simd::float3& v) {
-    std::println("[{} {} {}]", v[0], v[1], v[2]);
-}
-
-void printMatrix(const simd::float3x3& m) {
-    std::println("[[{} {} {}]", m.columns[0][0], m.columns[1][0], m.columns[2][0]);
-    std::println(" [{} {} {}]", m.columns[0][1], m.columns[1][1], m.columns[2][1]);
-    std::println(" [{} {} {}]]", m.columns[0][2], m.columns[1][2], m.columns[2][2]);
 }
 
 } // namespace RC

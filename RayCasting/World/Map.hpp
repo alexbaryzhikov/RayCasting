@@ -21,8 +21,8 @@ enum class Tile {
 namespace RC::Map {
 
 extern std::array<Tile, MAP_WIDTH * MAP_HEIGHT> tiles;
-extern float width;
-extern float height;
+extern const float width;
+extern const float height;
 extern float zoomFactor;
 
 bool isVisible();
