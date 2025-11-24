@@ -13,18 +13,18 @@ enum class TileSide {
 };
 
 struct TileHit {
-    int index; // -1 for miss
+    int index;    // -1 for miss
     float offset; // 0 to 1
     float angle;  // 0 to 1
     TileSide side;
 };
 
-struct Ray {
+struct RayHit {
     simd::float2 xy;
     float length;
-    TileHit hit;
+    TileHit tile;
 
-    bool isMiss() const { return hit.index == -1; }
+    bool isMiss() const { return tile.index == -1; }
 };
 
 } // namespace RC
@@ -40,10 +40,8 @@ void draw();
 
 void update();
 
-Ray castRay(float playerSpaceAngle, bool tracer = false);
-
-simd::float2 getRayExitH(float x, float sinA, float cosA);
-simd::float2 getRayExitV(float y, float sinA, float cosA);
+RayHit castRay(float playerSpaceAngle, bool tracer = false);
+RayHit castRayToFirstHit(float playerSpaceAngle);
 
 } // namespace RC::Viewport
 

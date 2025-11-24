@@ -14,7 +14,6 @@
 
 namespace RC::Viewport {
 
-constexpr TileHit tileMiss = {-1};
 constexpr float pi = std::numbers::pi_v<float>;
 constexpr float epsilon = std::numeric_limits<float>::epsilon() * 128;
 constexpr float bigFloat = 1e6;
@@ -23,6 +22,8 @@ constexpr size_t floorHeight = horizonHeight;
 constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 constexpr float maxDrawDistance = 800.0f;
+constexpr simd::float2 pointAtInf = {bigFloat, bigFloat};
+constexpr TileHit tileMiss = {-1};
 
 std::array<float, CANVAS_WIDTH> rayAnglesHorizontal;
 std::array<float, CANVAS_WIDTH> rayTansHorizontal;
@@ -209,30 +210,90 @@ float doorSegmentOffset(Tile door, int segmentIndex, float segmentOffset) {
     }
 }
 
-Ray castRay(float playerSpaceAngle, bool tracer) {
+struct RayComponent {
+    simd::float2 position; // ray position in map space
+    simd::float2 step;     // offset between adjacent grid-aligned positions
+    simd::float2 next;     // next grid-aligned position
+    TileHit tile;          // tile hit data
+    bool advance;          // true if ray can advance further
+};
+
+struct RayState {
+    simd::float2 normal; // ray direction in map space
+    RayComponent rayH;   // horizontal component
+    RayComponent rayV;   // vertical component
+};
+
+RayState makeRayState(float playerSpaceAngle) {
     float mapSpaceAngle = playerSpaceAngle + Player::angle;
-    float sinA = sin(mapSpaceAngle);
     float cosA = cos(mapSpaceAngle);
+    float sinA = sin(mapSpaceAngle);
+    simd::float2 nextH = pointAtInf;
+    simd::float2 stepH = {0, 0};
+    bool advanceH = false;
+    if (fabs(cosA) > epsilon) {
+        nextH.x = (cosA < 0 ? floor(Player::position.x / MAP_TILE_SIZE) : ceil(Player::position.x / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        nextH.y = Player::position.y + (nextH.x - Player::position.x) * sinA / cosA;
+        stepH = {MAP_TILE_SIZE * sign(cosA), fabs(MAP_TILE_SIZE * sinA / cosA) * sign(sinA)};
+        advanceH = true;
+    }
+    simd::float2 nextV = pointAtInf;
+    simd::float2 stepV = {0, 0};
+    bool advanceV = false;
+    if (fabs(sinA) > epsilon) {
+        nextV.y = (sinA < 0 ? floor(Player::position.y / MAP_TILE_SIZE) : ceil(Player::position.y / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        nextV.x = Player::position.x + (nextV.y - Player::position.y) * cosA / sinA;
+        stepV = {fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * sign(sinA)};
+        advanceV = true;
+    }
+    return {
+        .normal = {cosA, sinA},
+        .rayH = {
+            .position = pointAtInf,
+            .step = stepH,
+            .next = nextH,
+            .tile = tileMiss,
+            .advance = advanceH,
+        },
+        .rayV = {
+            .position = pointAtInf,
+            .step = stepV,
+            .next = nextV,
+            .tile = tileMiss,
+            .advance = advanceV,
+        },
+    };
+}
+
+bool inMapBounds(simd::float2 position) {
+    return position.x > 0 && position.x < Map::width && position.y > 0 && position.y < Map::height;
+}
+
+bool castRay(RayState& state, RayHit& ray) {
+    if (!state.rayH.advance && !state.rayV.advance) return false;
+
+    float cosA = state.normal.x;
+    float sinA = state.normal.y;
 
     // Scan columns
-    simd::float2 rayH = {bigFloat, bigFloat};
-    TileHit tileHitH = tileMiss;
-    if (fabs(cosA) > epsilon) {
-        rayH.x = (cosA < 0 ? floor(Player::position.x / MAP_TILE_SIZE) : ceil(Player::position.x / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
-        rayH.y = Player::position.y + (rayH.x - Player::position.x) * sinA / cosA;
-        simd::float2 d = {MAP_TILE_SIZE * sign(cosA), fabs(MAP_TILE_SIZE * sinA / cosA) * sign(sinA)};
-        for (; rayH.x > 0 && rayH.x < Map::width && rayH.y > 0 && rayH.y < Map::height; rayH += d) {
-            int row = floor(rayH.y / MAP_TILE_SIZE);
-            int col = floor(rayH.x / MAP_TILE_SIZE) - float(cosA < 0);
+    if (state.rayH.advance) {
+        RayComponent& rayH = state.rayH;
+        rayH.position = rayH.next;
+        rayH.next = pointAtInf;
+        rayH.tile = tileMiss;
+        for (; inMapBounds(rayH.position); rayH.position += rayH.step) {
+            int row = floor(rayH.position.y / MAP_TILE_SIZE);
+            int col = floor(rayH.position.x / MAP_TILE_SIZE) - float(cosA < 0);
             int tileIndex = row * MAP_WIDTH + col;
             Tile tile = Map::tiles[tileIndex];
-            if (tile == Tile::doorH || tile == Tile::doorV) {
+            if (isDoor(tile)) {
                 simd::float2 tilePosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
-                std::array<simd::float2, 2> ray = {rayH - tilePosition, rayH - tilePosition + d};
+                std::array<simd::float2, 2> raySegment = {rayH.position - tilePosition, rayH.position - tilePosition + rayH.step};
                 Intersection intersection;
-                if (findClosestIntersection(ray, tile == Tile::doorH ? doorH : doorV, intersection)) {
-                    rayH += intersection.point - ray[0];
-                    tileHitH = {
+                if (findClosestIntersection(raySegment, tile == Tile::doorH ? doorH : doorV, intersection)) {
+                    rayH.next = rayH.position + rayH.step;
+                    rayH.position += intersection.point - raySegment[0];
+                    rayH.tile = {
                         .index = tileIndex,
                         .offset = doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
                         .angle = atan(fabs(tile == Tile::doorH ? cosA / sinA : sinA / cosA)) * 2 / pi,
@@ -240,38 +301,37 @@ Ray castRay(float playerSpaceAngle, bool tracer) {
                     };
                     break;
                 }
-            } else if (tile != Tile::floor) {
-                tileHitH = {
+            } else if (isWall(tile)) {
+                rayH.tile = {
                     .index = tileIndex,
-                    .offset = invertIf(cosA < 0, (rayH.y - row * MAP_TILE_SIZE) / MAP_TILE_SIZE),
+                    .offset = invertIf(cosA < 0, (rayH.position.y - row * MAP_TILE_SIZE) / MAP_TILE_SIZE),
                     .angle = atan(fabs(sinA / cosA)) * 2 / pi,
                     .side = cosA < 0 ? TileSide::right : TileSide::left,
                 };
                 break;
             }
         }
-        rayH -= Player::position.xy;
     }
 
     // Scan rows
-    simd::float2 rayV = {bigFloat, bigFloat};
-    TileHit tileHitV = tileMiss;
-    if (fabs(sinA) > epsilon) {
-        rayV.y = (sinA < 0 ? floor(Player::position.y / MAP_TILE_SIZE) : ceil(Player::position.y / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
-        rayV.x = Player::position.x + (rayV.y - Player::position.y) * cosA / sinA;
-        simd::float2 d = {fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * sign(sinA)};
-        for (; rayV.x > 0 && rayV.x < Map::width && rayV.y > 0 && rayV.y < Map::height; rayV += d) {
-            int row = floor(rayV.y / MAP_TILE_SIZE) - float(sinA < 0);
-            int col = floor(rayV.x / MAP_TILE_SIZE);
+    if (state.rayV.advance) {
+        RayComponent& rayV = state.rayV;
+        rayV.position = rayV.next;
+        rayV.next = pointAtInf;
+        rayV.tile = tileMiss;
+        for (; inMapBounds(rayV.position); rayV.position += rayV.step) {
+            int row = floor(rayV.position.y / MAP_TILE_SIZE) - float(sinA < 0);
+            int col = floor(rayV.position.x / MAP_TILE_SIZE);
             int tileIndex = row * MAP_WIDTH + col;
             Tile tile = Map::tiles[tileIndex];
-            if (tile == Tile::doorH || tile == Tile::doorV) {
+            if (isDoor(tile)) {
                 simd::float2 tilePosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
-                std::array<simd::float2, 2> ray = {rayV - tilePosition, rayV - tilePosition + d};
+                std::array<simd::float2, 2> raySegment = {rayV.position - tilePosition, rayV.position - tilePosition + rayV.step};
                 Intersection intersection;
-                if (findClosestIntersection(ray, tile == Tile::doorH ? doorH : doorV, intersection)) {
-                    rayV += intersection.point - ray[0];
-                    tileHitV = {
+                if (findClosestIntersection(raySegment, tile == Tile::doorH ? doorH : doorV, intersection)) {
+                    rayV.next = rayV.position + rayV.step;
+                    rayV.position += intersection.point - raySegment[0];
+                    rayV.tile = {
                         .index = tileIndex,
                         .offset = doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
                         .angle = atan(fabs(tile == Tile::doorH ? cosA / sinA : sinA / cosA)) * 2 / pi,
@@ -279,70 +339,94 @@ Ray castRay(float playerSpaceAngle, bool tracer) {
                     };
                     break;
                 }
-            } else if (tile != Tile::floor) {
-                tileHitV = {
+            } else if (isWall(tile)) {
+                rayV.tile = {
                     .index = tileIndex,
-                    .offset = invertIf(sinA > 0, (rayV.x - col * MAP_TILE_SIZE) / MAP_TILE_SIZE),
+                    .offset = invertIf(sinA > 0, (rayV.position.x - col * MAP_TILE_SIZE) / MAP_TILE_SIZE),
                     .angle = atan(fabs(cosA / sinA)) * 2 / pi,
                     .side = sinA < 0 ? TileSide::bottom : TileSide::top,
                 };
                 break;
             }
         }
-        rayV -= Player::position.xy;
     }
 
-    // Choose the shortest ray
-    if (simd::length(rayH) < simd::length(rayV)) {
-        float lengthH = simd::dot(rayH, simd::float2{cos(Player::angle), sin(Player::angle)});
-        return {rayH, lengthH, lengthH > CAMERA_NEAR_CLIP ? tileHitH : tileMiss};
+    // Choose the shortest ray component
+    simd::float2 posH = state.rayH.position - Player::position.xy;
+    simd::float2 posV = state.rayV.position - Player::position.xy;
+    if (simd::length(posH) < simd::length(posV)) {
+        float lengthH = simd::dot(posH, simd::float2{cos(Player::angle), sin(Player::angle)});
+        ray.xy = posH;
+        ray.length = lengthH;
+        ray.tile = lengthH > CAMERA_NEAR_CLIP ? state.rayH.tile : tileMiss;
+        state.rayH.advance = state.rayH.next.x != bigFloat;
+        state.rayV.advance = false;
+        return !ray.isMiss();
     } else {
-        float lengthV = simd::dot(rayV, simd::float2{cos(Player::angle), sin(Player::angle)});
-        return {rayV, lengthV, lengthV > CAMERA_NEAR_CLIP ? tileHitV : tileMiss};
+        float lengthV = simd::dot(posV, simd::float2{cos(Player::angle), sin(Player::angle)});
+        ray.xy = posV;
+        ray.length = lengthV;
+        ray.tile = lengthV > CAMERA_NEAR_CLIP ? state.rayV.tile : tileMiss;
+        state.rayH.advance = false;
+        state.rayV.advance = state.rayV.next.x != bigFloat;
+        return !ray.isMiss();
     }
+}
+
+RayHit castRay(float playerSpaceAngle, bool tracer) {
+    RayState state = makeRayState(playerSpaceAngle);
+    RayHit ray;
+    while (castRay(state, ray)) {
+    }
+    return ray;
+}
+
+RayHit castRayToFirstHit(float playerSpaceAngle) {
+    RayState state = makeRayState(playerSpaceAngle);
+    RayHit ray;
+    castRay(state, ray);
+    return ray;
 }
 
 void drawWalls() {
     for (int x = 0; x < rayAnglesHorizontal.size(); ++x) {
-        Ray ray = castRay(rayAnglesHorizontal[x]);
-        if (ray.isMiss()) continue;
-        float projectionCoef = projectionDistance / ray.length;
-        float distanceCoef = ray.length * 2 / maxDrawDistance;
-        float angleCoef = 1 - ray.hit.angle / 2;
-        float yStart = ceil(horizonHeight - (MAP_TILE_SIZE - cameraHeight) * projectionCoef);
-        float yEnd = floor(horizonHeight + cameraHeight * projectionCoef);
-        for (float y = fmax(0, yStart), end = fmin(yEnd + 1, CANVAS_HEIGHT); y < end; ++y) {
+        int drawHeight = 0;
+        RayState state = makeRayState(rayAnglesHorizontal[x]);
+        RayHit ray;
+        while (castRay(state, ray)) {
+            float projectionCoef = projectionDistance / ray.length;
+            float height = MAP_TILE_SIZE * projectionCoef;
+            float begin = horizonHeight - (MAP_TILE_SIZE - cameraHeight) * projectionCoef;
+            float end = begin + height;
+            float verticalTextureOffset = 0;
+            Tile tile = Map::tiles[ray.tile.index];
+            if (isDoor(tile)) {
+                float progress = Map::doors[ray.tile.index].progress;
+                end = begin + height * progress;
+                verticalTextureOffset = 1 - progress;
+            }
+            if (end < drawHeight) continue;
+            float y = fmax(drawHeight, ceil(begin));
+            drawHeight = fmin(floor(end) + 1, CANVAS_HEIGHT);
             if (ray.length > maxDrawDistance) {
-                Canvas::point(x, y, Palette::fogColor);
-                continue;
-            }
-            uint32_t* texture;
-            switch (Map::tiles[ray.hit.index]) {
-                case Tile::doorH:
-                case Tile::doorV:
-                    texture = Textures::door.data();
-                    break;
-                case Tile::floor:
-                    texture = nullptr;
-                    break;
-                case Tile::wall:
-                    texture = Textures::wall.data();
-                    break;
-                case Tile::wallFortified:
-                    texture = Textures::wallFortified.data();
-                    break;
-                case Tile::wallIndestructible:
-                    texture = Textures::wallIndestructible.data();
-                    break;
-            }
-            uint32_t color = sampleTexture(texture, ray.hit.offset, (y - yStart) / (yEnd - yStart));
-            if (distanceCoef < 1) {
-                color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0xA0, BlendMode::add);
+                for (; y < drawHeight; ++y) {
+                    Canvas::point(x, y, Palette::fogColor);
+                }
             } else {
-                color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
+                uint32_t* texture = Textures::getTexture(tile);
+                float distanceCoef = ray.length * 2 / maxDrawDistance;
+                float angleCoef = 1 - ray.tile.angle / 2;
+                for (; y < drawHeight; ++y) {
+                    uint32_t color = sampleTexture(texture, ray.tile.offset, (y - begin) / height + verticalTextureOffset);
+                    if (distanceCoef < 1) {
+                        color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0xA0, BlendMode::add);
+                    } else {
+                        color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
+                    }
+                    color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
+                    Canvas::point(x, y, color);
+                }
             }
-            color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
-            Canvas::point(x, y, color);
         }
     }
 }

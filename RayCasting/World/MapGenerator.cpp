@@ -149,6 +149,10 @@ void carveTunnelH(int x1, int x2, int y) {
                     break;
                 case Tile::wallFortified:
                     tile = Tile::doorV;
+                    doors[y * MAP_WIDTH + x] = {
+                        .state = DoorState::closing,
+                        .progress = 0.8,
+                    };
                     break;
                 default:
                     break;
@@ -168,6 +172,10 @@ void carveTunnelV(int y1, int y2, int x) {
                     break;
                 case Tile::wallFortified:
                     tile = Tile::doorH;
+                    doors[y * MAP_WIDTH + x] = {
+                        .state = DoorState::opening,
+                        .progress = 0.8,
+                    };
                     break;
                 default:
                     break;

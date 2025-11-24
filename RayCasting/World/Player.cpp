@@ -153,9 +153,9 @@ void updateActions() {
     static bool mouseRightUpdated = false;
     if (!mouseRightUpdated && Mouse::buttonRight) {
         mouseRightUpdated = true;
-        Ray ray = Viewport::castRay(0);
+        RayHit ray = Viewport::castRayToFirstHit(0);
         if (!ray.isMiss() && ray.length < PLAYER_ACTION_RANGE) {
-            Tile& tile = Map::tiles[ray.hit.index];
+            Tile& tile = Map::tiles[ray.tile.index];
             if (tile != Tile::wallIndestructible) {
                 tile = Tile::floor;
             }
@@ -169,7 +169,7 @@ void updateActions() {
     static bool mouseLeftUpdated = false;
     if (!mouseLeftUpdated && Mouse::buttonLeft) {
         mouseLeftUpdated = true;
-        Ray ray = Viewport::castRay(0);
+        RayHit ray = Viewport::castRayToFirstHit(0);
         if (ray.isMiss() || ray.length > PLAYER_ACTION_RANGE) {
             simd::float2 tilePosition = (position.xy + simd::float2{cos(angle), sin(angle)} * PLAYER_ACTION_RANGE) / MAP_TILE_SIZE;
             int col = floor(tilePosition.x);

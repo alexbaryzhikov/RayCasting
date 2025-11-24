@@ -23,4 +23,20 @@ void drawTexture() {
     }
 }
 
+uint32_t* getTexture(Tile tile) {
+    switch (tile) {
+        case Tile::doorH:
+        case Tile::doorV:
+            return door.data();
+        case Tile::floor:
+            return floor.data();
+        case Tile::wall:
+            return wall.data();
+        case Tile::wallFortified:
+            return wallFortified.data();
+        case Tile::wallIndestructible:
+            return wallIndestructible.data();
+    }
+}
+
 } // namespace RC::Textures

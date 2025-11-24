@@ -3,6 +3,8 @@
 
 #include <array>
 
+#include "Map.hpp"
+
 namespace RC::Textures {
 
 constexpr size_t dimension = 512;
@@ -18,6 +20,8 @@ extern std::array<uint32_t, dimension * dimension> wallFortifiedTorch;
 extern std::array<uint32_t, dimension * dimension> wallIndestructible;
 
 void drawTexture();
+
+uint32_t* getTexture(Tile tile);
 
 } // namespace RC::Textures
 

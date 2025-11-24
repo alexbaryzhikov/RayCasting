@@ -2,8 +2,8 @@
 #define Config_h
 
 // Display
-#define CANVAS_WIDTH                1280
-#define CANVAS_HEIGHT               720
+#define CANVAS_WIDTH                800
+#define CANVAS_HEIGHT               450
 #define CANVAS_SIZE                 (CANVAS_WIDTH * CANVAS_HEIGHT)
 #define VIEW_SCALE                  2
 #define VIEW_WIDTH                  (CANVAS_WIDTH * VIEW_SCALE)
@@ -31,6 +31,7 @@
 #define ROOM_MAX_SIZE               10
 #define ROOM_MAX_LOOPS              10000
 #define DOOR_DEPTH                  8.0f
+#define DOOR_OPEN_SPEED             0.01f
 
 // Player
 #define PLAYER_MOVE_SPEED           4.0f

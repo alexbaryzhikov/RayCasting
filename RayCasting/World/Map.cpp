@@ -1,12 +1,37 @@
 #include "Map.hpp"
 
 #include "Canvas.hpp"
-#include "MapGeometry.hpp"
 #include "Keyboard.hpp"
+#include "MapGeometry.hpp"
 #include "MathUtils.hpp"
 #include "Palette.hpp"
 #include "Player.hpp"
 #include "Viewport.hpp"
+
+namespace RC {
+
+bool isDoor(Tile tile) {
+    switch (tile) {
+        case Tile::doorH:
+        case Tile::doorV:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool isWall(Tile tile) {
+    switch (tile) {
+        case Tile::wall:
+        case Tile::wallFortified:
+        case Tile::wallIndestructible:
+            return true;
+        default:
+            return false;
+    }
+}
+
+} // namespace RC
 
 namespace RC::Map {
 
@@ -24,6 +49,7 @@ const std::vector<Segment> fortifiedWallGeometry = MapGeometry::makeWallFortifie
 const std::vector<Segment> indestructibleWallGeometry = MapGeometry::makeWallIndestuctible();
 
 std::array<Tile, MAP_WIDTH * MAP_HEIGHT> tiles;
+std::map<int, Door> doors;
 float zoomFactor = MAP_ZOOM_DEFAULT;
 Frame frame = fullFrame;
 simd::float2 positionOffset = -Player::position.xy;
@@ -138,6 +164,29 @@ void draw() {
     }
 }
 
+void updateDoors() {
+    for (auto& [_, door] : doors) {
+        switch (door.state) {
+            case DoorState::idle:
+                break;
+            case DoorState::opening:
+                door.progress -= DOOR_OPEN_SPEED;
+                if (door.progress < 0) {
+                    door.progress = 0;
+                    door.state = DoorState::closing;
+                }
+                break;
+            case DoorState::closing:
+                door.progress += DOOR_OPEN_SPEED;
+                if (door.progress > 1) {
+                    door.progress = 1;
+                    door.state = DoorState::opening;
+                }
+                break;
+        }
+    }
+}
+
 void updateVisibility() {
     static bool updated = false;
     if (!updated && Keyboard::keys[Keyboard::keyM]) {
@@ -209,6 +258,7 @@ void updatePlayerPresentation() {
 }
 
 void update() {
+    updateDoors();
     updateVisibility();
     if (visible) {
         updateFollowMode();
