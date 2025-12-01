@@ -67,6 +67,10 @@ void applyFriction(float friction) {
     }
 }
 
+bool isImpassableTile(int index) {
+    return isWall(Map::tiles[index]) || (isDoor(Map::tiles[index]) && !Map::doors[index].isPassable());
+}
+
 void applyWallCollision(float radius) {
     if (!wallCollision || simd::all(velocity == 0)) return;
 
@@ -75,23 +79,23 @@ void applyWallCollision(float radius) {
     simd::float3 newPosition = position + velocity;
 
     // West
-    if (mapX == 0 || Map::tiles[mapY * MAP_WIDTH + mapX - 1] != Tile::floor) {
+    if (mapX == 0 || isImpassableTile(mapY * MAP_WIDTH + mapX - 1)) {
         newPosition.x = fmax(newPosition.x, mapX * MAP_TILE_SIZE + radius);
     }
     // East
-    if (mapX + 1 == MAP_WIDTH || Map::tiles[mapY * MAP_WIDTH + mapX + 1] != Tile::floor) {
+    if (mapX + 1 == MAP_WIDTH || isImpassableTile(mapY * MAP_WIDTH + mapX + 1)) {
         newPosition.x = fmin(newPosition.x, (mapX + 1) * MAP_TILE_SIZE - radius);
     }
     // North
-    if (mapY == 0 || Map::tiles[(mapY - 1) * MAP_WIDTH + mapX] != Tile::floor) {
+    if (mapY == 0 || isImpassableTile((mapY - 1) * MAP_WIDTH + mapX)) {
         newPosition.y = fmax(newPosition.y, mapY * MAP_TILE_SIZE + radius);
     }
     // South
-    if (mapY + 1 == MAP_HEIGHT || Map::tiles[(mapY + 1) * MAP_WIDTH + mapX] != Tile::floor) {
+    if (mapY + 1 == MAP_HEIGHT || isImpassableTile((mapY + 1) * MAP_WIDTH + mapX)) {
         newPosition.y = fmin(newPosition.y, (mapY + 1) * MAP_TILE_SIZE - radius);
     }
     // NW
-    if (mapX == 0 || mapY == 0 || Map::tiles[(mapY - 1) * MAP_WIDTH + mapX - 1] != Tile::floor) {
+    if (mapX == 0 || mapY == 0 || isImpassableTile((mapY - 1) * MAP_WIDTH + mapX - 1)) {
         simd::float2 corner = simd::float2{float(mapX), float(mapY)} * MAP_TILE_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);
@@ -100,7 +104,7 @@ void applyWallCollision(float radius) {
         }
     }
     // SW
-    if (mapX == 0 || mapY + 1 == MAP_HEIGHT || Map::tiles[(mapY + 1) * MAP_WIDTH + mapX - 1] != Tile::floor) {
+    if (mapX == 0 || mapY + 1 == MAP_HEIGHT || isImpassableTile((mapY + 1) * MAP_WIDTH + mapX - 1)) {
         simd::float2 corner = simd::float2{float(mapX), float(mapY + 1)} * MAP_TILE_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);
@@ -109,7 +113,7 @@ void applyWallCollision(float radius) {
         }
     }
     // NE
-    if (mapX + 1 == MAP_WIDTH || mapY == 0 || Map::tiles[(mapY - 1) * MAP_WIDTH + mapX + 1] != Tile::floor) {
+    if (mapX + 1 == MAP_WIDTH || mapY == 0 || isImpassableTile((mapY - 1) * MAP_WIDTH + mapX + 1)) {
         simd::float2 corner = simd::float2{float(mapX + 1), float(mapY)} * MAP_TILE_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);
@@ -118,7 +122,7 @@ void applyWallCollision(float radius) {
         }
     }
     // SE
-    if (mapX + 1 == MAP_WIDTH || mapY + 1 == MAP_HEIGHT || Map::tiles[(mapY + 1) * MAP_WIDTH + mapX + 1] != Tile::floor) {
+    if (mapX + 1 == MAP_WIDTH || mapY + 1 == MAP_HEIGHT || isImpassableTile((mapY + 1) * MAP_WIDTH + mapX + 1)) {
         simd::float2 corner = simd::float2{float(mapX + 1), float(mapY + 1)} * MAP_TILE_SIZE;
         simd::float2 cornerToPlayer = newPosition.xy - corner;
         float cornerToPlayerDistance = simd::length(cornerToPlayer);

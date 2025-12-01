@@ -89,18 +89,22 @@ void drawGrid() {
     drawGeometry(gridGeometry, transform, Palette::mapGridColor);
 }
 
-void drawTile(Tile tile, size_t row, size_t col) {
+void drawTile(int row, int col) {
     simd::float2 wallPosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
     simd::float2 offset = (wallPosition + positionOffset) * zoomFactor;
     simd::float3x3 translate = makeTranslationMatrix(frame.centerX() + offset.x, frame.centerY() + offset.y);
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
-    switch (tile) {
+    switch (tiles[row * MAP_WIDTH + col]) {
         case Tile::doorH:
-            drawGeometry(doorHGeometry, transform, Palette::mapWallColor);
+            if (doors[row * MAP_WIDTH + col].isPassable()) {
+                drawGeometry(doorHGeometry, transform, Palette::mapWallColor);
+            }
             break;
         case Tile::doorV:
-            drawGeometry(doorVGeometry, transform, Palette::mapWallColor);
+            if (doors[row * MAP_WIDTH + col].isPassable()) {
+                drawGeometry(doorVGeometry, transform, Palette::mapWallColor);
+            }
             break;
         case Tile::floor:
             break;
@@ -117,9 +121,9 @@ void drawTile(Tile tile, size_t row, size_t col) {
 }
 
 void drawTiles() {
-    for (size_t row = 0; row < MAP_HEIGHT; ++row) {
-        for (size_t col = 0; col < MAP_WIDTH; ++col) {
-            drawTile(tiles[row * MAP_WIDTH + col], row, col);
+    for (int row = 0; row < MAP_HEIGHT; ++row) {
+        for (int col = 0; col < MAP_WIDTH; ++col) {
+            drawTile(row, col);
         }
     }
 }
@@ -171,8 +175,8 @@ void updateDoors() {
                 break;
             case DoorState::opening:
                 door.progress -= DOOR_OPEN_SPEED;
-                if (door.progress < 0) {
-                    door.progress = 0;
+                if (door.progress < 0.05) {
+                    door.progress = 0.05;
                     door.state = DoorState::closing;
                 }
                 break;

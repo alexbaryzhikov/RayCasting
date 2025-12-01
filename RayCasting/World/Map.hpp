@@ -30,6 +30,8 @@ enum class DoorState {
 struct Door {
     DoorState state = DoorState::idle;
     float progress = 1; // from 0 (fully open) to 1 (fully closed)
+
+    bool isPassable() { return progress < 1 - CAMERA_HEIGHT / MAP_TILE_SIZE; }
 };
 
 } // namespace RC
