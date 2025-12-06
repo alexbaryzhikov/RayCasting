@@ -31,7 +31,9 @@
 #define ROOM_MAX_SIZE               10
 #define ROOM_MAX_LOOPS              10000
 #define DOOR_DEPTH                  8.0f
+#define DOOR_OPEN_DISTANCE          50.0f
 #define DOOR_OPEN_SPEED             0.01f
+#define DOOR_CLOSE_DELAY_SECONDS    3
 
 // Player
 #define PLAYER_MOVE_SPEED           4.0f

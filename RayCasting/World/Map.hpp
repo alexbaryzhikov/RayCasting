@@ -2,7 +2,9 @@
 #define Map_hpp
 
 #include <array>
+#include <chrono>
 #include <map>
+#include <simd/simd.h>
 
 #include "Config.h"
 
@@ -28,8 +30,21 @@ enum class DoorState {
 };
 
 struct Door {
-    DoorState state = DoorState::idle;
-    float progress = 1; // from 0 (fully open) to 1 (fully closed)
+    using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+
+    simd::float2 position;
+    float progress; // from 0 (fully open) to 1 (fully closed)
+    DoorState state;
+    TimePoint closingTime;
+
+    static Door makeDoorAt(int col, int row) {
+        return {
+            .position = (simd::float2{float(col), float(row)} + 0.5) * MAP_TILE_SIZE,
+            .progress = 1,
+            .state = DoorState::idle,
+            .closingTime = TimePoint(std::chrono::seconds(0)),
+        };
+    }
 
     bool isPassable() { return progress < 1 - CAMERA_HEIGHT / MAP_TILE_SIZE; }
 };

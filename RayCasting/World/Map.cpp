@@ -97,12 +97,12 @@ void drawTile(int row, int col) {
     simd::float3x3 transform = matrix_multiply(translate, scale);
     switch (tiles[row * MAP_WIDTH + col]) {
         case Tile::doorH:
-            if (doors[row * MAP_WIDTH + col].isPassable()) {
+            if (!doors[row * MAP_WIDTH + col].isPassable()) {
                 drawGeometry(doorHGeometry, transform, Palette::mapWallColor);
             }
             break;
         case Tile::doorV:
-            if (doors[row * MAP_WIDTH + col].isPassable()) {
+            if (!doors[row * MAP_WIDTH + col].isPassable()) {
                 drawGeometry(doorVGeometry, transform, Palette::mapWallColor);
             }
             break;
@@ -170,23 +170,35 @@ void draw() {
 
 void updateDoors() {
     for (auto& [_, door] : doors) {
-        switch (door.state) {
-            case DoorState::idle:
-                break;
-            case DoorState::opening:
-                door.progress -= DOOR_OPEN_SPEED;
-                if (door.progress < 0.05) {
-                    door.progress = 0.05;
-                    door.state = DoorState::closing;
-                }
-                break;
-            case DoorState::closing:
-                door.progress += DOOR_OPEN_SPEED;
-                if (door.progress > 1) {
-                    door.progress = 1;
-                    door.state = DoorState::opening;
-                }
-                break;
+        if (simd::length(door.position - Player::position.xy) < DOOR_OPEN_DISTANCE) {
+            door.state = DoorState::opening;
+            door.progress -= DOOR_OPEN_SPEED;
+            if (door.progress < 0.05) {
+                door.progress = 0.05;
+            }
+        } else {
+            Door::TimePoint now = std::chrono::steady_clock::now();
+            switch (door.state) {
+                case DoorState::idle:
+                    break;
+                case DoorState::opening:
+                    door.progress -= DOOR_OPEN_SPEED;
+                    if (door.progress < 0.05) {
+                        door.progress = 0.05;
+                        door.state = DoorState::closing;
+                        door.closingTime = now + std::chrono::seconds(DOOR_CLOSE_DELAY_SECONDS);
+                    }
+                    break;
+                case DoorState::closing:
+                    if (door.closingTime < now) {
+                        door.progress += DOOR_OPEN_SPEED;
+                        if (door.progress > 1) {
+                            door.progress = 1;
+                            door.state = DoorState::idle;
+                        }
+                    }
+                    break;
+            }
         }
     }
 }

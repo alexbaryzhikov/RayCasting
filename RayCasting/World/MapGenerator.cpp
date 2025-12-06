@@ -111,7 +111,7 @@ std::vector<Rect> generateRooms() {
     int floorTiles = 0;
     int totalTiles = MAP_WIDTH * MAP_HEIGHT;
 
-    for (int i = 0; i < ROOM_MAX_LOOPS && static_cast<float>(floorTiles) / totalTiles < FLOOR_COVERAGE_TARGET; ++i) {
+    for (int i = 0; i < ROOM_MAX_LOOPS && float(floorTiles) / totalTiles < FLOOR_COVERAGE_TARGET; ++i) {
         // We use odd numbers for dimensions and positions to make tunnel connections easier
         int w = getRandomOdd(ROOM_MIN_SIZE, ROOM_MAX_SIZE);
         int h = getRandomOdd(ROOM_MIN_SIZE, ROOM_MAX_SIZE);
@@ -149,10 +149,7 @@ void carveTunnelH(int x1, int x2, int y) {
                     break;
                 case Tile::wallFortified:
                     tile = Tile::doorV;
-                    doors[y * MAP_WIDTH + x] = {
-                        .state = DoorState::closing,
-                        .progress = 0.8,
-                    };
+                    doors[y * MAP_WIDTH + x] = Door::makeDoorAt(x, y);
                     break;
                 default:
                     break;
@@ -172,10 +169,7 @@ void carveTunnelV(int y1, int y2, int x) {
                     break;
                 case Tile::wallFortified:
                     tile = Tile::doorH;
-                    doors[y * MAP_WIDTH + x] = {
-                        .state = DoorState::opening,
-                        .progress = 0.8,
-                    };
+                    doors[y * MAP_WIDTH + x] = Door::makeDoorAt(x, y);
                     break;
                 default:
                     break;
