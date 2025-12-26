@@ -17,8 +17,7 @@
 
 ## Next Steps
 
-- Doors
-- Destruction/fortification of walls
-- Wall decorations (edge, support beam, window)
-- Generalized ligth source and wall torches
 - GPU ray casting
+- Torches as light sources
+- Fortification of walls
+- Wall decorations (edge, support beam, window)

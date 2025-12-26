@@ -19,7 +19,7 @@ struct TileHit {
     TileSide side;
 };
 
-struct RayHit {
+struct Ray {
     simd::float2 xy;
     float length;
     TileHit tile;
@@ -40,8 +40,8 @@ void draw();
 
 void update();
 
-RayHit castRay(float playerSpaceAngle, bool tracer = false);
-RayHit castRayToFirstHit(float playerSpaceAngle);
+Ray castRay(float playerSpaceAngle, bool tracer = false);
+Ray castRayToFirstHit(float playerSpaceAngle);
 
 } // namespace RC::Viewport
 

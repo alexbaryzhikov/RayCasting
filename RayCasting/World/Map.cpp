@@ -3,7 +3,7 @@
 #include "Canvas.hpp"
 #include "Keyboard.hpp"
 #include "MapGeometry.hpp"
-#include "MathUtils.hpp"
+#include "MatrixUtils.hpp"
 #include "Palette.hpp"
 #include "Player.hpp"
 #include "Viewport.hpp"

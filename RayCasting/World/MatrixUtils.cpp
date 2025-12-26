@@ -1,28 +1,11 @@
-#include <numbers>
-
-#include "MathUtils.hpp"
+#include "MatrixUtils.hpp"
 
 namespace RC {
 
-float sign(float value) {
-    return value < 0 ? -1 : 1;
-}
-
-float invertIf(bool condition, float value) {
-    return condition ? 1 - value : value;
-}
-
-float normalizeAngle(float angle) {
-    using std::numbers::pi;
-    angle = fmod(angle, pi * 2);
-    if (angle <= -pi) {
-        angle += pi * 2;
-    } else if (angle > pi) {
-        angle -= pi * 2;
-    }
-    return angle;
-}
-
+/**
+ * Creates a normalized 2D direction vector from x and y components.
+ * The third component (w) is set to 0.0f to represent a direction, which is unaffected by translations.
+ */
 simd::float3 makeNormal(float x, float y) {
     if (x == 0.0f && y == 0.0f) {
         return {0.0f, 0.0f, 0.0f};
@@ -45,9 +28,9 @@ simd::float3x3 makeRotationMatrix(float angle) {
 }
 
 simd::float3x3 makeRotationMatrix(float rx, float ry) {
-    simd::float3 dir = makeNormal(rx, ry);
-    float cosA = dir[0];
-    float sinA = dir[1];
+    simd::float3 normal = makeNormal(rx, ry);
+    float cosA = normal[0];
+    float sinA = normal[1];
     return simd::float3x3{simd::float3{cosA, sinA, 0.0f},
                           simd::float3{-sinA, cosA, 0.0f},
                           simd::float3{0.0f, 0.0f, 1.0f}};

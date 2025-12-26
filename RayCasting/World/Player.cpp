@@ -1,10 +1,12 @@
+#include <numbers>
+
 #include "Player.hpp"
 
 #include "Canvas.hpp"
 #include "Config.h"
 #include "Keyboard.hpp"
 #include "Map.hpp"
-#include "MathUtils.hpp"
+#include "MatrixUtils.hpp"
 #include "Mouse.hpp"
 #include "Palette.hpp"
 #include "Viewport.hpp"
@@ -25,6 +27,20 @@ void updateWallCollision() {
     if (!Keyboard::keys[Keyboard::keyN]) {
         updated = false;
     }
+}
+
+/**
+ * Force angle to (-pi, pi] range.
+ */
+float normalizeAngle(float angle) {
+    using std::numbers::pi;
+    angle = fmod(angle, pi * 2);
+    if (angle <= -pi) {
+        angle += pi * 2;
+    } else if (angle > pi) {
+        angle -= pi * 2;
+    }
+    return angle;
 }
 
 void updateAngle() {
@@ -157,7 +173,7 @@ void updateActions() {
     static bool mouseRightUpdated = false;
     if (!mouseRightUpdated && Mouse::buttonRight) {
         mouseRightUpdated = true;
-        RayHit ray = Viewport::castRayToFirstHit(0);
+        Ray ray = Viewport::castRayToFirstHit(0);
         if (!ray.isMiss() && ray.length < PLAYER_ACTION_RANGE) {
             Tile& tile = Map::tiles[ray.tile.index];
             if (tile != Tile::wallIndestructible) {
@@ -173,7 +189,7 @@ void updateActions() {
     static bool mouseLeftUpdated = false;
     if (!mouseLeftUpdated && Mouse::buttonLeft) {
         mouseLeftUpdated = true;
-        RayHit ray = Viewport::castRayToFirstHit(0);
+        Ray ray = Viewport::castRayToFirstHit(0);
         if (ray.isMiss() || ray.length > PLAYER_ACTION_RANGE) {
             simd::float2 tilePosition = (position.xy + simd::float2{cos(angle), sin(angle)} * PLAYER_ACTION_RANGE) / MAP_TILE_SIZE;
             int col = floor(tilePosition.x);

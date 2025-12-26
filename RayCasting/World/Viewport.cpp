@@ -7,7 +7,7 @@
 #include "Config.h"
 #include "Keyboard.hpp"
 #include "Map.hpp"
-#include "MathUtils.hpp"
+#include "MatrixUtils.hpp"
 #include "Palette.hpp"
 #include "Player.hpp"
 #include "Textures.hpp"
@@ -17,22 +17,23 @@ namespace RC::Viewport {
 constexpr float pi = std::numbers::pi_v<float>;
 constexpr float epsilon = std::numeric_limits<float>::epsilon() * 128;
 constexpr float bigFloat = 1e6;
-constexpr float horizonHeight = CANVAS_HEIGHT / 2.0f;
-constexpr size_t floorHeight = horizonHeight;
-constexpr size_t ceilingHeight = CANVAS_HEIGHT - floorHeight;
+constexpr float horizonY = CANVAS_HEIGHT / 2.0f; // screen space
+constexpr size_t ceilingSize = horizonY;
+constexpr size_t floorSize = CANVAS_HEIGHT - ceilingSize;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
 constexpr float maxDrawDistance = 800.0f;
-constexpr simd::float2 pointAtInf = {bigFloat, bigFloat};
+constexpr simd::float3 mapTile = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
+constexpr simd::float3 pointAtInf = {bigFloat, bigFloat, 1.0f};
 constexpr TileHit tileMiss = {-1};
 
 std::array<float, CANVAS_WIDTH> rayAnglesHorizontal;
 std::array<float, CANVAS_WIDTH> rayTansHorizontal;
-std::array<float, floorHeight> rayTansFloor;
-std::array<float, ceilingHeight> rayTansCeiling;
+std::array<float, floorSize> rayTansFloor;
+std::array<float, ceilingSize> rayTansCeiling;
 std::array<simd::float2, 4> doorH;
 std::array<simd::float2, 4> doorV;
 
-float cameraHeight = MAP_TILE_SIZE / 2.0f;
+float cameraHeight = MAP_TILE_SIZE / 2.0f; // map space
 bool wallsVisible = true;
 
 void initialize() {
@@ -49,7 +50,7 @@ void initialize() {
         rayTansFloor[i] = y / projectionDistance;
     }
     for (size_t i = 0; i < rayTansCeiling.size(); ++i) {
-        float y = ceilingHeight - (float(i) + 0.5f);
+        float y = ceilingSize - (float(i) + 0.5f);
         rayTansCeiling[i] = y / projectionDistance;
     }
     doorH = {
@@ -66,6 +67,46 @@ void initialize() {
     };
 }
 
+float sign(float value) {
+    return value < 0 ? -1 : 1;
+}
+
+float invertIf(bool condition, float value) {
+    return condition ? 1 - value : value;
+}
+
+bool inMapBounds(simd::float2 point) {
+    return point.x > 0 && point.x < Map::width && point.y > 0 && point.y < Map::height;
+}
+
+simd::float3x3 makePlayerToMapTransform() {
+    return matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
+                           makeRotationMatrix(Player::angle));
+}
+
+/**
+ * Returns a point in player space where ray cast from camera to screen pixel (x, y) hits the ceiling.
+ */
+simd::float3 ceilingHit(int x, int y, float ceilingHeight) {
+    if (y > ceilingSize || cameraHeight > ceilingHeight) return pointAtInf;
+    float hitX = (ceilingHeight - cameraHeight) / rayTansCeiling[y];
+    float hitY = hitX * rayTansHorizontal[x];
+    return {hitX, hitY, 1.0f};
+}
+
+/**
+ * Returns a point in player space where ray cast from camera to screen pixel (x, y) hits the foor.
+ */
+simd::float3 floorHit(int x, int y, float floorHeight) {
+    if (y < ceilingSize || cameraHeight < floorHeight) return pointAtInf;
+    float hitX = (cameraHeight - floorHeight) / rayTansFloor[y - ceilingSize];
+    float hitY = hitX * rayTansHorizontal[x];
+    return {hitX, hitY, 1.0f};
+}
+
+/**
+ * Returns texture color at point (x, y). Assumes x and y are in [0, 1] range.
+ */
 uint32_t sampleTexture(uint32_t* texture, float x, float y) {
     using Textures::dimension;
     float row = round(y * (dimension - 1));
@@ -73,64 +114,56 @@ uint32_t sampleTexture(uint32_t* texture, float x, float y) {
     return texture[int(row * dimension + col)];
 }
 
-void drawFloor() {
-    const float cameraDistanceToSurface = cameraHeight;
-    simd::float3 mapTile = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
-    simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
-                                                       makeRotationMatrix(Player::angle));
-    for (size_t i = 0; i < rayTansHorizontal.size(); ++i) {
-        for (size_t j = 0; j < rayTansFloor.size(); ++j) {
-            float hitX = cameraDistanceToSurface / rayTansFloor[j];
-            if (hitX > maxDrawDistance) {
-                Canvas::point(i, j + ceilingHeight, Palette::fogColor);
+void drawCeiling() {
+    simd::float3x3 playerToMapTransform = makePlayerToMapTransform();
+    for (int x = 0; x < CANVAS_WIDTH; ++x) {
+        for (int y = 0; y < ceilingSize; ++y) {
+            simd::float3 hitPlayer = ceilingHit(x, y, MAP_TILE_SIZE);
+            if (hitPlayer.x > maxDrawDistance) {
+                Canvas::point(x, y, Palette::fogColor);
                 continue;
             }
-            float hitY = hitX * rayTansHorizontal[i];
-            simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
-            if (hit.x < 0 || hit.x > Map::width || hit.y < 0 || hit.y > Map::height) {
+            simd::float3 hitMap = matrix_multiply(playerToMapTransform, hitPlayer);
+            if (!inMapBounds(hitMap.xy)) {
                 continue;
             }
-            simd::float3 texturePos = simd::fmod(hit, mapTile) / mapTile;
-            uint32_t color = sampleTexture(Textures::floor.data(), texturePos.x, texturePos.y);
-            float distanceCoef = hitX * 2 / maxDrawDistance;
+            simd::float3 texturePos = simd::fmod(hitMap, mapTile) / mapTile;
+            uint32_t color = sampleTexture(Textures::ceiling.data(), texturePos.x, texturePos.y);
+            float distanceCoef = hitPlayer.x * 2 / maxDrawDistance;
             if (distanceCoef < 1) {
                 color = Palette::blend(color, Palette::lightColor, (1 - distanceCoef) * 0x70, BlendMode::add);
             } else {
                 color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
             }
-            color = Palette::blend(color, Palette::fogColor, hitX / maxDrawDistance * 0xFF, BlendMode::normal);
-            Canvas::point(i, j + ceilingHeight, color);
+            color = Palette::blend(color, Palette::fogColor, hitPlayer.x / maxDrawDistance * 0xFF, BlendMode::normal);
+            Canvas::point(x, y, color);
         }
     }
 }
 
-void drawCeiling() {
-    const float cameraDistanceToSurface = MAP_TILE_SIZE - cameraHeight;
-    simd::float3 mapTile = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
-    simd::float3x3 mapSpaceTransform = matrix_multiply(makeTranslationMatrix(Player::position.x, Player::position.y),
-                                                       makeRotationMatrix(Player::angle));
-    for (size_t i = 0; i < rayTansHorizontal.size(); ++i) {
-        for (size_t j = 0; j < rayTansCeiling.size(); ++j) {
-            float hitX = cameraDistanceToSurface / rayTansCeiling[j];
-            if (hitX > maxDrawDistance) {
-                Canvas::point(i, j, Palette::fogColor);
+void drawFloor() {
+    simd::float3x3 playerToMapTransform = makePlayerToMapTransform();
+    for (int x = 0; x < CANVAS_WIDTH; ++x) {
+        for (int y = ceilingSize; y < CANVAS_HEIGHT; ++y) {
+            simd::float3 hitPlayer = floorHit(x, y, 0);
+            if (hitPlayer.x > maxDrawDistance) {
+                Canvas::point(x, y, Palette::fogColor);
                 continue;
             }
-            float hitY = hitX * rayTansHorizontal[i];
-            simd::float3 hit = matrix_multiply(mapSpaceTransform, simd::float3{hitX, hitY, 1.0f});
-            if (hit.x < 0 || hit.x > Map::width || hit.y < 0 || hit.y > Map::height) {
+            simd::float3 hitMap = matrix_multiply(playerToMapTransform, hitPlayer);
+            if (!inMapBounds(hitMap.xy)) {
                 continue;
             }
-            simd::float3 texturePos = simd::fmod(hit, mapTile) / mapTile;
-            uint32_t color = sampleTexture(Textures::ceiling.data(), texturePos.x, texturePos.y);
-            float distanceCoef = hitX * 2 / maxDrawDistance;
+            simd::float3 texturePos = simd::fmod(hitMap, mapTile) / mapTile;
+            uint32_t color = sampleTexture(Textures::floor.data(), texturePos.x, texturePos.y);
+            float distanceCoef = hitPlayer.x * 2 / maxDrawDistance;
             if (distanceCoef < 1) {
                 color = Palette::blend(color, Palette::lightColor, (1 - distanceCoef) * 0x70, BlendMode::add);
             } else {
                 color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
             }
-            color = Palette::blend(color, Palette::fogColor, hitX / maxDrawDistance * 0xFF, BlendMode::normal);
-            Canvas::point(i, j, color);
+            color = Palette::blend(color, Palette::fogColor, hitPlayer.x / maxDrawDistance * 0xFF, BlendMode::normal);
+            Canvas::point(x, y, color);
         }
     }
 }
@@ -228,7 +261,7 @@ RayState makeRayState(float playerSpaceAngle) {
     float mapSpaceAngle = playerSpaceAngle + Player::angle;
     float cosA = cos(mapSpaceAngle);
     float sinA = sin(mapSpaceAngle);
-    simd::float2 nextH = pointAtInf;
+    simd::float2 nextH = pointAtInf.xy;
     simd::float2 stepH = {0, 0};
     bool advanceH = false;
     if (fabs(cosA) > epsilon) {
@@ -237,7 +270,7 @@ RayState makeRayState(float playerSpaceAngle) {
         stepH = {MAP_TILE_SIZE * sign(cosA), fabs(MAP_TILE_SIZE * sinA / cosA) * sign(sinA)};
         advanceH = true;
     }
-    simd::float2 nextV = pointAtInf;
+    simd::float2 nextV = pointAtInf.xy;
     simd::float2 stepV = {0, 0};
     bool advanceV = false;
     if (fabs(sinA) > epsilon) {
@@ -249,14 +282,14 @@ RayState makeRayState(float playerSpaceAngle) {
     return {
         .normal = {cosA, sinA},
         .rayH = {
-            .position = pointAtInf,
+            .position = pointAtInf.xy,
             .step = stepH,
             .next = nextH,
             .tile = tileMiss,
             .advance = advanceH,
         },
         .rayV = {
-            .position = pointAtInf,
+            .position = pointAtInf.xy,
             .step = stepV,
             .next = nextV,
             .tile = tileMiss,
@@ -265,11 +298,14 @@ RayState makeRayState(float playerSpaceAngle) {
     };
 }
 
-bool inMapBounds(simd::float2 position) {
-    return position.x > 0 && position.x < Map::width && position.y > 0 && position.y < Map::height;
+/**
+ * Returns tile's upper left corner position in map space.
+ */
+simd::float2 makeTilePosition(int col, int row) {
+    return simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
 }
 
-bool castRay(RayState& state, RayHit& ray) {
+bool castRay(RayState& state, Ray& ray) {
     if (!state.rayH.advance && !state.rayV.advance) return false;
 
     float cosA = state.normal.x;
@@ -279,7 +315,7 @@ bool castRay(RayState& state, RayHit& ray) {
     if (state.rayH.advance) {
         RayComponent& rayH = state.rayH;
         rayH.position = rayH.next;
-        rayH.next = pointAtInf;
+        rayH.next = pointAtInf.xy;
         rayH.tile = tileMiss;
         for (; inMapBounds(rayH.position); rayH.position += rayH.step) {
             int row = floor(rayH.position.y / MAP_TILE_SIZE);
@@ -287,7 +323,7 @@ bool castRay(RayState& state, RayHit& ray) {
             int tileIndex = row * MAP_WIDTH + col;
             Tile tile = Map::tiles[tileIndex];
             if (isDoor(tile)) {
-                simd::float2 tilePosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
+                simd::float2 tilePosition = makeTilePosition(col, row);
                 std::array<simd::float2, 2> raySegment = {rayH.position - tilePosition, rayH.position - tilePosition + rayH.step};
                 Intersection intersection;
                 if (findClosestIntersection(raySegment, tile == Tile::doorH ? doorH : doorV, intersection)) {
@@ -317,7 +353,7 @@ bool castRay(RayState& state, RayHit& ray) {
     if (state.rayV.advance) {
         RayComponent& rayV = state.rayV;
         rayV.position = rayV.next;
-        rayV.next = pointAtInf;
+        rayV.next = pointAtInf.xy;
         rayV.tile = tileMiss;
         for (; inMapBounds(rayV.position); rayV.position += rayV.step) {
             int row = floor(rayV.position.y / MAP_TILE_SIZE) - float(sinA < 0);
@@ -373,59 +409,121 @@ bool castRay(RayState& state, RayHit& ray) {
     }
 }
 
-RayHit castRay(float playerSpaceAngle, bool tracer) {
+Ray castRay(float playerSpaceAngle, bool tracer) {
     RayState state = makeRayState(playerSpaceAngle);
-    RayHit ray;
+    Ray ray;
     while (castRay(state, ray)) {
     }
     return ray;
 }
 
-RayHit castRayToFirstHit(float playerSpaceAngle) {
+Ray castRayToFirstHit(float playerSpaceAngle) {
     RayState state = makeRayState(playerSpaceAngle);
-    RayHit ray;
+    Ray ray;
     castRay(state, ray);
     return ray;
 }
 
+/**
+ * Returns a polygon in map space for the specified door tile.
+ */
+std::array<simd::float2, 4> makeDoorPolygon(int tileIndex) {
+    simd::float2 tilePosition = makeTilePosition(tileIndex % MAP_WIDTH, tileIndex / MAP_WIDTH);
+    std::array<simd::float2, 4> doorPolygon = (Map::tiles[tileIndex] == Tile::doorH ? doorH : doorV);
+    for (simd::float2& p : doorPolygon) {
+        p += tilePosition;
+    }
+    return doorPolygon;
+}
+
+/**
+ * Checks if the point belongs to the polygon. Assumes polygon has CCW winding.
+ */
+template <size_t N>
+bool inPolygonBounds(simd::float2 point, const std::array<simd::float2, N>& polygon) {
+    for (int i = 0; i < N; ++i) {
+        int j = (i + 1) % N;
+        float crossProduct = simd::cross(polygon[j] - polygon[i], point - polygon[i])[2];
+        if (crossProduct > -epsilon) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void drawWall(const Ray& ray, float beginY, float endY, float wallHeight, float textureOffsetY, int x, int& y) {
+    y = fmax(y, ceil(beginY));
+    int end = fmin(floor(endY) + 1, CANVAS_HEIGHT);
+    if (y >= end) {
+        // Wall is fully obstructed, nothing to draw.
+        return;
+    }
+    if (ray.length > maxDrawDistance) {
+        for (; y < end; ++y) {
+            Canvas::point(x, y, Palette::fogColor);
+        }
+        return;
+    }
+    uint32_t* texture = Textures::getTexture(Map::tiles[ray.tile.index]);
+    float distanceCoef = ray.length * 2 / maxDrawDistance;
+    float angleCoef = 1 - ray.tile.angle / 2;
+    for (; y < end; ++y) {
+        uint32_t color = sampleTexture(texture, ray.tile.offset, (y - beginY) / wallHeight + textureOffsetY);
+        if (distanceCoef < 1) {
+            color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0xA0, BlendMode::add);
+        } else {
+            color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
+        }
+        color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
+        Canvas::point(x, y, color);
+    }
+}
+
+void drawDoorBottom(const Ray& ray, int x, int& y) {
+    float doorProgress = Map::doors[ray.tile.index].progress;
+    float doorBottomHeight = MAP_TILE_SIZE * (1 - doorProgress);
+    if (cameraHeight > doorBottomHeight) {
+        // Door bottom is not visible, nothing to draw.
+        return;
+    }
+    simd::float3x3 playerToMapTransform = makePlayerToMapTransform();
+    std::array<simd::float2, 4> doorPolygon = makeDoorPolygon(ray.tile.index);
+    uint32_t* doorTexture = Textures::getTexture(Map::tiles[ray.tile.index]);
+    float distanceCoef = ray.length * 2 / maxDrawDistance;
+    for (; y < horizonY; ++y) {
+        simd::float3 hit = matrix_multiply(playerToMapTransform, ceilingHit(x, y, doorBottomHeight));
+        if (!inPolygonBounds(hit.xy, doorPolygon)) {
+            break;
+        }
+        simd::float3 texturePos = simd::fmod(hit, mapTile) / mapTile;
+        uint32_t color = sampleTexture(doorTexture, Map::tiles[ray.tile.index] == Tile::doorH ? texturePos.x : texturePos.y, 1.0f);
+        if (distanceCoef < 1) {
+            color = Palette::blend(color, Palette::lightColor, (1 - distanceCoef) * 0x70, BlendMode::add);
+        } else {
+            color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
+        }
+        color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
+        Canvas::point(x, y, color);
+    }
+}
+
 void drawWalls() {
     for (int x = 0; x < rayAnglesHorizontal.size(); ++x) {
-        int drawHeight = 0;
         RayState state = makeRayState(rayAnglesHorizontal[x]);
-        RayHit ray;
-        while (castRay(state, ray)) {
+        Ray ray;
+        for (int y = 0; y < CANVAS_HEIGHT && castRay(state, ray);) {
             float projectionCoef = projectionDistance / ray.length;
-            float height = MAP_TILE_SIZE * projectionCoef;
-            float begin = horizonHeight - (MAP_TILE_SIZE - cameraHeight) * projectionCoef;
-            float end = begin + height;
-            float verticalTextureOffset = 0;
-            Tile tile = Map::tiles[ray.tile.index];
-            if (isDoor(tile)) {
-                float progress = Map::doors[ray.tile.index].progress;
-                end = begin + height * progress;
-                verticalTextureOffset = 1 - progress;
-            }
-            if (end < drawHeight) continue;
-            float y = fmax(drawHeight, ceil(begin));
-            drawHeight = fmin(floor(end) + 1, CANVAS_HEIGHT);
-            if (ray.length > maxDrawDistance) {
-                for (; y < drawHeight; ++y) {
-                    Canvas::point(x, y, Palette::fogColor);
-                }
+            float wallHeight = MAP_TILE_SIZE * projectionCoef;
+            float beginY = horizonY - (MAP_TILE_SIZE - cameraHeight) * projectionCoef;
+            if (!isDoor(Map::tiles[ray.tile.index])) {
+                float endY = beginY + wallHeight;
+                drawWall(ray, beginY, endY, wallHeight, 0, x, y);
             } else {
-                uint32_t* texture = Textures::getTexture(tile);
-                float distanceCoef = ray.length * 2 / maxDrawDistance;
-                float angleCoef = 1 - ray.tile.angle / 2;
-                for (; y < drawHeight; ++y) {
-                    uint32_t color = sampleTexture(texture, ray.tile.offset, (y - begin) / height + verticalTextureOffset);
-                    if (distanceCoef < 1) {
-                        color = Palette::blend(color, Palette::lightColor, angleCoef * (1 - distanceCoef) * 0xA0, BlendMode::add);
-                    } else {
-                        color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
-                    }
-                    color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
-                    Canvas::point(x, y, color);
-                }
+                float doorProgress = Map::doors[ray.tile.index].progress;
+                float endY = beginY + wallHeight * doorProgress;
+                float textureOffsetY = 1 - doorProgress;
+                drawWall(ray, beginY, endY, wallHeight, textureOffsetY, x, y);
+                drawDoorBottom(ray, x, y);
             }
         }
     }
@@ -433,8 +531,8 @@ void drawWalls() {
 
 void draw() {
     if (Map::isVisible() && Map::isFullScreen()) return;
-    drawFloor();
     drawCeiling();
+    drawFloor();
     if (wallsVisible) drawWalls();
 }
 
@@ -457,7 +555,7 @@ void bounceCamera() {
     phase += simd::length(Player::velocity) * freqency;
     if (phase > 1) phase = 0;
 
-    cameraHeight = MAP_TILE_SIZE / 2.0f - sin(phase * pi) * amplitude;
+    cameraHeight = MAP_TILE_SIZE / 2.0f + sin(phase * pi) * amplitude;
 }
 
 void update() {
