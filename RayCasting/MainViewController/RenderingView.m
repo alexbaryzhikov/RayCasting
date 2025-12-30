@@ -1,5 +1,4 @@
 #import "RenderingView.h"
-
 #import "RCBridge.h"
 
 @implementation RenderingView {

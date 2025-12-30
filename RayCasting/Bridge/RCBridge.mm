@@ -1,5 +1,3 @@
-#import <Foundation/Foundation.h>
-
 #import "RCBridge.h"
 
 #include "Canvas.hpp"

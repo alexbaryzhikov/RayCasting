@@ -1,12 +1,13 @@
 #import "MainViewController.h"
-
+#import "CPURenderer.h"
 #import "Config.h"
+#import "GPURenderer.h"
 #import "Renderer.h"
 #import "RenderingView.h"
 
 @implementation MainViewController {
     RenderingView* _view;
-    Renderer* _renderer;
+    id<Renderer> _renderer;
 }
 
 - (void)loadView {
@@ -24,8 +25,11 @@
         self.view = [[NSView alloc] initWithFrame:self.view.frame];
         return;
     }
-
-    _renderer = [[Renderer alloc] initWithMetalKitView:_view];
+    if (GPU_RENDERING) {
+        _renderer = [[GPURenderer alloc] initWithMetalKitView:_view];
+    } else {
+        _renderer = [[CPURenderer alloc] initWithMetalKitView:_view];
+    }
     [_renderer mtkView:_view drawableSizeWillChange:_view.drawableSize];
     _view.delegate = _renderer;
 }

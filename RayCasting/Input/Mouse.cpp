@@ -1,5 +1,4 @@
 #include "Mouse.hpp"
-
 #include "Config.h"
 #include "Map.hpp"
 #include "Player.hpp"

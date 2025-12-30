@@ -1,13 +1,11 @@
+#import "CPURenderer.h"
+#import "CPUShaderTypes.h"
+#import "Config.h"
+#import "RCBridge.h"
 #import <ModelIO/ModelIO.h>
 #import <os/log.h>
 #import <os/signpost.h>
 #import <simd/simd.h>
-
-#import "Renderer.h"
-
-#import "Config.h"
-#import "RCBridge.h"
-#import "ShaderTypes.h"
 
 #define BYTES_PER_PIXEL 4
 
@@ -17,7 +15,7 @@ static const size_t kAlignedUniformsSize = (sizeof(Uniforms) & ~0xFF) + 0x100;
 
 static os_log_t rendererLog;
 
-@implementation Renderer {
+@implementation CPURenderer {
     dispatch_semaphore_t _inFlightSemaphore;
     id<MTLDevice> _device;
     id<MTLCommandQueue> _commandQueue;
