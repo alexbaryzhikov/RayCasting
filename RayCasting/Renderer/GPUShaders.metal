@@ -8,9 +8,10 @@ kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;
     }
+    texture2d<float, access::sample> texture = textures[TextureDoor];
     constexpr sampler textureSampler(coord::normalized, address::clamp_to_edge, filter::nearest);
-    float2 readCoord = float2((float(gid.x) + 0.5) / float(textures[0].get_width()),
-                              (float(gid.y) + 0.5) / float(textures[0].get_height()));
-    float4 color = textures[0].sample(textureSampler, readCoord);
+    float2 readCoord = float2((float(gid.x) + 0.5) / float(texture.get_width()),
+                              (float(gid.y) + 0.5) / float(texture.get_height()));
+    float4 color = texture.sample(textureSampler, readCoord);
     outputTexture.write(color, gid);
 }

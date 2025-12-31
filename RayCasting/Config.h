@@ -8,7 +8,7 @@
 #define VIEW_SCALE                  2
 #define VIEW_WIDTH                  (CANVAS_WIDTH * VIEW_SCALE)
 #define VIEW_HEIGHT                 (CANVAS_HEIGHT * VIEW_SCALE)
-#define GPU_RENDERING               false
+#define GPU_RENDERING               true
 
 // Font
 #define FONT_MAP_WIDTH              128

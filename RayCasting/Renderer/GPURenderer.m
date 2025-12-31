@@ -45,8 +45,13 @@
 }
 
 - (void)loadTextures {
-    _textures[0] = [self loadTexture:@"door"];
-    _texturesCount = 1;
+    _textures[TextureCeiling] = [self loadTexture:@"basalt"];
+    _textures[TextureFloor] = [self loadTexture:@"dirt"];
+    _textures[TextureDoor] = [self loadTexture:@"door"];
+    _textures[TextureWall] = [self loadTexture:@"wall_basalt"];
+    _textures[TextureWallFortified] = [self loadTexture:@"wall_brick"];
+    _textures[TextureWallIndestructible] = [self loadTexture:@"wall_metal"];
+    _texturesCount = 6;
 }
 
 - (nullable id<MTLTexture>)loadTexture:(nonnull NSString*)name {
