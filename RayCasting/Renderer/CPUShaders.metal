@@ -34,14 +34,3 @@ fragment float4 fragmentShader(ColorInOut in [[stage_in]],
 
     return float4(colorSample);
 }
-
-kernel void transformTexture(texture2d<float, access::read>  sourceTexture  [[texture(0)]],
-                             texture2d<float, access::write> destinationTexture [[texture(1)]],
-                             uint2 gid [[thread_position_in_grid]]) {
-    if (gid.x >= destinationTexture.get_width() || gid.y >= destinationTexture.get_height()) {
-        return;
-    }
-    uint2 readCoord = uint2(gid.x, sourceTexture.get_height() - gid.y - 1);
-    float4 inColor = sourceTexture.read(readCoord);
-    destinationTexture.write(inColor, gid);
-}

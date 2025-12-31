@@ -50,12 +50,12 @@
 }
 
 - (nullable id<MTLTexture>)loadTexture:(nonnull NSString*)name {
+    MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:_device];
     NSURL* url = [NSBundle.mainBundle URLForResource:name withExtension:@"png"];
     if (!url) {
         NSLog(@"Could not find file '%@.png' in main bundle", name);
         return nil;
     }
-    MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:_device];
     NSDictionary<MTKTextureLoaderOption, id>* options = @{
         MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead),
         MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate),

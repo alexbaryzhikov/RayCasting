@@ -24,7 +24,6 @@ static os_log_t rendererLog;
     id<MTLDepthStencilState> _depthState;
     id<MTLTexture> _canvasTexture;
     MTLVertexDescriptor* _mtlVertexDescriptor;
-    id<MTLComputePipelineState> _computePipelineState;
 
     uint32_t _uniformBufferOffset;
     uint8_t _uniformBufferIndex;
@@ -103,13 +102,6 @@ static os_log_t rendererLog;
     _dynamicUniformBuffer.label = @"UniformBuffer";
 
     _commandQueue = [_device newCommandQueue];
-
-    id<MTLFunction> kernelFunction = [library newFunctionWithName:@"transformTexture"];
-
-    _computePipelineState = [_device newComputePipelineStateWithFunction:kernelFunction error:&error];
-    if (!_computePipelineState) {
-        NSLog(@"Failed to create compute pipeline state: %@", error);
-    }
 }
 
 - (void)_loadAssets {
@@ -117,16 +109,16 @@ static os_log_t rendererLog;
 
     [self _createCanvas];
 
-    [self _loadTexture:@(FONT_MAP) to:[RCBridge fontBytes]];
-    [self _loadTexture:@"Ceiling" to:[RCBridge textureBytes_ceiling]];
-    [self _loadTexture:@"Door" to:[RCBridge textureBytes_door]];
-    [self _loadTexture:@"Floor" to:[RCBridge textureBytes_floor]];
-    [self _loadTexture:@"Wall" to:[RCBridge textureBytes_wall]];
-    [self _loadTexture:@"WallFortified" to:[RCBridge textureBytes_wallFortified]];
-    [self _loadTexture:@"WallFortifiedDecal1" to:[RCBridge textureBytes_wallFortifiedDecal1]];
-    [self _loadTexture:@"WallFortifiedDecal2" to:[RCBridge textureBytes_wallFortifiedDecal2]];
-    [self _loadTexture:@"WallFortifiedTorch" to:[RCBridge textureBytes_wallFortifiedTorch]];
-    [self _loadTexture:@"WallIndestructible" to:[RCBridge textureBytes_wallIndestructible]];
+    [self _loadTexture:@"font_sweet_sixteen" to:[RCBridge fontBytes]];
+    [self _loadTexture:@"basalt" to:[RCBridge textureBytes_ceiling]];
+    [self _loadTexture:@"door" to:[RCBridge textureBytes_door]];
+    [self _loadTexture:@"dirt" to:[RCBridge textureBytes_floor]];
+    [self _loadTexture:@"wall_basalt" to:[RCBridge textureBytes_wall]];
+    [self _loadTexture:@"wall_brick" to:[RCBridge textureBytes_wallFortified]];
+    [self _loadTexture:@"wall_brick_support" to:[RCBridge textureBytes_wallFortifiedDecal1]];
+    [self _loadTexture:@"wall_brick_window" to:[RCBridge textureBytes_wallFortifiedDecal2]];
+    [self _loadTexture:@"wall_brick_torch" to:[RCBridge textureBytes_wallFortifiedTorch]];
+    [self _loadTexture:@"wall_metal" to:[RCBridge textureBytes_wallIndestructible]];
 
     [RCBridge generateMap];
     [RCBridge startWorld];
@@ -169,72 +161,28 @@ static os_log_t rendererLog;
 }
 
 - (void)_loadTexture:(nonnull NSString*)name to:(nonnull void*)bytes {
-    NSError* error = nil;
-    id<MTLTexture> texture = [self _loadTexture:name error:&error];
-    if (!texture || error) {
-        NSLog(@"Error loading texture '%@': %@", name, error.localizedDescription);
-        return;
-    }
-
-    texture = [self createTransformedTextureFrom:texture];
-    if (!texture || error) {
-        NSLog(@"Error converting texture '%@': %@", name, error.localizedDescription);
-        return;
-    }
-
-    [texture getBytes:bytes
-          bytesPerRow:texture.width * BYTES_PER_PIXEL
-           fromRegion:MTLRegionMake2D(0, 0, texture.width, texture.height)
-          mipmapLevel:0];
-}
-
-- (nullable id<MTLTexture>)_loadTexture:(nonnull NSString*)name error:(NSError**)error {
     MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:_device];
+    NSURL* url = [NSBundle.mainBundle URLForResource:name withExtension:@"png"];
+    if (!url) {
+        NSLog(@"Could not find file '%@.png' in main bundle", name);
+        return;
+    }
     NSDictionary<MTKTextureLoaderOption, id>* options = @{
         MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageUnknown),
         MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModeShared),
     };
-    return [textureLoader newTextureWithName:name
-                                 scaleFactor:1.0
-                                      bundle:nil
-                                     options:options
-                                       error:error];
-}
-
-- (id<MTLTexture>)createTransformedTextureFrom:(id<MTLTexture>)sourceTexture {
-    MTLTextureDescriptor* descriptor = [MTLTextureDescriptor
-        texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB
-                                     width:sourceTexture.width
-                                    height:sourceTexture.height
-                                 mipmapped:NO];
-
-    descriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
-
-    id<MTLTexture> destinationTexture = [_device newTextureWithDescriptor:descriptor];
-    if (!destinationTexture) {
-        NSLog(@"Failed to create destination texture");
-        return nil;
+    NSError* error = nil;
+    id<MTLTexture> texture = [textureLoader newTextureWithContentsOfURL:url
+                                                                options:options
+                                                                  error:&error];
+    if (!texture || error) {
+        NSLog(@"Error loading texture '%@.png': %@", name, error);
+        return;
     }
-
-    id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
-    id<MTLComputeCommandEncoder> computeCommandEncoder = [commandBuffer computeCommandEncoder];
-
-    [computeCommandEncoder setComputePipelineState:_computePipelineState];
-    [computeCommandEncoder setTexture:sourceTexture atIndex:0];
-    [computeCommandEncoder setTexture:destinationTexture atIndex:1];
-
-    NSUInteger w = _computePipelineState.threadExecutionWidth;
-    NSUInteger h = _computePipelineState.maxTotalThreadsPerThreadgroup / w;
-    MTLSize threadsPerThreadgroup = MTLSizeMake(w, h, 1);
-    MTLSize threadsPerGrid = MTLSizeMake(sourceTexture.width, sourceTexture.height, 1);
-
-    [computeCommandEncoder dispatchThreads:threadsPerGrid
-                     threadsPerThreadgroup:threadsPerThreadgroup];
-    [computeCommandEncoder endEncoding];
-    [commandBuffer commit];
-    [commandBuffer waitUntilCompleted];
-
-    return destinationTexture;
+    [texture getBytes:bytes
+          bytesPerRow:texture.width * BYTES_PER_PIXEL
+           fromRegion:MTLRegionMake2D(0, 0, texture.width, texture.height)
+          mipmapLevel:0];
 }
 
 #pragma mark MTRViewDelegate Methods
