@@ -25,11 +25,13 @@
         self.view = [[NSView alloc] initWithFrame:self.view.frame];
         return;
     }
+
     if (GPU_RENDERING) {
         _renderer = [[GPURenderer alloc] initWithMetalKitView:_view];
     } else {
         _renderer = [[CPURenderer alloc] initWithMetalKitView:_view];
     }
+
     [_renderer mtkView:_view drawableSizeWillChange:_view.drawableSize];
     _view.delegate = _renderer;
 }

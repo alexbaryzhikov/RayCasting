@@ -67,9 +67,10 @@
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
     self.window.title = @"Ray Casting";
-    MainViewController* viewController = [[MainViewController alloc] init];
-    self.window.contentViewController = viewController;
-    [self.window makeFirstResponder:viewController];
+    self.window.backgroundColor = NSColor.blackColor;
+    self.window.contentAspectRatio = NSMakeSize(VIEW_WIDTH, VIEW_HEIGHT);
+    self.window.contentViewController = [[MainViewController alloc] init];
+    [self.window makeFirstResponder:self.window.contentViewController];
     [self.window center];
     [self.window makeKeyAndOrderFront:nil];
 }

@@ -3,7 +3,7 @@
 
 // Display
 #define CANVAS_WIDTH                800
-#define CANVAS_HEIGHT               450
+#define CANVAS_HEIGHT               500
 #define CANVAS_SIZE                 (CANVAS_WIDTH * CANVAS_HEIGHT)
 #define VIEW_SCALE                  2
 #define VIEW_WIDTH                  (CANVAS_WIDTH * VIEW_SCALE)
