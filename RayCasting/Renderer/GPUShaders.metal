@@ -4,6 +4,7 @@ using namespace metal;
 
 kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]],
                      array<texture2d<float, access::sample>, TEXTURE_HEAP_SIZE> textures [[texture(1)]],
+                     constant Camera& camera [[buffer(0)]],
                      uint2 gid [[thread_position_in_grid]]) {
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;

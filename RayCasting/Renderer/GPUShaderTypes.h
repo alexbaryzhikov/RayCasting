@@ -12,4 +12,15 @@ enum TextureIndex {
     TextureWallIndestructible = 5,
 };
 
+#ifdef __METAL_VERSION_
+#define FLOAT4 float4
+#else
+#include <simd/simd.h>
+#define FLOAT4 simd_float4
+#endif
+
+typedef struct Camera {
+    FLOAT4 placement; // xyz + angle
+} Camera;
+
 #endif /* GPUShaderTypes_h */

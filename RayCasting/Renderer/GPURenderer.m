@@ -1,23 +1,27 @@
 #import "GPURenderer.h"
 #import "Config.h"
 #import "GPUShaderTypes.h"
+#import "RCBridge.h"
 
 @implementation GPURenderer {
-    id<MTLDevice> _device;
-    id<MTLCommandQueue> _commandQueue;
-    id<MTLComputePipelineState> _computePipelineState;
+    id<MTLDevice> device;
+    id<MTLCommandQueue> commandQueue;
+    id<MTLComputePipelineState> computePipelineState;
 
-    id<MTLTexture> _textures[TEXTURE_HEAP_SIZE];
-    NSUInteger _texturesCount;
+    id<MTLTexture> textures[TEXTURE_HEAP_SIZE];
+    NSUInteger texturesCount;
+
+    id<MTLBuffer> cameraBuffer;
 }
 
 - (nonnull instancetype)initWithMetalKitView:(nonnull MTKView*)view {
     self = [super init];
     if (self) {
-        _device = view.device;
+        device = view.device;
         [self setupView:view];
         [self loadMetal];
         [self loadTextures];
+        [self setupWorld];
     }
     return self;
 }
@@ -32,30 +36,32 @@
 }
 
 - (void)loadMetal {
-    _commandQueue = [_device newCommandQueue];
+    commandQueue = [device newCommandQueue];
 
-    id<MTLLibrary> defaultLibrary = [_device newDefaultLibrary];
+    id<MTLLibrary> defaultLibrary = [device newDefaultLibrary];
     id<MTLFunction> kernelFunction = [defaultLibrary newFunctionWithName:@"castRays"];
 
     NSError* error = nil;
-    _computePipelineState = [_device newComputePipelineStateWithFunction:kernelFunction error:&error];
-    if (!_computePipelineState) {
+    computePipelineState = [device newComputePipelineStateWithFunction:kernelFunction error:&error];
+    if (!computePipelineState) {
         NSLog(@"Failed to create compute pipeline state: %@", error);
     }
+
+    cameraBuffer = [device newBufferWithLength:sizeof(Camera) options:MTLResourceStorageModeShared];
 }
 
 - (void)loadTextures {
-    _textures[TextureCeiling] = [self loadTexture:@"basalt"];
-    _textures[TextureFloor] = [self loadTexture:@"dirt"];
-    _textures[TextureDoor] = [self loadTexture:@"door"];
-    _textures[TextureWall] = [self loadTexture:@"wall_basalt"];
-    _textures[TextureWallFortified] = [self loadTexture:@"wall_brick"];
-    _textures[TextureWallIndestructible] = [self loadTexture:@"wall_metal"];
-    _texturesCount = 6;
+    textures[TextureCeiling] = [self loadTexture:@"basalt"];
+    textures[TextureFloor] = [self loadTexture:@"dirt"];
+    textures[TextureDoor] = [self loadTexture:@"door"];
+    textures[TextureWall] = [self loadTexture:@"wall_basalt"];
+    textures[TextureWallFortified] = [self loadTexture:@"wall_brick"];
+    textures[TextureWallIndestructible] = [self loadTexture:@"wall_metal"];
+    texturesCount = 6;
 }
 
 - (nullable id<MTLTexture>)loadTexture:(nonnull NSString*)name {
-    MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:_device];
+    MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:device];
     NSURL* url = [NSBundle.mainBundle URLForResource:name withExtension:@"png"];
     if (!url) {
         NSLog(@"Could not find file '%@.png' in main bundle", name);
@@ -76,30 +82,45 @@
     return texture;
 }
 
+- (void)setupWorld {
+    [RCBridge generateMap];
+    [RCBridge startWorld];
+}
+
 - (void)drawInMTKView:(MTKView*)view {
     id<CAMetalDrawable> drawable = view.currentDrawable;
     if (!drawable) {
         return;
     }
 
-    id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
-    id<MTLComputeCommandEncoder> commandEncoder = [commandBuffer computeCommandEncoder];
-    [commandEncoder setComputePipelineState:_computePipelineState];
-    [commandEncoder setTexture:drawable.texture atIndex:0];
-    if (_texturesCount > 0) {
-        [commandEncoder setTextures:_textures withRange:NSMakeRange(1, _texturesCount)];
-    }
+    [self updateUniforms];
 
-    NSUInteger width = _computePipelineState.threadExecutionWidth;
-    NSUInteger height = _computePipelineState.maxTotalThreadsPerThreadgroup / width;
+    id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
+    id<MTLComputeCommandEncoder> commandEncoder = [commandBuffer computeCommandEncoder];
+    [commandEncoder setComputePipelineState:computePipelineState];
+    [commandEncoder setTexture:drawable.texture atIndex:0];
+    if (texturesCount > 0) {
+        [commandEncoder setTextures:textures withRange:NSMakeRange(1, texturesCount)];
+    }
+    [commandEncoder setBuffer:cameraBuffer offset:0 atIndex:0];
+
+    NSUInteger width = computePipelineState.threadExecutionWidth;
+    NSUInteger height = computePipelineState.maxTotalThreadsPerThreadgroup / width;
     MTLSize threadsPerThreadgroup = MTLSizeMake(width, height, 1);
     MTLSize threadsPerGrid = MTLSizeMake(drawable.texture.width, drawable.texture.height, 1);
-
     [commandEncoder dispatchThreads:threadsPerGrid threadsPerThreadgroup:threadsPerThreadgroup];
 
     [commandEncoder endEncoding];
     [commandBuffer presentDrawable:drawable];
     [commandBuffer commit];
+}
+
+- (void)updateUniforms {
+    [RCBridge updateWorld];
+    Camera* camera = cameraBuffer.contents;
+    camera->placement.xy = RCBridge.playerPosition;
+    camera->placement.z = RCBridge.cameraHeight;
+    camera->placement.w = RCBridge.playerAngle;
 }
 
 - (void)mtkView:(MTKView*)view drawableSizeWillChange:(CGSize)size {

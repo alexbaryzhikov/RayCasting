@@ -31,8 +31,7 @@ struct Ray {
 
 namespace RC::Viewport {
 
-extern simd::float2 rayA;
-extern simd::float2 rayB;
+extern float cameraHeight;
 
 void initialize();
 
@@ -41,6 +40,7 @@ void draw();
 void update();
 
 Ray castRay(float playerSpaceAngle, bool tracer = false);
+
 Ray castRayToFirstHit(float playerSpaceAngle);
 
 } // namespace RC::Viewport

@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 
+#include <simd/simd.h>
+
 @interface RCBridge : NSObject
 
 + (const void*)canvasBytes;
@@ -26,5 +28,8 @@
 + (void)rightMouseUp;
 + (void)mouseMoved:(CGVector)offset;
 + (void)mouseWheel:(CGVector)offset;
++ (simd_float2)playerPosition;
++ (float)playerAngle;
++ (float)cameraHeight;
 
 @end

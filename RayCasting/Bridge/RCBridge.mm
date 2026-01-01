@@ -5,8 +5,10 @@
 #include "Map.hpp"
 #include "MapGenerator.hpp"
 #include "Mouse.hpp"
+#include "Player.hpp"
 #include "Text.hpp"
 #include "Textures.hpp"
+#include "Viewport.hpp"
 #include "World.hpp"
 
 @implementation RCBridge
@@ -105,6 +107,18 @@
 
 + (void)mouseWheel:(CGVector)offset {
     RC::Mouse::scrolled(offset.dx, offset.dy);
+}
+
++ (simd_float2)playerPosition {
+    return RC::Player::position.xy;
+}
+
++ (float)playerAngle {
+    return RC::Player::angle;
+}
+
++ (float)cameraHeight {
+    return RC::Viewport::cameraHeight;
 }
 
 @end
