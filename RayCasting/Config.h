@@ -47,6 +47,7 @@
 #define CAMERA_HEIGHT               32.0f
 #define CAMERA_FOV                  1.04719758f
 #define CAMERA_NEAR_CLIP            12.0f
+#define CAMERA_FAR_CLIP             800.0f
 
 // Mouse
 #define MOUSE_SENSITIVITY           1.0f

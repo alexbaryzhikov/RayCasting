@@ -21,7 +21,6 @@ constexpr float horizonY = CANVAS_HEIGHT / 2.0f; // screen space
 constexpr size_t ceilingSize = horizonY;
 constexpr size_t floorSize = CANVAS_HEIGHT - ceilingSize;
 const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
-constexpr float maxDrawDistance = 800.0f;
 constexpr simd::float3 mapTile = {MAP_TILE_SIZE, MAP_TILE_SIZE, 1.0f};
 constexpr simd::float3 pointAtInf = {bigFloat, bigFloat, 1.0f};
 constexpr TileHit tileMiss = {-1};
@@ -119,7 +118,7 @@ void drawCeiling() {
     for (int x = 0; x < CANVAS_WIDTH; ++x) {
         for (int y = 0; y < ceilingSize; ++y) {
             simd::float3 hitPlayer = ceilingHit(x, y, MAP_TILE_SIZE);
-            if (hitPlayer.x > maxDrawDistance) {
+            if (hitPlayer.x > CAMERA_FAR_CLIP) {
                 Canvas::point(x, y, Palette::fogColor);
                 continue;
             }
@@ -129,13 +128,13 @@ void drawCeiling() {
             }
             simd::float3 texturePos = simd::fmod(hitMap, mapTile) / mapTile;
             uint32_t color = sampleTexture(Textures::ceiling.data(), texturePos.x, texturePos.y);
-            float distanceCoef = hitPlayer.x * 2 / maxDrawDistance;
+            float distanceCoef = hitPlayer.x * 2 / CAMERA_FAR_CLIP;
             if (distanceCoef < 1) {
                 color = Palette::blend(color, Palette::lightColor, (1 - distanceCoef) * 0x70, BlendMode::add);
             } else {
                 color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
             }
-            color = Palette::blend(color, Palette::fogColor, hitPlayer.x / maxDrawDistance * 0xFF, BlendMode::normal);
+            color = Palette::blend(color, Palette::fogColor, hitPlayer.x / CAMERA_FAR_CLIP * 0xFF, BlendMode::normal);
             Canvas::point(x, y, color);
         }
     }
@@ -146,7 +145,7 @@ void drawFloor() {
     for (int x = 0; x < CANVAS_WIDTH; ++x) {
         for (int y = ceilingSize; y < CANVAS_HEIGHT; ++y) {
             simd::float3 hitPlayer = floorHit(x, y, 0);
-            if (hitPlayer.x > maxDrawDistance) {
+            if (hitPlayer.x > CAMERA_FAR_CLIP) {
                 Canvas::point(x, y, Palette::fogColor);
                 continue;
             }
@@ -156,13 +155,13 @@ void drawFloor() {
             }
             simd::float3 texturePos = simd::fmod(hitMap, mapTile) / mapTile;
             uint32_t color = sampleTexture(Textures::floor.data(), texturePos.x, texturePos.y);
-            float distanceCoef = hitPlayer.x * 2 / maxDrawDistance;
+            float distanceCoef = hitPlayer.x * 2 / CAMERA_FAR_CLIP;
             if (distanceCoef < 1) {
                 color = Palette::blend(color, Palette::lightColor, (1 - distanceCoef) * 0x70, BlendMode::add);
             } else {
                 color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
             }
-            color = Palette::blend(color, Palette::fogColor, hitPlayer.x / maxDrawDistance * 0xFF, BlendMode::normal);
+            color = Palette::blend(color, Palette::fogColor, hitPlayer.x / CAMERA_FAR_CLIP * 0xFF, BlendMode::normal);
             Canvas::point(x, y, color);
         }
     }
@@ -458,14 +457,14 @@ void drawWall(const Ray& ray, float beginY, float endY, float wallHeight, float 
         // Wall is fully obstructed, nothing to draw.
         return;
     }
-    if (ray.length > maxDrawDistance) {
+    if (ray.length > CAMERA_FAR_CLIP) {
         for (; y < end; ++y) {
             Canvas::point(x, y, Palette::fogColor);
         }
         return;
     }
     uint32_t* texture = Textures::getTexture(Map::tiles[ray.tile.index]);
-    float distanceCoef = ray.length * 2 / maxDrawDistance;
+    float distanceCoef = ray.length * 2 / CAMERA_FAR_CLIP;
     float angleCoef = 1 - ray.tile.angle / 2;
     for (; y < end; ++y) {
         uint32_t color = sampleTexture(texture, ray.tile.offset, (y - beginY) / wallHeight + textureOffsetY);
@@ -474,7 +473,7 @@ void drawWall(const Ray& ray, float beginY, float endY, float wallHeight, float 
         } else {
             color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
         }
-        color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
+        color = Palette::blend(color, Palette::fogColor, ray.length / CAMERA_FAR_CLIP * 0xFF, BlendMode::normal);
         Canvas::point(x, y, color);
     }
 }
@@ -489,7 +488,7 @@ void drawDoorBottom(const Ray& ray, int x, int& y) {
     simd::float3x3 playerToMapTransform = makePlayerToMapTransform();
     std::array<simd::float2, 4> doorPolygon = makeDoorPolygon(ray.tile.index);
     uint32_t* doorTexture = Textures::getTexture(Map::tiles[ray.tile.index]);
-    float distanceCoef = ray.length * 2 / maxDrawDistance;
+    float distanceCoef = ray.length * 2 / CAMERA_FAR_CLIP;
     for (; y < horizonY; ++y) {
         simd::float3 hit = matrix_multiply(playerToMapTransform, ceilingHit(x, y, doorBottomHeight));
         if (!inPolygonBounds(hit.xy, doorPolygon)) {
@@ -502,7 +501,7 @@ void drawDoorBottom(const Ray& ray, int x, int& y) {
         } else {
             color = Palette::blend(color, Palette::shadowColor, (distanceCoef - 1) * 0xA0, BlendMode::multipy);
         }
-        color = Palette::blend(color, Palette::fogColor, ray.length / maxDrawDistance * 0xFF, BlendMode::normal);
+        color = Palette::blend(color, Palette::fogColor, ray.length / CAMERA_FAR_CLIP * 0xFF, BlendMode::normal);
         Canvas::point(x, y, color);
     }
 }
