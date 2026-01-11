@@ -121,4 +121,29 @@
     return RC::Viewport::cameraHeight;
 }
 
++ (void)copyTiles:(Tile*)dst {
+    for (int i = 0; i < RC::Map::tiles.size(); ++i) {
+        switch (RC::Map::tiles[i]) {
+            case RC::Tile::doorH:
+                dst[i] = TileDoorH;
+                break;
+            case RC::Tile::doorV:
+                dst[i] = TileDoorV;
+                break;
+            case RC::Tile::floor:
+                dst[i] = TileFloor;
+                break;
+            case RC::Tile::wall:
+                dst[i] = TileWall;
+                break;
+            case RC::Tile::wallFortified:
+                dst[i] = TileWallFortified;
+                break;
+            case RC::Tile::wallIndestructible:
+                dst[i] = TileWallIndestructible;
+                break;
+        }
+    }
+}
+
 @end

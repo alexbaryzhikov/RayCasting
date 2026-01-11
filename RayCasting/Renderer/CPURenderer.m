@@ -238,7 +238,7 @@ static os_log_t rendererLog;
         }
 
         [renderEncoder setFragmentTexture:_canvasTexture
-                                  atIndex:TextureIndexColor];
+                                  atIndex:0];
 
         for (MTKSubmesh* submesh in _canvasMesh.submeshes) {
             [renderEncoder drawIndexedPrimitives:submesh.primitiveType

@@ -24,10 +24,6 @@ typedef NS_ENUM(EnumBackingType, VertexAttribute) {
     VertexAttributeTexcoord = 1,
 };
 
-typedef NS_ENUM(EnumBackingType, TextureIndex) {
-    TextureIndexColor = 0,
-};
-
 typedef struct {
     simd_float4x4 projectionMatrix;
     simd_float4x4 modelViewMatrix;

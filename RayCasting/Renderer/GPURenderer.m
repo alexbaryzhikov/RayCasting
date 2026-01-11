@@ -1,5 +1,4 @@
 #import "GPURenderer.h"
-#import "Config.h"
 #import "GPUShaderTypes.h"
 #import "RCBridge.h"
 
@@ -12,6 +11,7 @@
     NSUInteger texturesCount;
 
     id<MTLBuffer> cameraBuffer;
+    id<MTLBuffer> mapBuffer;
 }
 
 - (nonnull instancetype)initWithMetalKitView:(nonnull MTKView*)view {
@@ -19,7 +19,7 @@
     if (self) {
         device = view.device;
         [self setupView:view];
-        [self loadMetal];
+        [self setupMetal];
         [self loadTextures];
         [self setupWorld];
     }
@@ -35,7 +35,7 @@
     view.layer.contentsGravity = kCAGravityResizeAspect;
 }
 
-- (void)loadMetal {
+- (void)setupMetal {
     commandQueue = [device newCommandQueue];
 
     id<MTLLibrary> defaultLibrary = [device newDefaultLibrary];
@@ -48,15 +48,16 @@
     }
 
     cameraBuffer = [device newBufferWithLength:sizeof(Camera) options:MTLResourceStorageModeShared];
+    mapBuffer = [device newBufferWithLength:sizeof(Map) options:MTLResourceStorageModeShared];
 }
 
 - (void)loadTextures {
-    textures[TextureCeiling] = [self loadTexture:@"basalt"];
-    textures[TextureFloor] = [self loadTexture:@"dirt"];
-    textures[TextureDoor] = [self loadTexture:@"door"];
-    textures[TextureWall] = [self loadTexture:@"wall_basalt"];
-    textures[TextureWallFortified] = [self loadTexture:@"wall_brick"];
-    textures[TextureWallIndestructible] = [self loadTexture:@"wall_metal"];
+    textures[TextureIndexCeiling] = [self loadTexture:@"basalt"];
+    textures[TextureIndexFloor] = [self loadTexture:@"dirt"];
+    textures[TextureIndexDoor] = [self loadTexture:@"door"];
+    textures[TextureIndexWall] = [self loadTexture:@"wall_basalt"];
+    textures[TextureIndexWallFortified] = [self loadTexture:@"wall_brick"];
+    textures[TextureIndexWallIndestructible] = [self loadTexture:@"wall_metal"];
     texturesCount = 6;
 }
 
@@ -103,6 +104,7 @@
         [commandEncoder setTextures:textures withRange:NSMakeRange(1, texturesCount)];
     }
     [commandEncoder setBuffer:cameraBuffer offset:0 atIndex:0];
+    [commandEncoder setBuffer:mapBuffer offset:0 atIndex:1];
 
     NSUInteger width = computePipelineState.threadExecutionWidth;
     NSUInteger height = computePipelineState.maxTotalThreadsPerThreadgroup / width;
@@ -121,6 +123,7 @@
     camera->placement.xy = RCBridge.playerPosition;
     camera->placement.z = RCBridge.cameraHeight;
     camera->placement.w = RCBridge.playerAngle;
+    [RCBridge copyTiles: mapBuffer.contents];
 }
 
 - (void)mtkView:(MTKView*)view drawableSizeWillChange:(CGSize)size {

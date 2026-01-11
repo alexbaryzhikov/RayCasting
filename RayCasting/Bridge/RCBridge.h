@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 
+#include "GPUShaderTypes.h"
 #include <simd/simd.h>
 
 @interface RCBridge : NSObject
@@ -31,5 +32,6 @@
 + (simd_float2)playerPosition;
 + (float)playerAngle;
 + (float)cameraHeight;
++ (void)copyTiles:(Tile*)dst;
 
 @end

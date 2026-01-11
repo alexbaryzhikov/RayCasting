@@ -1,15 +1,17 @@
 #ifndef GPUShaderTypes_h
 #define GPUShaderTypes_h
 
+#include "../Config.h"
+
 #define TEXTURE_HEAP_SIZE 8
 
 enum TextureIndex {
-    TextureCeiling = 0,
-    TextureFloor = 1,
-    TextureDoor = 2,
-    TextureWall = 3,
-    TextureWallFortified = 4,
-    TextureWallIndestructible = 5,
+    TextureIndexCeiling,
+    TextureIndexFloor,
+    TextureIndexDoor,
+    TextureIndexWall,
+    TextureIndexWallFortified,
+    TextureIndexWallIndestructible,
 };
 
 #ifdef __METAL_VERSION_
@@ -22,5 +24,18 @@ enum TextureIndex {
 typedef struct Camera {
     FLOAT4 placement; // xyz + angle
 } Camera;
+
+typedef enum Tile {
+    TileDoorH,
+    TileDoorV,
+    TileFloor,
+    TileWall,
+    TileWallFortified,
+    TileWallIndestructible,
+} Tile;
+
+typedef struct Map {
+    Tile tiles[MAP_WIDTH * MAP_HEIGHT];
+} Map;
 
 #endif /* GPUShaderTypes_h */

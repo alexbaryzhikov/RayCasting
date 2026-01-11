@@ -1,4 +1,3 @@
-#include "../Config.h"
 #include "GPUShaderTypes.h"
 #include <metal_stdlib>
 
@@ -9,6 +8,9 @@ constant constexpr float4 pointAtInf = {inf, inf, inf, 1};
 
 constant constexpr float pixelAngle = float(CAMERA_FOV) / float(CANVAS_WIDTH); // angle between rays cast from camera to adjacent pixels of projection plane
 constant constexpr float horizonY = float(CANVAS_HEIGHT) / 2;                  // horizon coordinate in screen space
+
+constant constexpr float mapWidth = MAP_WIDTH * MAP_TILE_SIZE;
+constant constexpr float mapHeight = MAP_HEIGHT * MAP_TILE_SIZE;
 
 constant constexpr float3 colorFog = float3(0x07, 0x00, 0x16) / 0xFF;
 constant constexpr float3 colorLight = float3(0xB7, 0x46, 0x40) / 0xFF;
@@ -77,6 +79,7 @@ float4 getSurfaceHit(float2 rayAngle, float cameraZ, float surfaceZ) {
 kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]],
                      array<texture2d<float, access::sample>, TEXTURE_HEAP_SIZE> textures [[texture(1)]],
                      constant Camera& camera [[buffer(0)]],
+                     constant Map& map [[buffer(1)]],
                      uint2 gid [[thread_position_in_grid]]) {
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;
@@ -92,7 +95,7 @@ kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]
     float cameraAngleZ = camera.placement.w;
     float4x4 cameraToWorld = makeTranslationMatrix(cameraPosition) * makeRotationZMatrix(cameraAngleZ);
     float4 hitWorld = cameraToWorld * hitCamera;
-    texture2d<float, access::sample> texture = isCeiling ? textures[TextureCeiling] : textures[TextureFloor];
+    texture2d<float, access::sample> texture = isCeiling ? textures[TextureIndexCeiling] : textures[TextureIndexFloor];
     constexpr sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
     float2 readCoord = hitWorld.xy / float(MAP_TILE_SIZE);
     float4 outColor = texture.sample(textureSampler, readCoord);

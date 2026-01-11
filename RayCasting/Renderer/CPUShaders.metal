@@ -25,7 +25,7 @@ vertex ColorInOut vertexShader(Vertex in [[stage_in]],
 
 fragment float4 fragmentShader(ColorInOut in [[stage_in]],
                                constant Uniforms & uniforms [[ buffer(BufferIndexUniforms) ]],
-                               texture2d<half> colorMap     [[ texture(TextureIndexColor) ]]) {
+                               texture2d<half> colorMap     [[ texture(0) ]]) {
     constexpr sampler colorSampler(mip_filter::nearest,
                                    mag_filter::nearest,
                                    min_filter::nearest);
