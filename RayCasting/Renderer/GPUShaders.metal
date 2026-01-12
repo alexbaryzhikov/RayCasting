@@ -27,11 +27,11 @@ float4 blendNormal(float4 src, float4 dst) {
 }
 
 float4 blendAdd(float4 src, float4 dst) {
-    return float4(dst.rgb + src.rgb * src.a, 1);
+    return float4(dst.rgb + src.rgb * src.a, src.a + dst.a * (1 - src.a));
 }
 
 float4 blendMultiply(float4 src, float4 dst) {
-    return float4(dst.rgb * (1 - (1 - src.rgb) * src.a), 1);
+    return float4(dst.rgb * (1 - (1 - src.rgb) * src.a), dst.a);
 }
 
 float4x4 makeTranslationMatrix(float4 t) {
@@ -67,13 +67,40 @@ float2 getRayAngle(uint2 pixel) {
 /**
  * Returns point in camera space where the ray cast from camera at given angle hits horizontal surface.
  */
-float4 getSurfaceHit(float2 rayAngle, float cameraZ, float surfaceZ) {
-    if (rayAngle.y >= 0 && cameraZ >= surfaceZ) return pointAtInf;
-    if (rayAngle.y <= 0 && cameraZ <= surfaceZ) return pointAtInf;
-    float z = (surfaceZ - cameraZ);
+float4 castRayToSurface(float2 rayAngle, float cameraPositionZ, float surfacePositionZ) {
+    if (rayAngle.y >= 0 && cameraPositionZ >= surfacePositionZ) return pointAtInf;
+    if (rayAngle.y <= 0 && cameraPositionZ <= surfacePositionZ) return pointAtInf;
+    float z = surfacePositionZ - cameraPositionZ;
     float x = z / tan(rayAngle.y);
     float y = x * tan(rayAngle.x);
     return {x, y, z, 1};
+}
+
+/**
+ * Draws horizontal surface color into the output texture pixel.
+ */
+void drawSurface(float4 raySurfaceHit,  // coordinate of ray and surface intersection in camera space
+                 float4 cameraPosition, // camera position in world space
+                 float cameraAngleZ,    // camera Z-angle in world space
+                 texture2d<float, access::sample> surfaceTexture,
+                 texture2d<float, access::write> outputTexture,
+                 uint2 pixel) {
+    if (raySurfaceHit.x >= CAMERA_FAR_CLIP) {
+        outputTexture.write(float4(sRGBToLinear(colorFog), 1), pixel);
+        return;
+    }
+    float4 raySurfaceHitWorld = makeTranslationMatrix(cameraPosition) * makeRotationZMatrix(cameraAngleZ) * raySurfaceHit;
+    constexpr sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
+    float2 readCoord = raySurfaceHitWorld.xy / float(MAP_TILE_SIZE);
+    float4 outColor = surfaceTexture.sample(textureSampler, readCoord);
+    float lightFalloff = 1.0f - min(1.0f, raySurfaceHit.x / PLAYER_LIGHT_RADIUS);
+    float4 lightColor = float4(sRGBToLinear(colorLight), lightFalloff * PLAYER_LIGHT_INTENSITY);
+    outColor = blendAdd(lightColor, outColor);
+    float4 shadowColor = float4(sRGBToLinear(colorShadow), raySurfaceHit.x / CAMERA_FAR_CLIP);
+    outColor = blendMultiply(shadowColor, outColor);
+    float4 fogColor = float4(sRGBToLinear(colorFog), raySurfaceHit.x / CAMERA_FAR_CLIP);
+    outColor = blendNormal(fogColor, outColor);
+    outputTexture.write(outColor, pixel);
 }
 
 kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]],
@@ -84,27 +111,11 @@ kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;
     }
-    float2 rayAngle = getRayAngle(gid);
-    bool isCeiling = rayAngle.y > 0;
-    float4 hitCamera = getSurfaceHit(rayAngle, camera.placement.z, isCeiling ? MAP_TILE_SIZE : 0);
-    if (hitCamera.x >= CAMERA_FAR_CLIP) {
-        outputTexture.write(float4(sRGBToLinear(colorFog), 1), gid);
-        return;
-    }
     float4 cameraPosition = float4(camera.placement.xyz, 1);
     float cameraAngleZ = camera.placement.w;
-    float4x4 cameraToWorld = makeTranslationMatrix(cameraPosition) * makeRotationZMatrix(cameraAngleZ);
-    float4 hitWorld = cameraToWorld * hitCamera;
-    texture2d<float, access::sample> texture = isCeiling ? textures[TextureIndexCeiling] : textures[TextureIndexFloor];
-    constexpr sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
-    float2 readCoord = hitWorld.xy / float(MAP_TILE_SIZE);
-    float4 outColor = texture.sample(textureSampler, readCoord);
-    float lightFalloff = 1.0f - min(1.0f, hitCamera.x / PLAYER_LIGHT_RADIUS);
-    float4 lightColor = float4(sRGBToLinear(colorLight), lightFalloff * PLAYER_LIGHT_INTENSITY);
-    outColor = blendAdd(lightColor, outColor);
-    float4 shadowColor = float4(sRGBToLinear(colorShadow), hitCamera.x / CAMERA_FAR_CLIP);
-    outColor = blendMultiply(shadowColor, outColor);
-    float4 fogColor = float4(sRGBToLinear(colorFog), hitCamera.x / CAMERA_FAR_CLIP);
-    outColor = blendNormal(fogColor, outColor);
-    outputTexture.write(outColor, gid);
+    float2 rayAngle = getRayAngle(gid);
+    float surfacePositionZ = rayAngle.y > 0 ? MAP_TILE_SIZE : 0;
+    texture2d<float, access::sample> surfaceTexture = rayAngle.y > 0 ? textures[TextureIndexCeiling] : textures[TextureIndexFloor];
+    float4 raySurfaceHit = castRayToSurface(rayAngle, cameraPosition.z, surfacePositionZ);
+    drawSurface(raySurfaceHit, cameraPosition, cameraAngleZ, surfaceTexture, outputTexture, gid);
 }
