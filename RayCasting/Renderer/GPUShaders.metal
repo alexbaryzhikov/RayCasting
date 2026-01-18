@@ -1,8 +1,11 @@
-#include "GPUShaderTypes.h"
 #include <metal_stdlib>
-
 using namespace metal;
 
+#include "GPUShaderTypes.h"
+#include "GPUShaderInternalTypes.hpp"
+
+constant constexpr float pi = M_PI_F;
+constant constexpr float eps = FLT_EPSILON;
 constant constexpr float inf = 1e10;
 constant constexpr float4 pointAtInf = {inf, inf, inf, 1};
 
@@ -11,6 +14,22 @@ constant constexpr float horizonY = float(CANVAS_HEIGHT) / 2;                  /
 
 constant constexpr float mapWidth = MAP_WIDTH * MAP_TILE_SIZE;
 constant constexpr float mapHeight = MAP_HEIGHT * MAP_TILE_SIZE;
+
+constant constexpr TileHit tileMiss = {-1};
+
+constant constexpr float2 doorH[4] = {
+    {0, (MAP_TILE_SIZE - DOOR_DEPTH) / 2},
+    {0, (MAP_TILE_SIZE + DOOR_DEPTH) / 2},
+    {MAP_TILE_SIZE, (MAP_TILE_SIZE + DOOR_DEPTH) / 2},
+    {MAP_TILE_SIZE, (MAP_TILE_SIZE - DOOR_DEPTH) / 2},
+};
+
+constant constexpr float2 doorV[4] = {
+    {(MAP_TILE_SIZE - DOOR_DEPTH) / 2, 0},
+    {(MAP_TILE_SIZE - DOOR_DEPTH) / 2, MAP_TILE_SIZE},
+    {(MAP_TILE_SIZE + DOOR_DEPTH) / 2, MAP_TILE_SIZE},
+    {(MAP_TILE_SIZE + DOOR_DEPTH) / 2, 0},
+};
 
 constant constexpr float3 colorFog = float3(0x07, 0x00, 0x16) / 0xFF;
 constant constexpr float3 colorLight = float3(0xB7, 0x46, 0x40) / 0xFF;
@@ -67,10 +86,10 @@ float2 getRayAngle(uint2 pixel) {
 /**
  * Returns point in camera space where the ray cast from camera at given angle hits horizontal surface.
  */
-float4 castRayToSurface(float2 rayAngle, float cameraPositionZ, float surfacePositionZ) {
-    if (rayAngle.y >= 0 && cameraPositionZ >= surfacePositionZ) return pointAtInf;
-    if (rayAngle.y <= 0 && cameraPositionZ <= surfacePositionZ) return pointAtInf;
-    float z = surfacePositionZ - cameraPositionZ;
+float4 castRayToSurface(float2 rayAngle, float cameraZ, float surfaceZ) {
+    if (rayAngle.y >= 0 && cameraZ >= surfaceZ) return pointAtInf;
+    if (rayAngle.y <= 0 && cameraZ <= surfaceZ) return pointAtInf;
+    float z = surfaceZ - cameraZ;
     float x = z / tan(rayAngle.y);
     float y = x * tan(rayAngle.x);
     return {x, y, z, 1};
@@ -81,7 +100,7 @@ float4 castRayToSurface(float2 rayAngle, float cameraPositionZ, float surfacePos
  */
 void drawSurface(float4 raySurfaceHit,  // coordinate of ray and surface intersection in camera space
                  float4 cameraPosition, // camera position in world space
-                 float cameraAngleZ,    // camera Z-angle in world space
+                 float cameraAngle,     // camera horizontal angle in world space
                  texture2d<float, access::sample> surfaceTexture,
                  texture2d<float, access::write> outputTexture,
                  uint2 pixel) {
@@ -89,7 +108,7 @@ void drawSurface(float4 raySurfaceHit,  // coordinate of ray and surface interse
         outputTexture.write(float4(sRGBToLinear(colorFog), 1), pixel);
         return;
     }
-    float4 raySurfaceHitWorld = makeTranslationMatrix(cameraPosition) * makeRotationZMatrix(cameraAngleZ) * raySurfaceHit;
+    float4 raySurfaceHitWorld = makeTranslationMatrix(cameraPosition) * makeRotationZMatrix(cameraAngle) * raySurfaceHit;
     constexpr sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
     float2 readCoord = raySurfaceHitWorld.xy / float(MAP_TILE_SIZE);
     float4 outColor = surfaceTexture.sample(textureSampler, readCoord);
@@ -103,6 +122,258 @@ void drawSurface(float4 raySurfaceHit,  // coordinate of ray and surface interse
     outputTexture.write(outColor, pixel);
 }
 
+/**
+ * Returns a traversal state for a wall ray cast.
+ */
+RayState makeRayState(constant Camera& camera, float2 rayAngle) {
+    float cosA = cos(camera.angle + rayAngle.x);
+    float sinA = sin(camera.angle + rayAngle.x);
+    float2 nextH = pointAtInf.xy;
+    float2 stepH = {0, 0};
+    bool advanceH = false;
+    if (fabs(cosA) > eps) {
+        nextH.x = (cosA < 0 ? floor(camera.position.x / MAP_TILE_SIZE) : ceil(camera.position.x / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        nextH.y = camera.position.y + (nextH.x - camera.position.x) * sinA / cosA;
+        stepH = {MAP_TILE_SIZE * sign(cosA), fabs(MAP_TILE_SIZE * sinA / cosA) * sign(sinA)};
+        advanceH = true;
+    }
+    float2 nextV = pointAtInf.xy;
+    float2 stepV = {0, 0};
+    bool advanceV = false;
+    if (fabs(sinA) > eps) {
+        nextV.y = (sinA < 0 ? floor(camera.position.y / MAP_TILE_SIZE) : ceil(camera.position.y / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
+        nextV.x = camera.position.x + (nextV.y - camera.position.y) * cosA / sinA;
+        stepV = {fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * sign(sinA)};
+        advanceV = true;
+    }
+    return {
+        .normal = {cosA, sinA},
+        .rayH = {
+            .position = pointAtInf.xy,
+            .step = stepH,
+            .next = nextH,
+            .tile = tileMiss,
+            .advance = advanceH,
+        },
+        .rayV = {
+            .position = pointAtInf.xy,
+            .step = stepV,
+            .next = nextV,
+            .tile = tileMiss,
+            .advance = advanceV,
+        },
+    };
+}
+
+/**
+ * Returns tile's upper left corner position in world space.
+ */
+float2 makeTilePosition(int col, int row) {
+    return float2{float(col), float(row)} * MAP_TILE_SIZE;
+}
+
+bool inMapBounds(float2 point) {
+    return point.x > 0 && point.x < mapWidth && point.y > 0 && point.y < mapHeight;
+}
+
+bool isDoor(Tile tile) {
+    switch (tile) {
+        case TileDoorH:
+        case TileDoorV:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool isWall(Tile tile) {
+    switch (tile) {
+        case TileWall:
+        case TileWallFortified:
+        case TileWallIndestructible:
+            return true;
+        default:
+            return false;
+    }
+}
+
+float invertIf(bool condition, float value) {
+    return select(1 - value, value, condition);
+}
+
+/**
+ * Find intersection point between two line segments.
+ */
+bool findIntersection(float2 a1, float2 b1, float2 a2, float2 b2, thread float2& point, thread float& offset) {
+    // Solve parametric equation:
+    // 't' is the parameter for the first line segment (a1, b1)
+    // 'u' is the parameter for the second line segment (a2, b2)
+    // a1 + t(b1 - a1) = a2 + u(b2 - a2)
+    // Rearrange and separate by component:
+    // t(b1.x - a1.x) - u(b2.x - a2.x) = a2.x - a1.x
+    // t(b1.y - a1.y) - u(b2.y - a2.y) = a2.y - a1.y
+
+    // Calculate coefficients
+    float2 d1 = b1 - a1;
+    float2 d2 = b2 - a2;
+    float2 delta = a2 - a1;
+
+    // Determinant of the main system:
+    float determinant = d2.x * d1.y - d2.y * d1.x;
+
+    if (fabs(determinant) < eps) {
+        // Lines are parallel
+        return false;
+    }
+
+    // Calculate 't' and 'u'
+    float t = (d2.x * delta.y - d2.y * delta.x) / determinant;
+    float u = (d1.x * delta.y - d1.y * delta.x) / determinant;
+
+    // Check if the intersection point lies on both line segments
+    // The parameters 't' and 'u' must be in the range [0, 1]
+    if (t > -eps && t < 1 + eps && u > -eps && u < 1 + eps) {
+        point = a1 + d1 * t;
+        offset = u;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Find intersection point between ray and polygon segment closest to the ray start.
+ */
+template <size_t N>
+bool findClosestIntersection(float2 ray[2], constant float2 polygon[N], thread Intersection& intersection) {
+    float minLength = inf;
+    float2 point;
+    float offset;
+    for (int i = 0; i < N; ++i) {
+        if (findIntersection(ray[0], ray[1], polygon[i], polygon[(i + 1) % N], point, offset)) {
+            float len = length(point - ray[0]);
+            if (len < minLength) {
+                minLength = len;
+                intersection.point = point;
+                intersection.segmentIndex = i;
+                intersection.segmentOffset = offset;
+            }
+        }
+    }
+    return minLength < inf;
+}
+
+float doorSegmentOffset(Tile door, int segmentIndex, float segmentOffset) {
+    if (door == TileDoorH) {
+        return segmentIndex == 1 || segmentIndex == 3 ? segmentOffset : 0;
+    } else {
+        return segmentIndex == 0 || segmentIndex == 2 ? segmentOffset : 0;
+    }
+}
+
+bool castRay(constant Camera& camera, constant Map& map, thread RayState& state, thread Ray& ray) {
+    if (!state.rayH.advance && !state.rayV.advance) return false;
+
+    float cosA = state.normal.x;
+    float sinA = state.normal.y;
+
+    // Scan columns
+    if (state.rayH.advance) {
+        thread RayComponent& rayH = state.rayH;
+        rayH.position = rayH.next;
+        rayH.next = pointAtInf.xy;
+        rayH.tile = tileMiss;
+        for (; inMapBounds(rayH.position); rayH.position += rayH.step) {
+            int row = floor(rayH.position.y / MAP_TILE_SIZE);
+            int col = floor(rayH.position.x / MAP_TILE_SIZE) - float(cosA < 0);
+            int tileIndex = row * MAP_WIDTH + col;
+            Tile tile = map.tiles[tileIndex];
+            if (isDoor(tile)) {
+                float2 tilePosition = makeTilePosition(col, row);
+                float2 raySegment[2] = {rayH.position - tilePosition, rayH.position - tilePosition + rayH.step};
+                Intersection intersection;
+                if (findClosestIntersection<4>(raySegment, tile == TileDoorH ? doorH : doorV, intersection)) {
+                    rayH.next = rayH.position + rayH.step;
+                    rayH.position += intersection.point - raySegment[0];
+                    rayH.tile = {
+                        .index = tileIndex,
+                        .offset = doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
+                        .angle = atan(fabs(tile == TileDoorH ? cosA / sinA : sinA / cosA)) * 2 / pi,
+                        .side = cosA < 0 ? TileSide::right : TileSide::left,
+                    };
+                    break;
+                }
+            } else if (isWall(tile)) {
+                rayH.tile = {
+                    .index = tileIndex,
+                    .offset = invertIf(cosA < 0, (rayH.position.y - row * MAP_TILE_SIZE) / MAP_TILE_SIZE),
+                    .angle = atan(fabs(sinA / cosA)) * 2 / pi,
+                    .side = cosA < 0 ? TileSide::right : TileSide::left,
+                };
+                break;
+            }
+        }
+    }
+
+    // Scan rows
+    if (state.rayV.advance) {
+        thread RayComponent& rayV = state.rayV;
+        rayV.position = rayV.next;
+        rayV.next = pointAtInf.xy;
+        rayV.tile = tileMiss;
+        for (; inMapBounds(rayV.position); rayV.position += rayV.step) {
+            int row = floor(rayV.position.y / MAP_TILE_SIZE) - float(sinA < 0);
+            int col = floor(rayV.position.x / MAP_TILE_SIZE);
+            int tileIndex = row * MAP_WIDTH + col;
+            Tile tile = map.tiles[tileIndex];
+            if (isDoor(tile)) {
+                float2 tilePosition = makeTilePosition(col, row);
+                float2 raySegment[2] = {rayV.position - tilePosition, rayV.position - tilePosition + rayV.step};
+                Intersection intersection;
+                if (findClosestIntersection<4>(raySegment, tile == TileDoorH ? doorH : doorV, intersection)) {
+                    rayV.next = rayV.position + rayV.step;
+                    rayV.position += intersection.point - raySegment[0];
+                    rayV.tile = {
+                        .index = tileIndex,
+                        .offset = doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
+                        .angle = atan(fabs(tile == TileDoorH ? cosA / sinA : sinA / cosA)) * 2 / pi,
+                        .side = sinA < 0 ? TileSide::bottom : TileSide::top,
+                    };
+                    break;
+                }
+            } else if (isWall(tile)) {
+                rayV.tile = {
+                    .index = tileIndex,
+                    .offset = invertIf(sinA > 0, (rayV.position.x - col * MAP_TILE_SIZE) / MAP_TILE_SIZE),
+                    .angle = atan(fabs(cosA / sinA)) * 2 / pi,
+                    .side = sinA < 0 ? TileSide::bottom : TileSide::top,
+                };
+                break;
+            }
+        }
+    }
+
+    // Choose the shortest ray component
+    float2 posH = state.rayH.position - camera.position.xy;
+    float2 posV = state.rayV.position - camera.position.xy;
+    if (length(posH) < length(posV)) {
+        float lengthH = dot(posH, float2{cos(camera.angle), sin(camera.angle)});
+        ray.position = posH;
+        ray.length = lengthH;
+        ray.tile = lengthH > CAMERA_NEAR_CLIP ? state.rayH.tile : tileMiss;
+        state.rayH.advance = state.rayH.next.x != inf;
+        state.rayV.advance = false;
+        return !ray.isMiss();
+    } else {
+        float lengthV = dot(posV, float2{cos(camera.angle), sin(camera.angle)});
+        ray.position = posV;
+        ray.length = lengthV;
+        ray.tile = lengthV > CAMERA_NEAR_CLIP ? state.rayV.tile : tileMiss;
+        state.rayH.advance = false;
+        state.rayV.advance = state.rayV.next.x != inf;
+        return !ray.isMiss();
+    }
+}
+
 kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]],
                      array<texture2d<float, access::sample>, TEXTURE_HEAP_SIZE> textures [[texture(1)]],
                      constant Camera& camera [[buffer(0)]],
@@ -111,11 +382,18 @@ kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;
     }
-    float4 cameraPosition = float4(camera.placement.xyz, 1);
-    float cameraAngleZ = camera.placement.w;
     float2 rayAngle = getRayAngle(gid);
-    float surfacePositionZ = rayAngle.y > 0 ? MAP_TILE_SIZE : 0;
+
+    // Cast ray to ceiling/floor.
+    float surfaceZ = rayAngle.y > 0 ? MAP_TILE_SIZE : 0;
+    float4 raySurfaceHit = castRayToSurface(rayAngle, camera.position.z, surfaceZ);
+
+    // Cast ray to wall.
+    RayState state = makeRayState(camera, rayAngle);
+    Ray ray;
+    castRay(camera, map, state, ray);
+
+    // Draw ceiling/floor.
     texture2d<float, access::sample> surfaceTexture = rayAngle.y > 0 ? textures[TextureIndexCeiling] : textures[TextureIndexFloor];
-    float4 raySurfaceHit = castRayToSurface(rayAngle, cameraPosition.z, surfacePositionZ);
-    drawSurface(raySurfaceHit, cameraPosition, cameraAngleZ, surfaceTexture, outputTexture, gid);
+    drawSurface(raySurfaceHit, camera.position, camera.angle, surfaceTexture, outputTexture, gid);
 }

@@ -109,16 +109,11 @@
     RC::Mouse::scrolled(offset.dx, offset.dy);
 }
 
-+ (simd_float2)playerPosition {
-    return RC::Player::position.xy;
-}
-
-+ (float)playerAngle {
-    return RC::Player::angle;
-}
-
-+ (float)cameraHeight {
-    return RC::Viewport::cameraHeight;
++ (void)copyCamera:(Camera*)dst {
+    dst->position.xy = RC::Player::position.xy;
+    dst->position.z = RC::Viewport::cameraHeight;
+    dst->position.w = 1;
+    dst->angle = RC::Player::angle;
 }
 
 + (void)copyTiles:(Tile*)dst {

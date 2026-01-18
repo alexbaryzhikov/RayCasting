@@ -1,7 +1,8 @@
 #import <Foundation/Foundation.h>
 
-#include "GPUShaderTypes.h"
 #include <simd/simd.h>
+
+#include "GPUShaderTypes.h"
 
 @interface RCBridge : NSObject
 
@@ -29,9 +30,7 @@
 + (void)rightMouseUp;
 + (void)mouseMoved:(CGVector)offset;
 + (void)mouseWheel:(CGVector)offset;
-+ (simd_float2)playerPosition;
-+ (float)playerAngle;
-+ (float)cameraHeight;
++ (void)copyCamera:(Camera*)dst;
 + (void)copyTiles:(Tile*)dst;
 
 @end

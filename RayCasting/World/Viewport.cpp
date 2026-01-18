@@ -360,7 +360,7 @@ bool castRay(RayState& state, Ray& ray) {
             int tileIndex = row * MAP_WIDTH + col;
             Tile tile = Map::tiles[tileIndex];
             if (isDoor(tile)) {
-                simd::float2 tilePosition = simd::float2{float(col), float(row)} * MAP_TILE_SIZE;
+                simd::float2 tilePosition = makeTilePosition(col, row);
                 std::array<simd::float2, 2> raySegment = {rayV.position - tilePosition, rayV.position - tilePosition + rayV.step};
                 Intersection intersection;
                 if (findClosestIntersection(raySegment, tile == Tile::doorH ? doorH : doorV, intersection)) {

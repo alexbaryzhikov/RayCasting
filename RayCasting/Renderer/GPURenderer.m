@@ -119,11 +119,8 @@
 
 - (void)updateUniforms {
     [RCBridge updateWorld];
-    Camera* camera = cameraBuffer.contents;
-    camera->placement.xy = RCBridge.playerPosition;
-    camera->placement.z = RCBridge.cameraHeight;
-    camera->placement.w = RCBridge.playerAngle;
-    [RCBridge copyTiles: mapBuffer.contents];
+    [RCBridge copyCamera:cameraBuffer.contents];
+    [RCBridge copyTiles:mapBuffer.contents];
 }
 
 - (void)mtkView:(MTKView*)view drawableSizeWillChange:(CGSize)size {
