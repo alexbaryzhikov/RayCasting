@@ -7,22 +7,24 @@ struct Intersection {
     float segmentOffset;
 };
 
-enum class TileSide {
-    left,
-    right,
-    top,
-    bottom,
+enum TileSide {
+    TileSideLeft,
+    TileSideRight,
+    TileSideTop,
+    TileSideBottom,
+    TileSideCeiling,
+    TileSideFloor,
 };
 
 struct TileHit {
     int index;     // -1 for miss
-    float2 offset; // 0 to 1
-    float angle;   // 0 to 1 (0 to 90 degrees)
-    TileSide side;
+    TileSide side; // side of the cube tile hit by the ray
+    float2 offset; // 0 to 1 (left to right for x, top to bottom for y)
+    float angle;   // 0 to 1 (0 to 90 degrees relative to surface)
 };
 
 struct Ray {
-    float2 position;
+    float4 position;
     float length;
     TileHit tile;
 
@@ -30,17 +32,19 @@ struct Ray {
 };
 
 struct RayComponent {
-    float2 position; // ray position in world space
-    float2 step;     // offset between adjacent grid-aligned positions
-    float2 next;     // next grid-aligned position
+    float4 position; // ray position in world space
+    float4 next;     // next grid-aligned position
+    float4 step;     // offset between adjacent grid-aligned positions
     TileHit tile;    // tile hit data
-    bool advance;    // true if ray can advance further
+    bool miss;       // true if ray component leaves map bounds
 };
 
 struct RayState {
-    float2 normal;     // ray direction in map space
-    RayComponent rayH; // horizontal component
-    RayComponent rayV; // vertical component
+    float2 normalH;    // ray horizontal direction in world space
+    float2 normalV;    // ray vertical direction in world space
+    RayComponent rayX; // tracks intersecitons with YZ walls
+    RayComponent rayY; // tracks intersections with XZ walls
+    RayComponent rayZ; // tracks intersections with XY surfaces
 };
 
 #endif /* GPUShaderInternalTypes_hpp */

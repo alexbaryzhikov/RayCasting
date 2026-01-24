@@ -1,8 +1,8 @@
 #include <metal_stdlib>
 using namespace metal;
 
-#include "GPUShaderTypes.h"
 #include "GPUShaderInternalTypes.hpp"
+#include "GPUShaderTypes.h"
 
 constant constexpr float pi = M_PI_F;
 constant constexpr float eps = FLT_EPSILON;
@@ -66,10 +66,10 @@ float4x4 makeRotationZMatrix(float angle) {
     float c = cos(angle);
     float s = sin(angle);
     return {
-        { c, s, 0, 0},
+        {c, s, 0, 0},
         {-s, c, 0, 0},
-        { 0, 0, 1, 0},
-        { 0, 0, 0, 1},
+        {0, 0, 1, 0},
+        {0, 0, 0, 1},
     };
 }
 
@@ -79,16 +79,16 @@ float4x4 makeRotationZMatrix(float angle) {
 float2 getRayAngle(uint2 pixel) {
     return {
         (pixel.x + 0.5f - CANVAS_WIDTH / 2.0f) * pixelAngle,
-        (horizonY - pixel.y - 0.5f) * pixelAngle
-    };
+        (horizonY - pixel.y - 0.5f) * pixelAngle};
 }
 
 /**
  * Returns point in camera space where the ray cast from camera at given angle hits horizontal surface.
  */
 float4 castRayToSurface(float2 rayAngle, float cameraZ, float surfaceZ) {
-    if (rayAngle.y >= 0 && cameraZ >= surfaceZ) return pointAtInf;
-    if (rayAngle.y <= 0 && cameraZ <= surfaceZ) return pointAtInf;
+    if (fabs(rayAngle.y) < eps) return pointAtInf;
+    if (rayAngle.y > 0 && cameraZ > surfaceZ) return pointAtInf;
+    if (rayAngle.y < 0 && cameraZ < surfaceZ) return pointAtInf;
     float z = surfaceZ - cameraZ;
     float x = z / tan(rayAngle.y);
     float y = x * tan(rayAngle.x);
@@ -123,46 +123,83 @@ void drawSurface(float4 raySurfaceHit,  // coordinate of ray and surface interse
 }
 
 /**
- * Returns a traversal state for a wall ray cast.
+ * Returns a traversal state for ray cast.
  */
 RayState makeRayState(constant Camera& camera, float2 rayAngle) {
-    float cosA = cos(camera.angle + rayAngle.x);
-    float sinA = sin(camera.angle + rayAngle.x);
-    float2 nextH = pointAtInf.xy;
-    float2 stepH = {0, 0};
-    bool advanceH = false;
-    if (fabs(cosA) > eps) {
-        nextH.x = (cosA < 0 ? floor(camera.position.x / MAP_TILE_SIZE) : ceil(camera.position.x / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
-        nextH.y = camera.position.y + (nextH.x - camera.position.x) * sinA / cosA;
-        stepH = {MAP_TILE_SIZE * sign(cosA), fabs(MAP_TILE_SIZE * sinA / cosA) * sign(sinA)};
-        advanceH = true;
-    }
-    float2 nextV = pointAtInf.xy;
-    float2 stepV = {0, 0};
-    bool advanceV = false;
-    if (fabs(sinA) > eps) {
-        nextV.y = (sinA < 0 ? floor(camera.position.y / MAP_TILE_SIZE) : ceil(camera.position.y / MAP_TILE_SIZE)) * MAP_TILE_SIZE;
-        nextV.x = camera.position.x + (nextV.y - camera.position.y) * cosA / sinA;
-        stepV = {fabs(MAP_TILE_SIZE * cosA / sinA) * sign(cosA), MAP_TILE_SIZE * sign(sinA)};
-        advanceV = true;
-    }
-    return {
-        .normal = {cosA, sinA},
-        .rayH = {
-            .position = pointAtInf.xy,
-            .step = stepH,
-            .next = nextH,
+    float cosH = cos(camera.angle + rayAngle.x);
+    float sinH = sin(camera.angle + rayAngle.x);
+    float cosV = cos(rayAngle.y);
+    float sinV = sin(rayAngle.y);
+
+    RayState state = {
+        .normalH = {cosH, sinH},
+        .normalV = {cosV, sinV},
+        .rayX = {
+            .position = camera.position,
+            .next = pointAtInf,
+            .step = {0, 0, 0, 0},
             .tile = tileMiss,
-            .advance = advanceH,
+            .miss = true,
         },
-        .rayV = {
-            .position = pointAtInf.xy,
-            .step = stepV,
-            .next = nextV,
+        .rayY = {
+            .position = camera.position,
+            .next = pointAtInf,
+            .step = {0, 0, 0, 0},
             .tile = tileMiss,
-            .advance = advanceV,
+            .miss = true,
         },
+        .rayZ = {
+            .position = camera.position,
+            .next = pointAtInf,
+            .step = {0, 0, 0, 0},
+            .tile = tileMiss,
+            .miss = true,
+        }
     };
+
+    if (fabs(cosH) > eps && fabs(cosV) > eps) {
+        state.rayX.next.x = select(floor(camera.position.x / MAP_TILE_SIZE), ceil(camera.position.x / MAP_TILE_SIZE), cosH < 0) * MAP_TILE_SIZE;
+        float nextDXY = fabs((state.rayX.next.x - camera.position.x) / cosH);
+        float nextDXYZ = fabs(nextDXY / cosV);
+        state.rayX.next.y = camera.position.y + nextDXY * sinH;
+        state.rayX.next.z = camera.position.z + nextDXYZ * sinV;
+        float stepDXY = fabs(MAP_TILE_SIZE / cosH);
+        float stepDXYZ = fabs(stepDXY / cosV);
+        state.rayX.step.x = MAP_TILE_SIZE * sign(cosH);
+        state.rayX.step.y = stepDXY * sinH;
+        state.rayX.step.z = stepDXYZ * sinV;
+        state.rayX.miss = false;
+    }
+
+    if (fabs(sinH) > eps && fabs(cosV) > eps) {
+        state.rayY.next.y = select(floor(camera.position.y / MAP_TILE_SIZE), ceil(camera.position.y / MAP_TILE_SIZE), sinH < 0) * MAP_TILE_SIZE;
+        float nextDXY = fabs((state.rayY.next.y - camera.position.y) / sinH);
+        float nextDXYZ = fabs(nextDXY / cosV);
+        state.rayY.next.x = camera.position.x + nextDXY * cosH;
+        state.rayY.next.z = camera.position.z + nextDXYZ * sinV;
+        float stepDXY = fabs(MAP_TILE_SIZE / sinH);
+        float stepDXYZ = fabs(stepDXY / cosV);
+        state.rayY.step.x = stepDXY * cosH;
+        state.rayY.step.y = MAP_TILE_SIZE * sign(sinH);
+        state.rayY.step.z = stepDXYZ * sinV;
+        state.rayY.miss = false;
+    }
+
+    if (fabs(sinV) > eps) {
+        state.rayZ.next.z = select(floor(camera.position.z / MAP_TILE_SIZE), ceil(camera.position.z / MAP_TILE_SIZE), sinV < 0) * MAP_TILE_SIZE;
+        float nextDXYZ = fabs((state.rayZ.next.z - camera.position.z) / sinV);
+        float nextDXY = fabs(nextDXYZ * cosV);
+        state.rayZ.next.x = camera.position.x + nextDXY * cosH;
+        state.rayZ.next.y = camera.position.y + nextDXY * sinH;
+        float stepDXYZ = fabs(MAP_TILE_SIZE / sinV);
+        float stepDXY = fabs(stepDXYZ * cosV);
+        state.rayZ.step.x = stepDXY * cosH;
+        state.rayZ.step.y = stepDXY * sinH;
+        state.rayZ.step.z = MAP_TILE_SIZE * sign(sinV);
+        state.rayZ.miss = false;
+    }
+
+    return state;
 }
 
 /**
@@ -271,14 +308,14 @@ float doorSegmentOffset(Tile door, int segmentIndex, float segmentOffset) {
 }
 
 bool castRay(constant Camera& camera, constant Map& map, thread RayState& state, thread Ray& ray) {
-    if (!state.rayH.advance && !state.rayV.advance) return false;
+    if (state.rayX.miss && state.rayY.miss) return false;
 
-    float cosA = state.normal.x;
-    float sinA = state.normal.y;
+    float cosA = state.normalH.x;
+    float sinA = state.normalH.y;
 
     // Scan columns
-    if (state.rayH.advance) {
-        thread RayComponent& rayH = state.rayH;
+    if (!state.rayX.miss) {
+        thread RayComponent& rayH = state.rayX;
         rayH.position = rayH.next;
         rayH.next = pointAtInf.xy;
         rayH.tile = tileMiss;
@@ -298,7 +335,7 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                         .index = tileIndex,
                         .offset = doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
                         .angle = atan(fabs(tile == TileDoorH ? cosA / sinA : sinA / cosA)) * 2 / pi,
-                        .side = cosA < 0 ? TileSide::right : TileSide::left,
+                        .side = cosA < 0 ? TileSideRight : TileSideLeft,
                     };
                     break;
                 }
@@ -307,7 +344,7 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                     .index = tileIndex,
                     .offset = invertIf(cosA < 0, (rayH.position.y - row * MAP_TILE_SIZE) / MAP_TILE_SIZE),
                     .angle = atan(fabs(sinA / cosA)) * 2 / pi,
-                    .side = cosA < 0 ? TileSide::right : TileSide::left,
+                    .side = cosA < 0 ? TileSideRight : TileSideLeft,
                 };
                 break;
             }
@@ -315,8 +352,8 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
     }
 
     // Scan rows
-    if (state.rayV.advance) {
-        thread RayComponent& rayV = state.rayV;
+    if (!state.rayY.miss) {
+        thread RayComponent& rayV = state.rayY;
         rayV.position = rayV.next;
         rayV.next = pointAtInf.xy;
         rayV.tile = tileMiss;
@@ -336,7 +373,7 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                         .index = tileIndex,
                         .offset = doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
                         .angle = atan(fabs(tile == TileDoorH ? cosA / sinA : sinA / cosA)) * 2 / pi,
-                        .side = sinA < 0 ? TileSide::bottom : TileSide::top,
+                        .side = sinA < 0 ? TileSideBottom : TileSideTop,
                     };
                     break;
                 }
@@ -345,7 +382,7 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                     .index = tileIndex,
                     .offset = invertIf(sinA > 0, (rayV.position.x - col * MAP_TILE_SIZE) / MAP_TILE_SIZE),
                     .angle = atan(fabs(cosA / sinA)) * 2 / pi,
-                    .side = sinA < 0 ? TileSide::bottom : TileSide::top,
+                    .side = sinA < 0 ? TileSideBottom : TileSideTop,
                 };
                 break;
             }
@@ -353,23 +390,23 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
     }
 
     // Choose the shortest ray component
-    float2 posH = state.rayH.position - camera.position.xy;
-    float2 posV = state.rayV.position - camera.position.xy;
+    float2 posH = state.rayX.position - camera.position.xy;
+    float2 posV = state.rayY.position - camera.position.xy;
     if (length(posH) < length(posV)) {
         float lengthH = dot(posH, float2{cos(camera.angle), sin(camera.angle)});
         ray.position = posH;
         ray.length = lengthH;
-        ray.tile = lengthH > CAMERA_NEAR_CLIP ? state.rayH.tile : tileMiss;
-        state.rayH.advance = state.rayH.next.x != inf;
-        state.rayV.advance = false;
+        ray.tile = lengthH > CAMERA_NEAR_CLIP ? state.rayX.tile : tileMiss;
+        state.rayX.miss = state.rayX.next.x == inf;
+        state.rayY.miss = true;
         return !ray.isMiss();
     } else {
         float lengthV = dot(posV, float2{cos(camera.angle), sin(camera.angle)});
         ray.position = posV;
         ray.length = lengthV;
-        ray.tile = lengthV > CAMERA_NEAR_CLIP ? state.rayV.tile : tileMiss;
-        state.rayH.advance = false;
-        state.rayV.advance = state.rayV.next.x != inf;
+        ray.tile = lengthV > CAMERA_NEAR_CLIP ? state.rayY.tile : tileMiss;
+        state.rayX.miss = true;
+        state.rayY.miss = state.rayY.next.x == inf;
         return !ray.isMiss();
     }
 }
