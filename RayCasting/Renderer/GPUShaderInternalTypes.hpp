@@ -20,7 +20,7 @@ struct TileHit {
     int index;     // -1 for miss
     TileSide side; // side of the cube tile hit by the ray
     float2 offset; // 0 to 1 (left to right for x, top to bottom for y)
-    float angle;   // 0 to 1 (0 to 90 degrees relative to surface)
+    float slope;   // 0 to 1 (slope of the tile face relative to the ray)
 };
 
 struct Ray {
