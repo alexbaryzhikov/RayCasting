@@ -15,7 +15,8 @@ constant constexpr float horizonY = float(CANVAS_HEIGHT) / 2;                  /
 
 constant constexpr float mapWidth = MAP_WIDTH * MAP_TILE_SIZE;
 constant constexpr float mapHeight = MAP_HEIGHT * MAP_TILE_SIZE;
-constant constexpr float4 mapBounds = {mapWidth, mapHeight, MAP_TILE_SIZE, 1};
+constant constexpr float mapDepth = MAP_TILE_SIZE;
+constant constexpr float4 mapBounds = {mapWidth, mapHeight, mapDepth, 1};
 
 constant constexpr TileHit tileMiss = {-1};
 
@@ -76,28 +77,6 @@ float4x4 makeRotationZMatrix(float angle) {
 }
 
 /**
- * Returns angle in camera space of the ray cast from camera to pixel of projection plane.
- */
-float2 getRayAngle(uint2 pixel) {
-    return {
-        (pixel.x + 0.5f - CANVAS_WIDTH / 2.0f) * pixelAngle,
-        (horizonY - pixel.y - 0.5f) * pixelAngle};
-}
-
-/**
- * Returns point in camera space where the ray cast from camera at given angle hits horizontal surface.
- */
-float4 castRayToSurface(float2 rayAngle, float cameraZ, float surfaceZ) {
-    if (fabs(rayAngle.y) < eps) return pointAtInf;
-    if (rayAngle.y > 0 && cameraZ > surfaceZ) return pointAtInf;
-    if (rayAngle.y < 0 && cameraZ < surfaceZ) return pointAtInf;
-    float z = surfaceZ - cameraZ;
-    float x = z / tan(rayAngle.y);
-    float y = x * tan(rayAngle.x);
-    return {x, y, z, 1};
-}
-
-/**
  * Draws horizontal surface color into the output texture pixel.
  */
 void drawSurface(float4 raySurfaceHit,  // coordinate of ray and surface intersection in camera space
@@ -135,17 +114,27 @@ void drawPixel(uint2 pixel,
 }
 
 /**
+ * Returns a direction vector in world space of the ray cast from camera to pixel of projection plane.
+ */
+float4 getRayDirection(float cameraAngle, uint2 pixel) {
+    const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
+    float u = (pixel.x + 0.5f) - CANVAS_WIDTH / 2.0f;
+    float v = (pixel.y + 0.5f) - horizonY;
+    float4 direction = {projectionDistance, u, -v, 0.0f};
+    return normalize(makeRotationZMatrix(cameraAngle) * direction);
+}
+
+/**
  * Returns a traversal state for ray cast.
  */
-RayState makeRayState(constant Camera& camera, float2 rayAngle) {
-    float cosH = cos(camera.angle + rayAngle.x);
-    float sinH = sin(camera.angle + rayAngle.x);
-    float cosV = cos(rayAngle.y);
-    float sinV = sin(rayAngle.y);
+RayState makeRayState(constant Camera& camera, uint2 pixel) {
+    float4 direction = getRayDirection(camera.angle, pixel);
+    float2 normalH = normalize(direction.xy);
+    float2 normalV = {length(direction.xy), direction.z};
 
     RayState state = {
-        .normalH = {cosH, sinH},
-        .normalV = {cosV, sinV},
+        .normalH = normalH,
+        .normalV = normalV,
         .rayX = {
             .position = camera.position,
             .next = pointAtInf,
@@ -169,45 +158,45 @@ RayState makeRayState(constant Camera& camera, float2 rayAngle) {
         }
     };
 
-    if (fabs(cosH) > eps && fabs(cosV) > eps) {
-        state.rayX.next.x = select(floor(camera.position.x / MAP_TILE_SIZE), ceil(camera.position.x / MAP_TILE_SIZE), cosH > 0) * MAP_TILE_SIZE;
-        float nextDXY = fabs((state.rayX.next.x - camera.position.x) / cosH);
-        float nextDXYZ = fabs(nextDXY / cosV);
-        state.rayX.next.y = camera.position.y + nextDXY * sinH;
-        state.rayX.next.z = camera.position.z + nextDXYZ * sinV;
-        float stepDXY = fabs(MAP_TILE_SIZE / cosH);
-        float stepDXYZ = fabs(stepDXY / cosV);
-        state.rayX.step.x = MAP_TILE_SIZE * sign(cosH);
-        state.rayX.step.y = stepDXY * sinH;
-        state.rayX.step.z = stepDXYZ * sinV;
+    if (fabs(normalH.x) > eps && fabs(normalV.x) > eps) {
+        state.rayX.next.x = select(floor(camera.position.x / MAP_TILE_SIZE), ceil(camera.position.x / MAP_TILE_SIZE), normalH.x > 0) * MAP_TILE_SIZE;
+        float nextDXY = fabs((state.rayX.next.x - camera.position.x) / normalH.x);
+        float nextDXYZ = fabs(nextDXY / normalV.x);
+        state.rayX.next.y = camera.position.y + nextDXY * normalH.y;
+        state.rayX.next.z = camera.position.z + nextDXYZ * normalV.y;
+        float stepDXY = fabs(MAP_TILE_SIZE / normalH.x);
+        float stepDXYZ = fabs(stepDXY / normalV.x);
+        state.rayX.step.x = MAP_TILE_SIZE * sign(normalH.x);
+        state.rayX.step.y = stepDXY * normalH.y;
+        state.rayX.step.z = stepDXYZ * normalV.y;
         state.rayX.miss = false;
     }
 
-    if (fabs(sinH) > eps && fabs(cosV) > eps) {
-        state.rayY.next.y = select(floor(camera.position.y / MAP_TILE_SIZE), ceil(camera.position.y / MAP_TILE_SIZE), sinH > 0) * MAP_TILE_SIZE;
-        float nextDXY = fabs((state.rayY.next.y - camera.position.y) / sinH);
-        float nextDXYZ = fabs(nextDXY / cosV);
-        state.rayY.next.x = camera.position.x + nextDXY * cosH;
-        state.rayY.next.z = camera.position.z + nextDXYZ * sinV;
-        float stepDXY = fabs(MAP_TILE_SIZE / sinH);
-        float stepDXYZ = fabs(stepDXY / cosV);
-        state.rayY.step.x = stepDXY * cosH;
-        state.rayY.step.y = MAP_TILE_SIZE * sign(sinH);
-        state.rayY.step.z = stepDXYZ * sinV;
+    if (fabs(normalH.y) > eps && fabs(normalV.x) > eps) {
+        state.rayY.next.y = select(floor(camera.position.y / MAP_TILE_SIZE), ceil(camera.position.y / MAP_TILE_SIZE), normalH.y > 0) * MAP_TILE_SIZE;
+        float nextDXY = fabs((state.rayY.next.y - camera.position.y) / normalH.y);
+        float nextDXYZ = fabs(nextDXY / normalV.x);
+        state.rayY.next.x = camera.position.x + nextDXY * normalH.x;
+        state.rayY.next.z = camera.position.z + nextDXYZ * normalV.y;
+        float stepDXY = fabs(MAP_TILE_SIZE / normalH.y);
+        float stepDXYZ = fabs(stepDXY / normalV.x);
+        state.rayY.step.x = stepDXY * normalH.x;
+        state.rayY.step.y = MAP_TILE_SIZE * sign(normalH.y);
+        state.rayY.step.z = stepDXYZ * normalV.y;
         state.rayY.miss = false;
     }
 
-    if (fabs(sinV) > eps) {
-        state.rayZ.next.z = select(floor(camera.position.z / MAP_TILE_SIZE), ceil(camera.position.z / MAP_TILE_SIZE), sinV > 0) * MAP_TILE_SIZE;
-        float nextDXYZ = fabs((state.rayZ.next.z - camera.position.z) / sinV);
-        float nextDXY = fabs(nextDXYZ * cosV);
-        state.rayZ.next.x = camera.position.x + nextDXY * cosH;
-        state.rayZ.next.y = camera.position.y + nextDXY * sinH;
-        float stepDXYZ = fabs(MAP_TILE_SIZE / sinV);
-        float stepDXY = fabs(stepDXYZ * cosV);
-        state.rayZ.step.x = stepDXY * cosH;
-        state.rayZ.step.y = stepDXY * sinH;
-        state.rayZ.step.z = MAP_TILE_SIZE * sign(sinV);
+    if (fabs(normalV.y) > eps) {
+        state.rayZ.next.z = select(floor(camera.position.z / MAP_TILE_SIZE), ceil(camera.position.z / MAP_TILE_SIZE), normalV.y > 0) * MAP_TILE_SIZE;
+        float nextDXYZ = fabs((state.rayZ.next.z - camera.position.z) / normalV.y);
+        float nextDXY = fabs(nextDXYZ * normalV.x);
+        state.rayZ.next.x = camera.position.x + nextDXY * normalH.x;
+        state.rayZ.next.y = camera.position.y + nextDXY * normalH.y;
+        float stepDXYZ = fabs(MAP_TILE_SIZE / normalV.y);
+        float stepDXY = fabs(stepDXYZ * normalV.x);
+        state.rayZ.step.x = stepDXY * normalH.x;
+        state.rayZ.step.y = stepDXY * normalH.y;
+        state.rayZ.step.z = MAP_TILE_SIZE * sign(normalV.y);
         state.rayZ.miss = false;
     }
 
@@ -507,8 +496,7 @@ kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;
     }
-    float2 rayAngle = getRayAngle(gid);
-    RayState state = makeRayState(camera, rayAngle);
+    RayState state = makeRayState(camera, gid);
     Ray ray;
     if (castRay(camera, map, state, ray)) {
         texture2d<float, access::sample> tileTexture;
