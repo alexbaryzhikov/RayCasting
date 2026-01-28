@@ -170,7 +170,7 @@ RayState makeRayState(constant Camera& camera, float2 rayAngle) {
     };
 
     if (fabs(cosH) > eps && fabs(cosV) > eps) {
-        state.rayX.next.x = select(floor(camera.position.x / MAP_TILE_SIZE), ceil(camera.position.x / MAP_TILE_SIZE), cosH < 0) * MAP_TILE_SIZE;
+        state.rayX.next.x = select(floor(camera.position.x / MAP_TILE_SIZE), ceil(camera.position.x / MAP_TILE_SIZE), cosH > 0) * MAP_TILE_SIZE;
         float nextDXY = fabs((state.rayX.next.x - camera.position.x) / cosH);
         float nextDXYZ = fabs(nextDXY / cosV);
         state.rayX.next.y = camera.position.y + nextDXY * sinH;
@@ -184,7 +184,7 @@ RayState makeRayState(constant Camera& camera, float2 rayAngle) {
     }
 
     if (fabs(sinH) > eps && fabs(cosV) > eps) {
-        state.rayY.next.y = select(floor(camera.position.y / MAP_TILE_SIZE), ceil(camera.position.y / MAP_TILE_SIZE), sinH < 0) * MAP_TILE_SIZE;
+        state.rayY.next.y = select(floor(camera.position.y / MAP_TILE_SIZE), ceil(camera.position.y / MAP_TILE_SIZE), sinH > 0) * MAP_TILE_SIZE;
         float nextDXY = fabs((state.rayY.next.y - camera.position.y) / sinH);
         float nextDXYZ = fabs(nextDXY / cosV);
         state.rayY.next.x = camera.position.x + nextDXY * cosH;
@@ -198,7 +198,7 @@ RayState makeRayState(constant Camera& camera, float2 rayAngle) {
     }
 
     if (fabs(sinV) > eps) {
-        state.rayZ.next.z = select(floor(camera.position.z / MAP_TILE_SIZE), ceil(camera.position.z / MAP_TILE_SIZE), sinV < 0) * MAP_TILE_SIZE;
+        state.rayZ.next.z = select(floor(camera.position.z / MAP_TILE_SIZE), ceil(camera.position.z / MAP_TILE_SIZE), sinV > 0) * MAP_TILE_SIZE;
         float nextDXYZ = fabs((state.rayZ.next.z - camera.position.z) / sinV);
         float nextDXY = fabs(nextDXYZ * cosV);
         state.rayZ.next.x = camera.position.x + nextDXY * cosH;
@@ -233,10 +233,17 @@ float2 makeTilePosition(int col, int row) {
 }
 
 /**
- * Returns true if point is strictly inside map bounds, false if point is on the map boundary or outside.
+ * Returns true if point is inside or on map boundary.
  */
 bool inMapBounds(float4 point) {
-    return all(point > pointAtZero + eps) && all(point < mapBounds - eps);
+    return all(point >= pointAtZero - eps) && all(point <= mapBounds + eps);
+}
+
+/**
+ * Returns true if tile coordinates are valid.
+ */
+bool inMapBounds(int row, int col) {
+    return row >= 0 && row < MAP_HEIGHT && col >= 0 && col < MAP_WIDTH;
 }
 
 bool isDoor(Tile tile) {
@@ -260,8 +267,8 @@ bool isWall(Tile tile) {
     }
 }
 
-float invertIf(bool condition, float value) {
-    return select(1 - value, value, condition);
+float invertIf(float value, bool condition) {
+    return select(value, 1 - value, condition);
 }
 
 /**
@@ -327,9 +334,9 @@ bool findClosestIntersection(float2 ray[2], constant float2 polygon[N], thread I
 
 float doorSegmentOffset(Tile door, int segmentIndex, float segmentOffset) {
     if (door == TileDoorH) {
-        return segmentIndex == 1 || segmentIndex == 3 ? segmentOffset : 0;
+        return select(0.0f, segmentOffset, segmentIndex == 1 || segmentIndex == 3);
     } else {
-        return segmentIndex == 0 || segmentIndex == 2 ? segmentOffset : 0;
+        return select(0.0f, segmentOffset, segmentIndex == 0 || segmentIndex == 2);
     }
 }
 
@@ -341,49 +348,50 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
 
     // Scan intersections with vertical grid lines.
     if (!state.rayX.miss) {
-        thread RayComponent& ray = state.rayX;
-        ray.position = ray.next;
-        ray.next = pointAtInf;
-        ray.tile = tileMiss;
-        ray.miss = true;
-        for (; inMapBounds(ray.position); ray.position += ray.step) {
-            int row = floor(ray.position.y / MAP_TILE_SIZE);
-            int col = floor(ray.position.x / MAP_TILE_SIZE) - float(normalH.x < 0);
+        thread RayComponent& rayX = state.rayX;
+        rayX.position = rayX.next;
+        rayX.next = pointAtInf;
+        rayX.tile = tileMiss;
+        rayX.miss = true;
+        for (; inMapBounds(rayX.position); rayX.position += rayX.step) {
+            int row = floor(rayX.position.y / MAP_TILE_SIZE);
+            int col = floor(rayX.position.x / MAP_TILE_SIZE) - float(normalH.x < 0);
+            if (!inMapBounds(row, col)) break;
             int tileIndex = row * MAP_WIDTH + col;
             Tile tile = map.tiles[tileIndex];
             if (isWall(tile)) {
-                ray.next = ray.position + ray.step;
-                ray.tile = {
+                rayX.next = rayX.position + rayX.step;
+                rayX.tile = {
                     .index = tileIndex,
                     .side = normalH.x < 0 ? TileSideRight : TileSideLeft,
                     .offset = {
-                        invertIf(normalH.x < 0, (ray.position.y - row * MAP_TILE_SIZE) / MAP_TILE_SIZE),
-                        1 - ray.position.z / MAP_TILE_SIZE
+                        invertIf((rayX.position.y - row * MAP_TILE_SIZE) / MAP_TILE_SIZE, normalH.x < 0),
+                        1 - rayX.position.z / MAP_TILE_SIZE
                     },
                     .slope = atan(fabs(normalH.y / normalH.x)) * 2 / pi,
                 };
-                ray.miss = false;
+                rayX.miss = false;
                 break;
             } else if (isDoor(tile)) {
                 float2 tilePosition = makeTilePosition(col, row);
                 float2 raySegment[2] = {
-                    ray.position.xy - tilePosition,
-                    ray.position.xy - tilePosition + ray.step.xy
+                    rayX.position.xy - tilePosition,
+                    rayX.position.xy - tilePosition + rayX.step.xy
                 };
                 Intersection intersection;
                 if (findClosestIntersection<4>(raySegment, tile == TileDoorH ? doorH : doorV, intersection)) {
-                    ray.next = ray.position + ray.step;
-                    ray.position += getDelta(intersection.point - raySegment[0], normalV);
-                    ray.tile = {
+                    rayX.next = rayX.position + rayX.step;
+                    rayX.position += getDelta(intersection.point - raySegment[0], normalV);
+                    rayX.tile = {
                         .index = tileIndex,
                         .side = normalH.x < 0 ? TileSideRight : TileSideLeft,
                         .offset = {
                             doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
-                            1 - ray.position.z / MAP_TILE_SIZE
+                            1 - rayX.position.z / MAP_TILE_SIZE
                         },
                         .slope = atan(fabs(tile == TileDoorH ? normalH.x / normalH.y : normalH.y / normalH.x)) * 2 / pi,
                     };
-                    ray.miss = false;
+                    rayX.miss = false;
                     break;
                 }
             }
@@ -392,49 +400,50 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
 
     // Scan intersections with horizontal grid lines.
     if (!state.rayY.miss) {
-        thread RayComponent& ray = state.rayY;
-        ray.position = ray.next;
-        ray.next = pointAtInf;
-        ray.tile = tileMiss;
-        ray.miss = true;
-        for (; inMapBounds(ray.position); ray.position += ray.step) {
-            int row = floor(ray.position.y / MAP_TILE_SIZE) - float(normalH.y < 0);
-            int col = floor(ray.position.x / MAP_TILE_SIZE);
+        thread RayComponent& rayY = state.rayY;
+        rayY.position = rayY.next;
+        rayY.next = pointAtInf;
+        rayY.tile = tileMiss;
+        rayY.miss = true;
+        for (; inMapBounds(rayY.position); rayY.position += rayY.step) {
+            int row = floor(rayY.position.y / MAP_TILE_SIZE) - float(normalH.y < 0);
+            int col = floor(rayY.position.x / MAP_TILE_SIZE);
+            if (!inMapBounds(row, col)) break;
             int tileIndex = row * MAP_WIDTH + col;
             Tile tile = map.tiles[tileIndex];
             if (isWall(tile)) {
-                ray.next = ray.position + ray.step;
-                ray.tile = {
+                rayY.next = rayY.position + rayY.step;
+                rayY.tile = {
                     .index = tileIndex,
                     .side = normalH.y < 0 ? TileSideBottom : TileSideTop,
                     .offset = {
-                        invertIf(normalH.y > 0, (ray.position.x - col * MAP_TILE_SIZE) / MAP_TILE_SIZE),
-                        1 - ray.position.z / MAP_TILE_SIZE
+                        invertIf((rayY.position.x - col * MAP_TILE_SIZE) / MAP_TILE_SIZE, normalH.y > 0),
+                        1 - rayY.position.z / MAP_TILE_SIZE
                     },
                     .slope = atan(fabs(normalH.x / normalH.y)) * 2 / pi,
                 };
-                ray.miss = false;
+                rayY.miss = false;
                 break;
             } else if (isDoor(tile)) {
                 float2 tilePosition = makeTilePosition(col, row);
                 float2 raySegment[2] = {
-                    ray.position.xy - tilePosition,
-                    ray.position.xy - tilePosition + ray.step.xy
+                    rayY.position.xy - tilePosition,
+                    rayY.position.xy - tilePosition + rayY.step.xy
                 };
                 Intersection intersection;
                 if (findClosestIntersection<4>(raySegment, tile == TileDoorH ? doorH : doorV, intersection)) {
-                    ray.next = ray.position + ray.step;
-                    ray.position += getDelta(intersection.point - raySegment[0], normalV);
-                    ray.tile = {
+                    rayY.next = rayY.position + rayY.step;
+                    rayY.position += getDelta(intersection.point - raySegment[0], normalV);
+                    rayY.tile = {
                         .index = tileIndex,
                         .side = normalH.y < 0 ? TileSideBottom : TileSideTop,
                         .offset = {
                             doorSegmentOffset(tile, intersection.segmentIndex, intersection.segmentOffset),
-                            1 - ray.position.z / MAP_TILE_SIZE
+                            1 - rayY.position.z / MAP_TILE_SIZE
                         },
                         .slope = atan(fabs(tile == TileDoorH ? normalH.x / normalH.y : normalH.y / normalH.x)) * 2 / pi,
                     };
-                    ray.miss = false;
+                    rayY.miss = false;
                     break;
                 }
             }
@@ -443,40 +452,42 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
 
     // Calculate intersection with floor/ceiling.
     if (!state.rayZ.miss) {
-        thread RayComponent& ray = state.rayZ;
-        ray.position = ray.next;
-        ray.next = pointAtInf;
-        ray.tile = tileMiss;
-        ray.miss = true;
-        if (inMapBounds(ray.position)) {
-            int row = floor(ray.position.y / MAP_TILE_SIZE);
-            int col = floor(ray.position.x / MAP_TILE_SIZE);
-            int tileIndex = row * MAP_WIDTH + col;
-            float2 tilePosition = makeTilePosition(col, row);
-            ray.next = ray.position + ray.step;
-            ray.tile = {
-                .index = tileIndex,
-                .side = normalH.y < 0 ? TileSideBottom : TileSideTop,
-                .offset = (ray.position.xy - tilePosition) / MAP_TILE_SIZE,
-                .slope = atan(fabs(normalV.x / normalV.y)) * 2 / pi,
-            };
-            ray.miss = false;
+        thread RayComponent& rayZ = state.rayZ;
+        rayZ.position = rayZ.next;
+        rayZ.next = pointAtInf;
+        rayZ.tile = tileMiss;
+        rayZ.miss = true;
+        if (inMapBounds(rayZ.position)) {
+            int row = floor(rayZ.position.y / MAP_TILE_SIZE);
+            int col = floor(rayZ.position.x / MAP_TILE_SIZE);
+            if (inMapBounds(row, col)) {
+                int tileIndex = row * MAP_WIDTH + col;
+                float2 tilePosition = makeTilePosition(col, row);
+                rayZ.next = rayZ.position + rayZ.step;
+                rayZ.tile = {
+                    .index = tileIndex,
+                    .side = normalV.y < 0 ? TileSideFloor : TileSideCeiling,
+                    .offset = (rayZ.position.xy - tilePosition) / MAP_TILE_SIZE,
+                    .slope = atan(fabs(normalV.x / normalV.y)) * 2 / pi,
+                };
+                rayZ.miss = false;
+            }
         }
     }
 
     if (state.rayX.miss && state.rayY.miss && state.rayZ.miss) return false;
 
     // Choose the shortest ray component
-    float lengthX = state.rayX.miss ? inf : length(state.rayX.position.xy - camera.position.xy);
-    float lengthY = state.rayY.miss ? inf : length(state.rayY.position.xy - camera.position.xy);
-    float lengthZ = state.rayZ.miss ? inf : length(state.rayZ.position.xy - camera.position.xy);
+    float lengthX = state.rayX.miss ? inf : length(state.rayX.position - camera.position);
+    float lengthY = state.rayY.miss ? inf : length(state.rayY.position - camera.position);
+    float lengthZ = state.rayZ.miss ? inf : length(state.rayZ.position - camera.position);
     if (lengthX < lengthY && lengthX < lengthZ) {
         ray.position = state.rayX.position;
         ray.length = lengthX;
         ray.tile = state.rayX.tile;
         return true;
     }
-    if (lengthY < lengthX && lengthY < lengthZ) {
+    if (lengthY < lengthZ) {
         ray.position = state.rayY.position;
         ray.length = lengthY;
         ray.tile = state.rayY.tile;
