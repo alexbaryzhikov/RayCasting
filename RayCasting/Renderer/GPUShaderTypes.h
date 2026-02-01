@@ -19,17 +19,17 @@ typedef struct Camera {
     float angle;
 } Camera;
 
-typedef enum Tile {
-    TileDoorH,
-    TileDoorV,
-    TileFloor,
-    TileWall,
-    TileWallFortified,
-    TileWallIndestructible,
-} Tile;
+typedef enum TileType {
+    TileTypeDoorH,
+    TileTypeDoorV,
+    TileTypeEmpty,
+    TileTypeWall,
+    TileTypeWallFortified,
+    TileTypeWallIndestructible,
+} TileType;
 
 typedef struct Map {
-    Tile tiles[MAP_WIDTH * MAP_HEIGHT];
+    TileType tiles[MAP_WIDTH * MAP_HEIGHT];
 } Map;
 
 #endif /* GPUShaderTypes_h */

@@ -1,6 +1,8 @@
 #ifndef GPUShaderInternalTypes_hpp
 #define GPUShaderInternalTypes_hpp
 
+#include "GPUShaderTypes.h"
+
 struct Intersection {
     float2 point;
     int segmentIndex;
@@ -16,9 +18,9 @@ enum TileSide {
     TileSideFloor,
 };
 
-struct TileHit {
-    int index;     // -1 for miss
-    TileSide side; // side of the cube tile hit by the ray
+struct Tile {
+    TileType type;
+    TileSide side;
     float2 offset; // 0 to 1 (left to right for x, top to bottom for y)
     float slope;   // 0 to 1 (slope of the tile face relative to the ray)
 };
@@ -26,17 +28,13 @@ struct TileHit {
 struct Ray {
     float4 position;
     float length;
-    TileHit tile;
-
-    bool isMiss() const { return tile.index == -1; }
+    Tile tile;
+    bool miss;
 };
 
 struct RayComponent {
     float4 position; // ray position in world space
-    float4 next;     // next grid-aligned position
     float4 step;     // offset between adjacent grid-aligned positions
-    TileHit tile;    // tile hit data
-    bool miss;       // true if ray component leaves map bounds
 };
 
 struct RayState {

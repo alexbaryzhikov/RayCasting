@@ -116,26 +116,26 @@
     dst->angle = RC::Player::angle;
 }
 
-+ (void)copyTiles:(Tile*)dst {
++ (void)copyTiles:(TileType*)dst {
     for (int i = 0; i < RC::Map::tiles.size(); ++i) {
         switch (RC::Map::tiles[i]) {
             case RC::Tile::doorH:
-                dst[i] = TileDoorH;
+                dst[i] = TileTypeDoorH;
                 break;
             case RC::Tile::doorV:
-                dst[i] = TileDoorV;
+                dst[i] = TileTypeDoorV;
                 break;
-            case RC::Tile::floor:
-                dst[i] = TileFloor;
+            case RC::Tile::empty:
+                dst[i] = TileTypeEmpty;
                 break;
             case RC::Tile::wall:
-                dst[i] = TileWall;
+                dst[i] = TileTypeWall;
                 break;
             case RC::Tile::wallFortified:
-                dst[i] = TileWallFortified;
+                dst[i] = TileTypeWallFortified;
                 break;
             case RC::Tile::wallIndestructible:
-                dst[i] = TileWallIndestructible;
+                dst[i] = TileTypeWallIndestructible;
                 break;
         }
     }

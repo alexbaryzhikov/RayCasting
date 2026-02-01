@@ -177,7 +177,7 @@ void updateActions() {
         if (!ray.isMiss() && ray.length < PLAYER_ACTION_RANGE) {
             Tile& tile = Map::tiles[ray.tile.index];
             if (tile != Tile::wallIndestructible) {
-                tile = Tile::floor;
+                tile = Tile::empty;
             }
         }
     }
@@ -195,7 +195,7 @@ void updateActions() {
             int col = floor(tilePosition.x);
             int row = floor(tilePosition.y);
             Tile& tile = Map::tiles[row * MAP_WIDTH + col];
-            if (tile == Tile::floor) {
+            if (tile == Tile::empty) {
                 tile = Tile::wallFortified;
             }
         }

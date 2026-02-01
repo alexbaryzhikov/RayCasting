@@ -75,8 +75,8 @@ void generateWalls() {
 void carveRoom(const Rect& room, int& floorTiles) {
     for (int y = room.y; y < room.y + room.h; ++y) {
         for (int x = room.x; x < room.x + room.w; ++x) {
-            if (tiles[y * MAP_WIDTH + x] != Tile::floor) {
-                tiles[y * MAP_WIDTH + x] = Tile::floor;
+            if (tiles[y * MAP_WIDTH + x] != Tile::empty) {
+                tiles[y * MAP_WIDTH + x] = Tile::empty;
                 ++floorTiles;
             }
         }
@@ -145,7 +145,7 @@ void carveTunnelH(int x1, int x2, int y) {
             Tile& tile = tiles[y * MAP_WIDTH + x];
             switch (tile) {
                 case Tile::wall:
-                    tile = Tile::floor;
+                    tile = Tile::empty;
                     break;
                 case Tile::wallFortified:
                     tile = Tile::doorV;
@@ -165,7 +165,7 @@ void carveTunnelV(int y1, int y2, int x) {
             Tile& tile = tiles[y * MAP_WIDTH + x];
             switch (tile) {
                 case Tile::wall:
-                    tile = Tile::floor;
+                    tile = Tile::empty;
                     break;
                 case Tile::wallFortified:
                     tile = Tile::doorH;

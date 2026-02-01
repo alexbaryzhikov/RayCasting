@@ -13,7 +13,7 @@ namespace RC {
 enum class Tile {
     doorH,
     doorV,
-    floor,
+    empty,
     wall,
     wallFortified,
     wallIndestructible,

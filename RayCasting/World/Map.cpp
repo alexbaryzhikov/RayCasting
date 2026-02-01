@@ -106,7 +106,7 @@ void drawTile(int row, int col) {
                 drawGeometry(doorVGeometry, transform, Palette::mapWallColor);
             }
             break;
-        case Tile::floor:
+        case Tile::empty:
             break;
         case Tile::wall:
             drawGeometry(wallGeometry, transform, Palette::mapWallColor);

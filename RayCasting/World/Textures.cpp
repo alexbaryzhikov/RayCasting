@@ -28,7 +28,7 @@ uint32_t* getTexture(Tile tile) {
         case Tile::doorH:
         case Tile::doorV:
             return door.data();
-        case Tile::floor:
+        case Tile::empty:
             return floor.data();
         case Tile::wall:
             return wall.data();
