@@ -5,21 +5,21 @@
 
 #define TEXTURE_HEAP_SIZE 8
 
-enum TextureIndex {
+typedef enum {
     TextureIndexCeiling,
     TextureIndexFloor,
     TextureIndexDoor,
     TextureIndexWall,
     TextureIndexWallFortified,
     TextureIndexWallIndestructible,
-};
+} TextureIndex;
 
-typedef struct Camera {
+typedef struct {
     simd_float4 position;
     float angle;
 } Camera;
 
-typedef enum TileType {
+typedef enum {
     TileTypeDoorH,
     TileTypeDoorV,
     TileTypeEmpty,
@@ -28,8 +28,13 @@ typedef enum TileType {
     TileTypeWallIndestructible,
 } TileType;
 
-typedef struct Map {
+typedef struct {
+    float progress;
+} Door;
+
+typedef struct {
     TileType tiles[MAP_WIDTH * MAP_HEIGHT];
+    Door doors[MAP_WIDTH * MAP_HEIGHT];
 } Map;
 
 #endif /* GPUShaderTypes_h */

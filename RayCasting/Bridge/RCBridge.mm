@@ -116,28 +116,33 @@
     dst->angle = RC::Player::angle;
 }
 
-+ (void)copyTiles:(TileType*)dst {
++ (void)copyMap:(Map*)dst {
+    TileType* tiles = dst->tiles;
     for (int i = 0; i < RC::Map::tiles.size(); ++i) {
         switch (RC::Map::tiles[i]) {
             case RC::Tile::doorH:
-                dst[i] = TileTypeDoorH;
+                tiles[i] = TileTypeDoorH;
                 break;
             case RC::Tile::doorV:
-                dst[i] = TileTypeDoorV;
+                tiles[i] = TileTypeDoorV;
                 break;
             case RC::Tile::empty:
-                dst[i] = TileTypeEmpty;
+                tiles[i] = TileTypeEmpty;
                 break;
             case RC::Tile::wall:
-                dst[i] = TileTypeWall;
+                tiles[i] = TileTypeWall;
                 break;
             case RC::Tile::wallFortified:
-                dst[i] = TileTypeWallFortified;
+                tiles[i] = TileTypeWallFortified;
                 break;
             case RC::Tile::wallIndestructible:
-                dst[i] = TileTypeWallIndestructible;
+                tiles[i] = TileTypeWallIndestructible;
                 break;
         }
+    }
+    Door* doors = dst->doors;
+    for (auto [i, door] : RC::Map::doors) {
+        doors[i].progress = door.progress;
     }
 }
 

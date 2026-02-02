@@ -31,6 +31,6 @@
 + (void)mouseMoved:(CGVector)offset;
 + (void)mouseWheel:(CGVector)offset;
 + (void)copyCamera:(Camera*)dst;
-+ (void)copyTiles:(TileType*)dst;
++ (void)copyMap:(Map*)dst;
 
 @end

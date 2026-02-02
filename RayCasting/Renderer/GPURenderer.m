@@ -120,7 +120,7 @@
 - (void)updateUniforms {
     [RCBridge updateWorld];
     [RCBridge copyCamera:cameraBuffer.contents];
-    [RCBridge copyTiles:mapBuffer.contents];
+    [RCBridge copyMap:mapBuffer.contents];
 }
 
 - (void)mtkView:(MTKView*)view drawableSizeWillChange:(CGSize)size {
