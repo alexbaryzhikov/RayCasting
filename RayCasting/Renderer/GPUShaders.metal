@@ -437,17 +437,15 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                         float dZ = fabs(doorBottom - state.rayX.position.z);
                         float dXYZ = fabs(dZ / normalV.y);
                         float dXY = fabs(dXYZ * normalV.x);
-                        float2 tilePoint = state.rayX.position.xy - tilePosition + normalH * dXY;
+                        float4 rayOffset = float4(normalH * dXY, dZ, 0);
+                        float2 tilePoint = raySegment[0] + rayOffset.xy;
                         if (inPolygonBounds<4>(tilePoint, doorPolygon)) {
-                            ray.position = state.rayX.position + float4(tilePoint.x, tilePoint.y, dZ, 0);
+                            ray.position = state.rayX.position + rayOffset;
                             ray.length = lengthX + dXYZ;
                             ray.tile = {
                                 .type = tileType,
                                 .side = normalH.x < 0 ? TileSideRight : TileSideLeft,
-                                .offset = {
-                                    (tileType == TileTypeDoorH ? tilePoint.x : tilePoint.y) / MAP_TILE_SIZE,
-                                    1,
-                                },
+                                .offset = {(tileType == TileTypeDoorH ? tilePoint.x : tilePoint.y) / MAP_TILE_SIZE, 1},
                                 .slope = atan(fabs(normalV.x / normalV.y)) * 2 / pi,
                             };
                             ray.miss = false;
@@ -511,17 +509,15 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                         float dZ = fabs(doorBottom - state.rayY.position.z);
                         float dXYZ = fabs(dZ / normalV.y);
                         float dXY = fabs(dXYZ * normalV.x);
-                        float2 tilePoint = state.rayY.position.xy - tilePosition + normalH * dXY;
+                        float4 rayOffset = float4(normalH * dXY, dZ, 0);
+                        float2 tilePoint = raySegment[0] + rayOffset.xy;
                         if (inPolygonBounds<4>(tilePoint, doorPolygon)) {
-                            ray.position = state.rayY.position + float4(tilePoint.x, tilePoint.y, dZ, 0);
+                            ray.position = state.rayY.position + rayOffset;
                             ray.length = lengthY + dXYZ;
                             ray.tile = {
                                 .type = tileType,
                                 .side = normalH.y < 0 ? TileSideBottom : TileSideTop,
-                                .offset = {
-                                    (tileType == TileTypeDoorH ? tilePoint.x : tilePoint.y) / MAP_TILE_SIZE,
-                                    1,
-                                },
+                                .offset = {(tileType == TileTypeDoorH ? tilePoint.x : tilePoint.y) / MAP_TILE_SIZE, 1},
                                 .slope = atan(fabs(normalV.x / normalV.y)) * 2 / pi,
                             };
                             ray.miss = false;
