@@ -175,9 +175,9 @@ void updateActions() {
         mouseRightUpdated = true;
         Ray ray = Viewport::castRayToFirstHit(0);
         if (!ray.isMiss() && ray.length < PLAYER_ACTION_RANGE) {
-            Tile& tile = Map::tiles[ray.tile.index];
-            if (tile != Tile::wallIndestructible) {
-                tile = Tile::empty;
+            if (Map::tiles[ray.tile.index] != Tile::wallIndestructible) {
+                Map::tiles[ray.tile.index] = Tile::empty;
+                Map::doors.erase(ray.tile.index);
             }
         }
     }

@@ -129,9 +129,17 @@ void drawPixel(uint2 pixel,
                Ray ray,
                texture2d<float, access::sample> tileTexture,
                texture2d<float, access::write> outputTexture) {
-    constexpr sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
+    if (ray.length > CAMERA_FAR_CLIP) {
+        outputTexture.write(float4(sRGBToLinear(colorFog), 1), pixel);
+        return;
+    }
+    const sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
     float2 readCoord = ray.tile.offset;
     float4 outColor = tileTexture.sample(textureSampler, readCoord);
+    float4 shadowColor = float4(sRGBToLinear(colorShadow), ray.length / CAMERA_FAR_CLIP);
+    outColor = blendMultiply(shadowColor, outColor);
+    float4 fogColor = float4(sRGBToLinear(colorFog), ray.length / CAMERA_FAR_CLIP);
+    outColor = blendNormal(fogColor, outColor);
     outputTexture.write(outColor, pixel);
 }
 

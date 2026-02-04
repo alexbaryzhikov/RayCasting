@@ -19,5 +19,5 @@
 
 - GPU ray casting
 - Torches as light sources
-- Fortification of walls
+- Toolbar for building different kinds of walls
 - Wall decorations (edge, support beam, window)
