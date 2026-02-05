@@ -35,9 +35,11 @@ constant constexpr float3 colorLight = float3(0xBE, 0x96, 0x88) / 0xFF;
 constant constexpr float3 colorShadow = float3(0x01, 0x5A, 0x00) / 0xFF;
 
 float3 sRGBToLinear(float3 srgb) {
-    return select(srgb / 12.92f,
-                  pow((srgb + 0.055f) / 1.055f, 2.4f),
-                  srgb > 0.04045f);
+    return select(srgb / 12.92f, pow((srgb + 0.055f) / 1.055f, 2.4f), srgb > 0.04045f);
+}
+
+float3 applyIntensity(float3 color, float intensity) {
+    return select(1.0f - (1.0f - color) / intensity, color * intensity, intensity <= 1.0f);
 }
 
 float4 blendNormal(float4 src, float4 dst) {
@@ -116,7 +118,7 @@ void drawPixel(uint2 pixel,
     outColor = blendMultiply(shadowColor, outColor);
     float lightFalloff = 1.0f - min(1.0f, ray.length / PLAYER_LIGHT_RADIUS);
     float lightSlope = 1.0f - ray.tile.slope * 0.8f;
-    float4 lightColor = float4(sRGBToLinear(colorLight), lightFalloff * lightSlope * PLAYER_LIGHT_INTENSITY);
+    float4 lightColor = float4(applyIntensity(sRGBToLinear(colorLight), PLAYER_LIGHT_INTENSITY), lightFalloff * lightSlope);
     outColor = blendDodge(lightColor, outColor);
     float4 fogColor = float4(sRGBToLinear(colorFog), ray.length / CAMERA_FAR_CLIP);
     outColor = blendNormal(fogColor, outColor);
