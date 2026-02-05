@@ -9,30 +9,29 @@ constant constexpr float inf = 1e10;
 constant constexpr float4 pointAtZero = {0, 0, 0, 1};
 constant constexpr float4 pointAtInf = {inf, inf, inf, 1};
 
-constant constexpr float pixelAngle = float(CAMERA_FOV) / float(CANVAS_WIDTH); // angle between rays cast from camera to adjacent pixels of projection plane
-constant constexpr float horizonY = float(CANVAS_HEIGHT) / 2;                  // horizon coordinate in screen space
+constant constexpr float horizonY = float(CANVAS_HEIGHT) / 2; // horizon coordinate in screen space
 
 constant constexpr float mapWidth = MAP_WIDTH * MAP_TILE_SIZE;
 constant constexpr float mapHeight = MAP_HEIGHT * MAP_TILE_SIZE;
 constant constexpr float mapDepth = MAP_TILE_SIZE;
 constant constexpr float4 mapBounds = {mapWidth, mapHeight, mapDepth, 1};
 
-constant constexpr float2 doorH[4] = {
-    {0, (MAP_TILE_SIZE - DOOR_DEPTH) / 2},
-    {0, (MAP_TILE_SIZE + DOOR_DEPTH) / 2},
-    {MAP_TILE_SIZE, (MAP_TILE_SIZE + DOOR_DEPTH) / 2},
-    {MAP_TILE_SIZE, (MAP_TILE_SIZE - DOOR_DEPTH) / 2},
+constant constexpr array<float2, 4> doorH = {
+    float2(0, (MAP_TILE_SIZE - DOOR_DEPTH) / 2),
+    float2(0, (MAP_TILE_SIZE + DOOR_DEPTH) / 2),
+    float2(MAP_TILE_SIZE, (MAP_TILE_SIZE + DOOR_DEPTH) / 2),
+    float2(MAP_TILE_SIZE, (MAP_TILE_SIZE - DOOR_DEPTH) / 2),
 };
 
-constant constexpr float2 doorV[4] = {
-    {(MAP_TILE_SIZE - DOOR_DEPTH) / 2, 0},
-    {(MAP_TILE_SIZE - DOOR_DEPTH) / 2, MAP_TILE_SIZE},
-    {(MAP_TILE_SIZE + DOOR_DEPTH) / 2, MAP_TILE_SIZE},
-    {(MAP_TILE_SIZE + DOOR_DEPTH) / 2, 0},
+constant constexpr array<float2, 4> doorV = {
+    float2((MAP_TILE_SIZE - DOOR_DEPTH) / 2, 0),
+    float2((MAP_TILE_SIZE - DOOR_DEPTH) / 2, MAP_TILE_SIZE),
+    float2((MAP_TILE_SIZE + DOOR_DEPTH) / 2, MAP_TILE_SIZE),
+    float2((MAP_TILE_SIZE + DOOR_DEPTH) / 2, 0),
 };
 
 constant constexpr float3 colorFog = float3(0x07, 0x00, 0x16) / 0xFF;
-constant constexpr float3 colorLight = float3(0xB7, 0x46, 0x40) / 0xFF;
+constant constexpr float3 colorLight = float3(0xBE, 0x96, 0x88) / 0xFF;
 constant constexpr float3 colorShadow = float3(0x01, 0x5A, 0x00) / 0xFF;
 
 float3 sRGBToLinear(float3 srgb) {
@@ -42,15 +41,19 @@ float3 sRGBToLinear(float3 srgb) {
 }
 
 float4 blendNormal(float4 src, float4 dst) {
-    return float4(dst.rgb * (1 - src.a) + src.rgb * src.a, 1);
+    return float4(dst.rgb * (1.0f - src.a) + src.rgb * src.a, 1.0f);
 }
 
 float4 blendAdd(float4 src, float4 dst) {
-    return float4(dst.rgb + src.rgb * src.a, 1);
+    return float4(dst.rgb + src.rgb * src.a, 1.0f);
 }
 
 float4 blendMultiply(float4 src, float4 dst) {
-    return float4(dst.rgb * (1 - (1 - src.rgb) * src.a), 1);
+    return float4(dst.rgb * (1.0f - (1.0f - src.rgb) * src.a), 1.0f);
+}
+
+float4 blendDodge(float4 src, float4 dst) {
+    return float4(dst.rgb * (1.0f - (1.0f - 1.0f / max(1.0f - src.rgb, 0.0001f)) * src.a), 1.0f);
 }
 
 float4x4 makeTranslationMatrix(float4 t) {
@@ -73,34 +76,7 @@ float4x4 makeRotationZMatrix(float angle) {
     };
 }
 
-/**
- * Draws horizontal surface color into the output texture pixel.
- */
-void drawSurface(float4 raySurfaceHit,  // coordinate of ray and surface intersection in camera space
-                 float4 cameraPosition, // camera position in world space
-                 float cameraAngle,     // camera horizontal angle in world space
-                 texture2d<float, access::sample> surfaceTexture,
-                 texture2d<float, access::write> outputTexture,
-                 uint2 pixel) {
-    if (raySurfaceHit.x >= CAMERA_FAR_CLIP) {
-        outputTexture.write(float4(sRGBToLinear(colorFog), 1), pixel);
-        return;
-    }
-    float4 raySurfaceHitWorld = makeTranslationMatrix(cameraPosition) * makeRotationZMatrix(cameraAngle) * raySurfaceHit;
-    constexpr sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
-    float2 readCoord = raySurfaceHitWorld.xy / float(MAP_TILE_SIZE);
-    float4 outColor = surfaceTexture.sample(textureSampler, readCoord);
-    float lightFalloff = 1.0f - min(1.0f, raySurfaceHit.x / PLAYER_LIGHT_RADIUS);
-    float4 lightColor = float4(sRGBToLinear(colorLight), lightFalloff * PLAYER_LIGHT_INTENSITY);
-    outColor = blendAdd(lightColor, outColor);
-    float4 shadowColor = float4(sRGBToLinear(colorShadow), raySurfaceHit.x / CAMERA_FAR_CLIP);
-    outColor = blendMultiply(shadowColor, outColor);
-    float4 fogColor = float4(sRGBToLinear(colorFog), raySurfaceHit.x / CAMERA_FAR_CLIP);
-    outColor = blendNormal(fogColor, outColor);
-    outputTexture.write(outColor, pixel);
-}
-
-texture2d<float, access::sample> getTileTexture(array<texture2d<float, access::sample>, TEXTURE_HEAP_SIZE> textures, Tile tile) {
+TextureIndex getTextureIndex(thread const Tile& tile) {
     switch (tile.side) {
         case TileSideLeft:
         case TileSideRight:
@@ -109,24 +85,24 @@ texture2d<float, access::sample> getTileTexture(array<texture2d<float, access::s
             switch (tile.type) {
                 case TileTypeDoorH:
                 case TileTypeDoorV:
-                    return textures[TextureIndexDoor];
+                    return TextureIndexDoor;
                 case TileTypeEmpty:
                 case TileTypeWall:
-                    return textures[TextureIndexWall];
+                    return TextureIndexWall;
                 case TileTypeWallFortified:
-                    return textures[TextureIndexWallFortified];
+                    return TextureIndexWallFortified;
                 case TileTypeWallIndestructible:
-                    return textures[TextureIndexWallIndestructible];
+                    return TextureIndexWallIndestructible;
             }
         case TileSideCeiling:
-            return textures[TextureIndexCeiling];
+            return TextureIndexCeiling;
         case TileSideFloor:
-            return textures[TextureIndexFloor];
+            return TextureIndexFloor;
     }
 }
 
 void drawPixel(uint2 pixel,
-               Ray ray,
+               thread const Ray& ray,
                texture2d<float, access::sample> tileTexture,
                texture2d<float, access::write> outputTexture) {
     if (ray.length > CAMERA_FAR_CLIP) {
@@ -138,6 +114,10 @@ void drawPixel(uint2 pixel,
     float4 outColor = tileTexture.sample(textureSampler, readCoord);
     float4 shadowColor = float4(sRGBToLinear(colorShadow), ray.length / CAMERA_FAR_CLIP);
     outColor = blendMultiply(shadowColor, outColor);
+    float lightFalloff = 1.0f - min(1.0f, ray.length / PLAYER_LIGHT_RADIUS);
+    float lightSlope = 1.0f - ray.tile.slope * 0.8f;
+    float4 lightColor = float4(sRGBToLinear(colorLight), lightFalloff * lightSlope * PLAYER_LIGHT_INTENSITY);
+    outColor = blendDodge(lightColor, outColor);
     float4 fogColor = float4(sRGBToLinear(colorFog), ray.length / CAMERA_FAR_CLIP);
     outColor = blendNormal(fogColor, outColor);
     outputTexture.write(outColor, pixel);
@@ -157,7 +137,7 @@ float4 getRayDirection(float cameraAngle, uint2 pixel) {
 /**
  * Returns a traversal state for ray cast.
  */
-RayState makeRayState(constant Camera& camera, uint2 pixel) {
+RayState makeRayState(constant const Camera& camera, uint2 pixel) {
     float4 direction = getRayDirection(camera.angle, pixel);
     float2 normalH = normalize(direction.xy);
     float2 normalV = {length(direction.xy), direction.z};
@@ -344,11 +324,13 @@ bool findIntersection(float2 a1, float2 b1, float2 a2, float2 b2, thread float2&
  * Find intersection point between ray and polygon segment closest to the ray start.
  */
 template <size_t N>
-bool findClosestIntersection(float2 ray[2], constant float2 polygon[N], thread Intersection& intersection) {
+bool findClosestIntersection(thread const array<float2, 2>& ray,
+                             constant const array<float2, N>& polygon,
+                             thread Intersection& intersection) {
     float minLength = inf;
     float2 point;
     float offset;
-    for (int i = 0; i < N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
         if (findIntersection(ray[0], ray[1], polygon[i], polygon[(i + 1) % N], point, offset)) {
             float len = length(point - ray[0]);
             if (len < minLength) {
@@ -366,9 +348,9 @@ bool findClosestIntersection(float2 ray[2], constant float2 polygon[N], thread I
  * Checks if the point belongs to the polygon. Assumes polygon has CCW winding.
  */
 template <size_t N>
-bool inPolygonBounds(float2 point, constant float2 polygon[N]) {
-    for (int i = 0; i < N; ++i) {
-        int j = (i + 1) % N;
+bool inPolygonBounds(float2 point, constant const array<float2, N>& polygon) {
+    for (size_t i = 0; i < N; ++i) {
+        size_t j = (i + 1) % N;
         float2 a = polygon[j] - polygon[i];
         float2 b = point - polygon[i];
         if (a.x * b.y - a.y * b.x > 0) {
@@ -417,13 +399,13 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
             ray.miss = false;
         } else if (isDoor(tileType)) {
             float2 tilePosition = makeTilePosition(col, row);
-            float2 raySegment[2] = {
+            array<float2, 2> raySegment = {
                 state.rayX.position.xy - tilePosition,
                 state.rayX.position.xy - tilePosition + state.rayX.step.xy
             };
-            constant float2* doorPolygon = tileType == TileTypeDoorH ? doorH : doorV;
+            constant const array<float2, 4>& doorPolygon = tileType == TileTypeDoorH ? doorH : doorV;
             Intersection intersection;
-            if (findClosestIntersection<4>(raySegment, doorPolygon, intersection)) {
+            if (findClosestIntersection(raySegment, doorPolygon, intersection)) {
                 float4 rayPosition = state.rayX.position + getDelta(intersection.point - raySegment[0], normalV);
                 float rayLength = length(rayPosition - camera.position);
                 if (rayLength < lengthZ) {
@@ -447,7 +429,7 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                         float dXY = fabs(dXYZ * normalV.x);
                         float4 rayOffset = float4(normalH * dXY, dZ, 0);
                         float2 tilePoint = raySegment[0] + rayOffset.xy;
-                        if (inPolygonBounds<4>(tilePoint, doorPolygon)) {
+                        if (inPolygonBounds(tilePoint, doorPolygon)) {
                             ray.position = state.rayX.position + rayOffset;
                             ray.length = lengthX + dXYZ;
                             ray.tile = {
@@ -489,13 +471,13 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
             ray.miss = false;
         } else if (isDoor(tileType)) {
             float2 tilePosition = makeTilePosition(col, row);
-            float2 raySegment[2] = {
+            array<float2, 2> raySegment = {
                 state.rayY.position.xy - tilePosition,
                 state.rayY.position.xy - tilePosition + state.rayY.step.xy
             };
-            constant float2* doorPolygon = tileType == TileTypeDoorH ? doorH : doorV;
+            constant const array<float2, 4>& doorPolygon = tileType == TileTypeDoorH ? doorH : doorV;
             Intersection intersection;
-            if (findClosestIntersection<4>(raySegment, doorPolygon, intersection)) {
+            if (findClosestIntersection(raySegment, doorPolygon, intersection)) {
                 float4 rayPosition = state.rayY.position + getDelta(intersection.point - raySegment[0], normalV);
                 float rayLength = length(rayPosition - camera.position);
                 if (rayLength < lengthZ) {
@@ -519,7 +501,7 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
                         float dXY = fabs(dXYZ * normalV.x);
                         float4 rayOffset = float4(normalH * dXY, dZ, 0);
                         float2 tilePoint = raySegment[0] + rayOffset.xy;
-                        if (inPolygonBounds<4>(tilePoint, doorPolygon)) {
+                        if (inPolygonBounds(tilePoint, doorPolygon)) {
                             ray.position = state.rayY.position + rayOffset;
                             ray.length = lengthY + dXYZ;
                             ray.tile = {
@@ -572,8 +554,7 @@ kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]
     Ray ray = makeRay();
     while (castRay(camera, map, state, ray)) {
         if (!ray.miss) {
-            texture2d<float, access::sample> tileTexture = getTileTexture(textures, ray.tile);
-            drawPixel(gid, ray, tileTexture, outputTexture);
+            drawPixel(gid, ray, textures[getTextureIndex(ray.tile)], outputTexture);
             return;
         }
     }

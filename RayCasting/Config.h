@@ -42,8 +42,8 @@
 #define PLAYER_FRICTION             0.1f
 #define PLAYER_RADIUS               16.0f
 #define PLAYER_ACTION_RANGE         (MAP_TILE_SIZE * 3)
-#define PLAYER_LIGHT_RADIUS         400.0f
-#define PLAYER_LIGHT_INTENSITY      0.3f
+#define PLAYER_LIGHT_RADIUS         600.0f
+#define PLAYER_LIGHT_INTENSITY      4.0f
 
 // Camera
 #define CAMERA_HEIGHT               32.0f
