@@ -17,7 +17,7 @@
 
 ## Next Steps
 
-- GPU ray casting
+- FPS and map overlay
 - Torches as light sources
 - Toolbar for building different kinds of walls
 - Wall decorations (edge, support beam, window)
