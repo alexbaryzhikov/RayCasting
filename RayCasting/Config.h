@@ -4,12 +4,8 @@
 // Display
 #define VIEWPORT_WIDTH              1600
 #define VIEWPORT_HEIGHT             900
-#define VIEW_SCALE                  1
-#define VIEW_WIDTH                  (VIEWPORT_WIDTH * VIEW_SCALE)
-#define VIEW_HEIGHT                 (VIEWPORT_HEIGHT * VIEW_SCALE)
 #define CANVAS_WIDTH                800
 #define CANVAS_HEIGHT               450
-#define CANVAS_SIZE                 (CANVAS_WIDTH * CANVAS_HEIGHT)
 #define GPU_RENDERING               true
 
 // Font
@@ -27,7 +23,7 @@
 #define MAP_ZOOM_SPEED              1.03124f
 #define MAP_WIDTH                   41
 #define MAP_HEIGHT                  41
-#define MAP_SEED                    80386
+#define MAP_SEED                    100486
 #define FLOOR_COVERAGE_TARGET       0.5f
 #define ROOM_MIN_SIZE               2
 #define ROOM_MAX_SIZE               10

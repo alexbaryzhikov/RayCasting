@@ -2,8 +2,8 @@
 #import "CanvasRenderer.h"
 #import "GPUShaderTypes.h"
 #import "RCBridge.h"
-
-#define BYTES_PER_PIXEL 4
+#import <os/log.h>
+#import <os/signpost.h>
 
 @implementation GPURenderer {
     id<MTLDevice> device;
@@ -11,6 +11,7 @@
     id<MTLComputePipelineState> computePipelineState;
 
     CanvasRenderer* canvasRenderer;
+    os_log_t renderLog;
 
     id<MTLTexture> textures[TEXTURE_HEAP_SIZE];
     NSUInteger texturesCount;
@@ -24,6 +25,7 @@
     if (self) {
         device = view.device;
         canvasRenderer = [[CanvasRenderer alloc] initWithDevice:device];
+        renderLog = os_log_create("com.alexb.RayCasting", "PointsOfInterest");
         [self setupView:view];
         [self setupMetal];
         [self loadTextures];
@@ -102,8 +104,9 @@
     if (!texture) {
         return;
     }
+    NSUInteger bytesPerPixel = 4;
     [texture getBytes:[RCBridge fontBytes]
-          bytesPerRow:texture.width * BYTES_PER_PIXEL
+          bytesPerRow:texture.width * bytesPerPixel
            fromRegion:MTLRegionMake2D(0, 0, texture.width, texture.height)
           mipmapLevel:0];
 }
@@ -114,6 +117,9 @@
 }
 
 - (void)drawInMTKView:(MTKView*)view {
+    os_signpost_id_t signpostID = os_signpost_id_generate(renderLog);
+    os_signpost_interval_begin(renderLog, signpostID, "Renderer::draw", "Started");
+
     [self updateUniforms];
 
     id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
@@ -143,6 +149,8 @@
     [commandEncoder endEncoding];
     [commandBuffer presentDrawable:drawable];
     [commandBuffer commit];
+
+    os_signpost_interval_end(renderLog, signpostID, "Renderer::draw", "Finished");
 }
 
 - (void)updateUniforms {

@@ -11,7 +11,7 @@
 }
 
 - (void)loadView {
-    self.view = [[RenderingView alloc] initWithFrame:NSMakeRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT)];
+    self.view = [[RenderingView alloc] initWithFrame:NSMakeRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT)];
 }
 
 - (void)viewDidLoad {

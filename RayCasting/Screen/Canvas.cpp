@@ -13,6 +13,7 @@ bool operator==(const Frame& a, const Frame& b) {
 
 namespace RC::Canvas {
 
+constexpr int canvasSize = CANVAS_WIDTH * CANVAS_HEIGHT;
 constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 
 uint32_t* canvas;
@@ -42,7 +43,7 @@ void fill() {
 
 void fill(uint32_t color) {
     if (clipFrame == fullFrame) {
-        std::fill_n(canvas, CANVAS_SIZE, color);
+        std::fill_n(canvas, canvasSize, color);
     } else {
         for (size_t i = clipFrame.y; i < clipFrame.maxY(); ++i) {
             size_t offset = i * CANVAS_WIDTH + clipFrame.x;
@@ -52,7 +53,7 @@ void fill(uint32_t color) {
 }
 
 void clear() {
-    std::fill_n(canvas, CANVAS_SIZE, 0);
+    std::fill_n(canvas, canvasSize, 0);
 }
 
 void point(float x, float y) {

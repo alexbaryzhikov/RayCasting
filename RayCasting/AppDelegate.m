@@ -59,7 +59,7 @@
 }
 
 - (void)setupWindow {
-    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT)
+    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
                                               styleMask:(NSWindowStyleMaskTitled |
                                                          NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskMiniaturizable |
@@ -68,7 +68,7 @@
                                                   defer:NO];
     self.window.title = @"Ray Casting";
     self.window.backgroundColor = NSColor.blackColor;
-    self.window.contentAspectRatio = NSMakeSize(VIEW_WIDTH, VIEW_HEIGHT);
+    self.window.contentAspectRatio = NSMakeSize(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
     self.window.contentViewController = [[MainViewController alloc] init];
     [self.window makeFirstResponder:self.window.contentViewController];
     [self.window center];

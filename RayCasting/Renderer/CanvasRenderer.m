@@ -2,7 +2,6 @@
 #import "Config.h"
 #import "RCBridge.h"
 
-static const NSUInteger bytesPerPixel = 4;
 static const NSUInteger bufferCount = 3;
 
 @implementation CanvasRenderer {
@@ -25,6 +24,7 @@ static const NSUInteger bufferCount = 3;
 
 - (void)createBuffersWithDevice:(id<MTLDevice>)device {
     NSUInteger alignment = [device minimumLinearTextureAlignmentForPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB];
+    NSUInteger bytesPerPixel = 4;
     NSUInteger bytesPerRow = (bytesPerPixel * CANVAS_WIDTH + (alignment - 1)) & ~(alignment - 1);
     NSUInteger totalBytes = bytesPerRow * CANVAS_HEIGHT;
 
