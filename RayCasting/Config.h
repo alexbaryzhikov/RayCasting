@@ -2,12 +2,14 @@
 #define Config_h
 
 // Display
+#define VIEWPORT_WIDTH              1600
+#define VIEWPORT_HEIGHT             900
+#define VIEW_SCALE                  1
+#define VIEW_WIDTH                  (VIEWPORT_WIDTH * VIEW_SCALE)
+#define VIEW_HEIGHT                 (VIEWPORT_HEIGHT * VIEW_SCALE)
 #define CANVAS_WIDTH                800
-#define CANVAS_HEIGHT               500
+#define CANVAS_HEIGHT               450
 #define CANVAS_SIZE                 (CANVAS_WIDTH * CANVAS_HEIGHT)
-#define VIEW_SCALE                  2
-#define VIEW_WIDTH                  (CANVAS_WIDTH * VIEW_SCALE)
-#define VIEW_HEIGHT                 (CANVAS_HEIGHT * VIEW_SCALE)
 #define GPU_RENDERING               true
 
 // Font
@@ -43,7 +45,7 @@
 #define PLAYER_RADIUS               16.0f
 #define PLAYER_ACTION_RANGE         (MAP_TILE_SIZE * 3)
 #define PLAYER_LIGHT_RADIUS         600.0f
-#define PLAYER_LIGHT_INTENSITY      4.0f
+#define PLAYER_LIGHT_INTENSITY      3.0f
 
 // Camera
 #define CAMERA_HEIGHT               32.0f

@@ -185,7 +185,7 @@ static os_log_t rendererLog;
           mipmapLevel:0];
 }
 
-#pragma mark MTRViewDelegate Methods
+#pragma mark MTKViewDelegate Methods
 
 - (void)drawInMTKView:(nonnull MTKView*)view {
     /// Per frame updates

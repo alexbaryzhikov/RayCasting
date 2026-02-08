@@ -27,7 +27,7 @@ bool operator==(const Frame& a, const Frame& b);
 
 namespace RC::Canvas {
 
-extern std::array<uint32_t, CANVAS_SIZE> canvas;
+extern uint32_t* canvas;
 
 void setClipFrame(float x, float y, float w, float h);
 void setClipFrame(Frame frame);
@@ -36,6 +36,7 @@ void resetClipFrame();
 
 void fill();
 void fill(uint32_t color);
+void clear();
 
 void point(float x, float y);
 void point(float x, float y, uint32_t color);

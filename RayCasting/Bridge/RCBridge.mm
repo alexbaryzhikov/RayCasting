@@ -13,8 +13,12 @@
 
 @implementation RCBridge
 
++ (void)setCanvasBytes:(void*)bytes {
+    RC::Canvas::canvas = (uint32_t*)bytes;
+}
+
 + (const void*)canvasBytes {
-    return RC::Canvas::canvas.data();
+    return RC::Canvas::canvas;
 }
 
 + (void*)fontBytes {

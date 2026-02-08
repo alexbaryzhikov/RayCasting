@@ -6,6 +6,7 @@
 
 @interface RCBridge : NSObject
 
++ (void)setCanvasBytes:(void*)bytes;
 + (const void*)canvasBytes;
 + (void*)fontBytes;
 + (void*)textureBytes_ceiling;

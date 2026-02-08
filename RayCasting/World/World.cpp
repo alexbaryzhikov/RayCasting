@@ -24,7 +24,8 @@ void drawFPS() {
 }
 
 void draw() {
-    Viewport::draw();
+    RC::Canvas::clear();
+//    Viewport::draw();
     Map::draw();
     drawFPS();
 }

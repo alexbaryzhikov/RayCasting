@@ -9,12 +9,14 @@ constant constexpr float inf = 1e10;
 constant constexpr float4 pointAtZero = {0, 0, 0, 1};
 constant constexpr float4 pointAtInf = {inf, inf, inf, 1};
 
-constant constexpr float horizonY = float(CANVAS_HEIGHT) / 2; // horizon coordinate in screen space
+constant constexpr float horizonY = float(VIEWPORT_HEIGHT) / 2; // horizon coordinate in screen space
+constant constexpr float2 viewportMaxCoord = float2(VIEWPORT_WIDTH, VIEWPORT_HEIGHT) - 1;
 
 constant constexpr float mapWidth = MAP_WIDTH * MAP_TILE_SIZE;
 constant constexpr float mapHeight = MAP_HEIGHT * MAP_TILE_SIZE;
 constant constexpr float mapDepth = MAP_TILE_SIZE;
 constant constexpr float4 mapBounds = {mapWidth, mapHeight, mapDepth, 1};
+
 
 constant constexpr array<float2, 4> doorH = {
     float2(0, (MAP_TILE_SIZE - DOOR_DEPTH) / 2),
@@ -31,7 +33,7 @@ constant constexpr array<float2, 4> doorV = {
 };
 
 constant constexpr float3 colorFog = float3(0x07, 0x00, 0x16) / 0xFF;
-constant constexpr float3 colorLight = float3(0xBE, 0x96, 0x88) / 0xFF;
+constant constexpr float3 colorLight = float3(0xE6, 0xb5, 0x97) / 0xFF;
 constant constexpr float3 colorShadow = float3(0x01, 0x5A, 0x00) / 0xFF;
 
 float3 sRGBToLinear(float3 srgb) {
@@ -103,13 +105,9 @@ TextureIndex getTextureIndex(thread const Tile& tile) {
     }
 }
 
-void drawPixel(uint2 pixel,
-               thread const Ray& ray,
-               texture2d<float, access::sample> tileTexture,
-               texture2d<float, access::write> outputTexture) {
+float4 getRayColor(texture2d<float, access::sample> tileTexture, thread const Ray& ray) {
     if (ray.length > CAMERA_FAR_CLIP) {
-        outputTexture.write(float4(sRGBToLinear(colorFog), 1), pixel);
-        return;
+        return float4(sRGBToLinear(colorFog), 1);
     }
     const sampler textureSampler(coord::normalized, address::repeat, filter::nearest);
     float2 readCoord = ray.tile.offset;
@@ -122,15 +120,21 @@ void drawPixel(uint2 pixel,
     outColor = blendDodge(lightColor, outColor);
     float4 fogColor = float4(sRGBToLinear(colorFog), ray.length / CAMERA_FAR_CLIP);
     outColor = blendNormal(fogColor, outColor);
-    outputTexture.write(outColor, pixel);
+    return outColor;
+}
+
+float4 getOverlayColor(texture2d<float, access::sample> overlayTexture, uint2 pixel) {
+    const sampler textureSampler(coord::normalized, address::clamp_to_edge, filter::nearest);
+    float2 readCoord = float2(pixel) / viewportMaxCoord;
+    return overlayTexture.sample(textureSampler, readCoord);
 }
 
 /**
  * Returns a direction vector in world space of the ray cast from camera to pixel of projection plane.
  */
 float4 getRayDirection(float cameraAngle, uint2 pixel) {
-    const float projectionDistance = (CANVAS_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
-    float u = (pixel.x + 0.5f) - CANVAS_WIDTH / 2.0f;
+    const float projectionDistance = (VIEWPORT_WIDTH / 2.0f) / tan(CAMERA_FOV / 2.0f);
+    float u = (pixel.x + 0.5f) - VIEWPORT_WIDTH / 2.0f;
     float v = (pixel.y + 0.5f) - horizonY;
     float4 direction = {projectionDistance, u, -v, 0.0f};
     return normalize(makeRotationZMatrix(cameraAngle) * direction);
@@ -544,20 +548,25 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
     return true;
 }
 
-kernel void castRays(texture2d<float, access::write> outputTexture [[texture(0)]],
-                     array<texture2d<float, access::sample>, TEXTURE_HEAP_SIZE> textures [[texture(1)]],
-                     constant Camera& camera [[buffer(0)]],
-                     constant Map& map [[buffer(1)]],
-                     uint2 gid [[thread_position_in_grid]]) {
+Ray castRay(constant Camera& camera, constant Map& map, uint2 pixel) {
+    RayState state = makeRayState(camera, pixel);
+    Ray ray = makeRay();
+    while (castRay(camera, map, state, ray) && ray.miss);
+    return ray;
+}
+
+kernel void render(texture2d<float, access::write> outputTexture [[texture(0)]],
+                   texture2d<float, access::sample> overlayTexture [[texture(1)]],
+                   array<texture2d<float, access::sample>, TEXTURE_HEAP_SIZE> textures [[texture(2)]],
+                   constant Camera& camera [[buffer(0)]],
+                   constant Map& map [[buffer(1)]],
+                   uint2 gid [[thread_position_in_grid]]) {
     if (gid.x >= outputTexture.get_width() || gid.y >= outputTexture.get_height()) {
         return;
     }
-    RayState state = makeRayState(camera, gid);
-    Ray ray = makeRay();
-    while (castRay(camera, map, state, ray)) {
-        if (!ray.miss) {
-            drawPixel(gid, ray, textures[getTextureIndex(ray.tile)], outputTexture);
-            return;
-        }
-    }
+    Ray ray = castRay(camera, map, gid);
+    float4 rayColor = getRayColor(textures[getTextureIndex(ray.tile)], ray);
+    float4 overlayColor = getOverlayColor(overlayTexture, gid);
+    float4 outColor = blendNormal(overlayColor, rayColor);
+    outputTexture.write(outColor, gid);
 }

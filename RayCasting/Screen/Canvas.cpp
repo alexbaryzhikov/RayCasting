@@ -15,11 +15,11 @@ namespace RC::Canvas {
 
 constexpr Frame fullFrame = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
 
-std::array<uint32_t, CANVAS_SIZE> canvas;
+uint32_t* canvas;
 Frame clipFrame = fullFrame;
 
 const void* bytes() {
-    return canvas.data();
+    return canvas;
 }
 
 void setClipFrame(float x, float y, float w, float h) {
@@ -42,13 +42,17 @@ void fill() {
 
 void fill(uint32_t color) {
     if (clipFrame == fullFrame) {
-        canvas.fill(color);
+        std::fill_n(canvas, CANVAS_SIZE, color);
     } else {
         for (size_t i = clipFrame.y; i < clipFrame.maxY(); ++i) {
             size_t offset = i * CANVAS_WIDTH + clipFrame.x;
-            std::fill_n(canvas.begin() + offset, clipFrame.w, color);
+            std::fill_n(canvas + offset, clipFrame.w, color);
         }
     }
+}
+
+void clear() {
+    std::fill_n(canvas, CANVAS_SIZE, 0);
 }
 
 void point(float x, float y) {
