@@ -69,9 +69,6 @@ bool isFollowing() {
     return follow;
 }
 
-void initialize() {
-}
-
 void drawGeometry(const std::vector<Segment>& geometry, simd::float3x3 transform, uint32_t color) {
     Palette::color = color;
     for (Segment segment : geometry) {
@@ -138,9 +135,9 @@ void drawPlayer() {
 }
 
 void drawRays() {
-    simd::float2 rayR = Viewport::castRay(-CAMERA_FOV / 2.0f).xy;
-    simd::float2 rayG = Viewport::castRay(0.0f, true).xy;
-    simd::float2 rayB = Viewport::castRay(CAMERA_FOV / 2.0f).xy;
+    simd::float2 rayR = Viewport::castRay(-CAMERA_FOV / 2.0f).position;
+    simd::float2 rayG = Viewport::castRay(0.0f).position;
+    simd::float2 rayB = Viewport::castRay(CAMERA_FOV / 2.0f).position;
     Segment segR = MapGeometry::makeSegment(0, 0, rayR.x, rayR.y);
     Segment segG = MapGeometry::makeSegment(0, 0, rayG.x, rayG.y);
     Segment segB = MapGeometry::makeSegment(0, 0, rayB.x, rayB.y);

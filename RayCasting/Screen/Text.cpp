@@ -1,4 +1,3 @@
-#include <array>
 #include <cmath>
 #include <cstdint>
 
@@ -8,7 +7,7 @@
 
 namespace RC::Text {
 
-std::array<uint32_t, FONT_MAP_SIZE> font;
+uint32_t* font;
 
 void drawFontMap() {
     for (int y = 0; y < FONT_MAP_HEIGHT; ++y) {

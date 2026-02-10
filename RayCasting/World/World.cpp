@@ -13,11 +13,6 @@ namespace RC::World {
 
 int64_t fps = 0;
 
-void start() {
-    Map::initialize();
-    Viewport::initialize();
-}
-
 void drawFPS() {
     Palette::color = Palette::white;
     Text::draw(4, 4, std::to_string(fps));
@@ -25,7 +20,6 @@ void drawFPS() {
 
 void draw() {
     RC::Canvas::clear();
-//    Viewport::draw();
     Map::draw();
     drawFPS();
 }

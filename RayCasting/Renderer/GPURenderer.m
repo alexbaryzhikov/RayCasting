@@ -1,6 +1,6 @@
 #import "GPURenderer.h"
 #import "CanvasRenderer.h"
-#import "GPUShaderTypes.h"
+#import "GPUShaderTypesShared.h"
 #import "RCBridge.h"
 #import <os/log.h>
 #import <os/signpost.h>
@@ -18,6 +18,7 @@
 
     id<MTLBuffer> cameraBuffer;
     id<MTLBuffer> mapBuffer;
+    id<MTLBuffer> fontBuffer;
 }
 
 - (nonnull instancetype)initWithMetalKitView:(nonnull MTKView*)view {
@@ -27,7 +28,8 @@
         canvasRenderer = [[CanvasRenderer alloc] initWithDevice:device];
         renderLog = os_log_create("com.alexb.RayCasting", "PointsOfInterest");
         [self setupView:view];
-        [self setupMetal];
+        [self setupMetalPipeline];
+        [self createBuffers];
         [self loadTextures];
         [self loadFont];
         [self setupWorld];
@@ -44,7 +46,7 @@
     view.layer.contentsGravity = kCAGravityResizeAspect;
 }
 
-- (void)setupMetal {
+- (void)setupMetalPipeline {
     commandQueue = [device newCommandQueue];
 
     id<MTLLibrary> defaultLibrary = [device newDefaultLibrary];
@@ -55,7 +57,9 @@
     if (!computePipelineState) {
         NSLog(@"Failed to create compute pipeline state: %@", error);
     }
+}
 
+- (void)createBuffers {
     cameraBuffer = [device newBufferWithLength:sizeof(Camera) options:MTLResourceStorageModeShared];
     mapBuffer = [device newBufferWithLength:sizeof(Map) options:MTLResourceStorageModeShared];
 }
@@ -104,16 +108,26 @@
     if (!texture) {
         return;
     }
+
+    NSUInteger alignment = [device minimumLinearTextureAlignmentForPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB];
     NSUInteger bytesPerPixel = 4;
-    [texture getBytes:[RCBridge fontBytes]
+    NSUInteger bytesPerRow = (bytesPerPixel * texture.width + (alignment - 1)) & ~(alignment - 1);
+    NSUInteger totalBytes = bytesPerRow * texture.height;
+    fontBuffer = [device newBufferWithLength:totalBytes options:MTLResourceStorageModeShared];
+    if (!fontBuffer) {
+        NSLog(@"Failed to create font buffer");
+        return;
+    }
+
+    [texture getBytes:fontBuffer.contents
           bytesPerRow:texture.width * bytesPerPixel
            fromRegion:MTLRegionMake2D(0, 0, texture.width, texture.height)
           mipmapLevel:0];
+    [RCBridge setFontBytes:fontBuffer.contents];
 }
 
 - (void)setupWorld {
     [RCBridge generateMap];
-    [RCBridge startWorld];
 }
 
 - (void)drawInMTKView:(MTKView*)view {

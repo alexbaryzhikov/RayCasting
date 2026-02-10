@@ -1,5 +1,4 @@
 #import "MainViewController.h"
-#import "CPURenderer.h"
 #import "Config.h"
 #import "GPURenderer.h"
 #import "Renderer.h"
@@ -17,22 +16,16 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    _view = (RenderingView*)self.view;
-    _view.device = MTLCreateSystemDefaultDevice();
-
-    if (!_view.device) {
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    if (!device) {
         NSLog(@"Metal is not supported on this device");
         self.view = [[NSView alloc] initWithFrame:self.view.frame];
         return;
     }
 
-    if (GPU_RENDERING) {
-        _renderer = [[GPURenderer alloc] initWithMetalKitView:_view];
-    } else {
-        _renderer = [[CPURenderer alloc] initWithMetalKitView:_view];
-    }
-
-    [_renderer mtkView:_view drawableSizeWillChange:_view.drawableSize];
+    _view = (RenderingView*)self.view;
+    _view.device = device;
+    _renderer = [[GPURenderer alloc] initWithMetalKitView:_view];
     _view.delegate = _renderer;
 }
 

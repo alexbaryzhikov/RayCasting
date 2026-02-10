@@ -11,7 +11,6 @@
 // Font
 #define FONT_MAP_WIDTH              128
 #define FONT_MAP_HEIGHT             FONT_MAP_WIDTH
-#define FONT_MAP_SIZE               (FONT_MAP_WIDTH * FONT_MAP_WIDTH)
 #define GLYPH_WIDTH                 (FONT_MAP_WIDTH / 16)
 #define GLYPH_HEIGHT                (FONT_MAP_HEIGHT / 8)
 

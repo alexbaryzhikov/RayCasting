@@ -1,7 +1,7 @@
-#ifndef GPUShaderInternalTypes_hpp
-#define GPUShaderInternalTypes_hpp
+#ifndef GPUShaderTypesInternal_hpp
+#define GPUShaderTypesInternal_hpp
 
-#include "GPUShaderTypes.h"
+#include "GPUShaderTypesShared.h"
 
 struct Intersection {
     float2 point;
@@ -45,4 +45,4 @@ struct RayState {
     RayComponent rayZ; // tracks intersections with XY surfaces
 };
 
-#endif /* GPUShaderInternalTypes_hpp */
+#endif /* GPUShaderTypesInternal_hpp */

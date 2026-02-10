@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-#include "GPUShaderInternalTypes.hpp"
+#include "GPUShaderTypesInternal.hpp"
 
 constant constexpr float pi = M_PI_F;
 constant constexpr float eps = FLT_EPSILON;
@@ -58,15 +58,6 @@ float4 blendMultiply(float4 src, float4 dst) {
 
 float4 blendDodge(float4 src, float4 dst) {
     return float4(dst.rgb * (1.0f - (1.0f - 1.0f / max(1.0f - src.rgb, 0.0001f)) * src.a), 1.0f);
-}
-
-float4x4 makeTranslationMatrix(float4 t) {
-    return {
-        {1, 0, 0, 0},
-        {0, 1, 0, 0},
-        {0, 0, 1, 0},
-        {t.x, t.y, t.z, 1},
-    };
 }
 
 float4x4 makeRotationZMatrix(float angle) {
@@ -252,7 +243,7 @@ float2 makeTilePosition(int col, int row) {
  * Returns true if point is inside or on map boundary.
  */
 bool inMapBounds(float4 point) {
-    return all(point >= pointAtZero - eps) && all(point <= mapBounds + eps);
+    return all(pointAtZero - point <= eps) && all(point - mapBounds <= eps);
 }
 
 /**
@@ -318,7 +309,7 @@ bool findIntersection(float2 a1, float2 b1, float2 a2, float2 b2, thread float2&
 
     // Check if the intersection point lies on both line segments
     // The parameters 't' and 'u' must be in the range [0, 1]
-    if (t > -eps && t < 1 + eps && u > -eps && u < 1 + eps) {
+    if (t > -eps && t - 1 < eps && u > -eps && u - 1 < eps) {
         point = a1 + d1 * t;
         offset = u;
         return true;
@@ -526,26 +517,27 @@ bool castRay(constant Camera& camera, constant Map& map, thread RayState& state,
         return true;
     }
 
-    if (lengthZ == inf) {
-        return false;
+    if (lengthZ < inf) {
+        int row = floor(state.rayZ.position.y / MAP_TILE_SIZE);
+        int col = floor(state.rayZ.position.x / MAP_TILE_SIZE);
+        if (!inMapBounds(row, col)) {
+            return false;
+        }
+        float2 tilePosition = makeTilePosition(col, row);
+        ray.position = state.rayZ.position;
+        ray.length = lengthZ;
+        ray.tile = {
+            .type = TileTypeEmpty,
+            .side = normalV.y < 0 ? TileSideFloor : TileSideCeiling,
+            .offset = (ray.position.xy - tilePosition) / MAP_TILE_SIZE,
+            .slope = atan(fabs(normalV.x / normalV.y)) * 2 / pi,
+        };
+        ray.miss = false;
+        state.rayZ.position += state.rayZ.step;
+        return true;
     }
-    int row = floor(state.rayZ.position.y / MAP_TILE_SIZE);
-    int col = floor(state.rayZ.position.x / MAP_TILE_SIZE);
-    if (!inMapBounds(row, col)) {
-        return false;
-    }
-    float2 tilePosition = makeTilePosition(col, row);
-    ray.position = state.rayZ.position;
-    ray.length = lengthZ;
-    ray.tile = {
-        .type = TileTypeEmpty,
-        .side = normalV.y < 0 ? TileSideFloor : TileSideCeiling,
-        .offset = (ray.position.xy - tilePosition) / MAP_TILE_SIZE,
-        .slope = atan(fabs(normalV.x / normalV.y)) * 2 / pi,
-    };
-    ray.miss = false;
-    state.rayZ.position += state.rayZ.step;
-    return true;
+
+    return false;
 }
 
 Ray castRay(constant Camera& camera, constant Map& map, uint2 pixel) {

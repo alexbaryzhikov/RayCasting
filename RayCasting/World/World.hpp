@@ -3,8 +3,6 @@
 
 namespace RC::World {
 
-void start();
-
 void draw();
 
 void update();

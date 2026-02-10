@@ -9,7 +9,7 @@
 
 namespace RC::Text {
 
-extern std::array<uint32_t, FONT_MAP_SIZE> font;
+extern uint32_t* font;
 
 void drawFontMap();
 

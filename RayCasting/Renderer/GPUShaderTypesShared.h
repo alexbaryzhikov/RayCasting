@@ -1,7 +1,8 @@
-#ifndef GPUShaderTypes_h
-#define GPUShaderTypes_h
+#ifndef GPUShaderTypesShared_h
+#define GPUShaderTypesShared_h
 
 #include "../Config.h"
+#include <simd/simd.h>
 
 #define TEXTURE_HEAP_SIZE 8
 
@@ -37,4 +38,4 @@ typedef struct {
     Door doors[MAP_WIDTH * MAP_HEIGHT];
 } Map;
 
-#endif /* GPUShaderTypes_h */
+#endif /* GPUShaderTypesShared_h */

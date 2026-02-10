@@ -5,43 +5,23 @@
 
 namespace RC {
 
-enum class TileSide {
-    left,
-    right,
-    top,
-    bottom,
-};
-
-struct TileHit {
-    int index;    // -1 for miss
-    float offset; // 0 to 1
-    float angle;  // 0 to 1
-    TileSide side;
-};
-
 struct Ray {
-    simd::float2 xy;
+    simd::float2 position;
     float length;
-    TileHit tile;
+    int tileIndex;
 
-    bool isMiss() const { return tile.index == -1; }
+    bool isMiss() const { return tileIndex == -1; }
 };
 
 } // namespace RC
 
 namespace RC::Viewport {
 
-extern float cameraHeight;
-
-void initialize();
-
-void draw();
+extern float cameraPositionZ;
 
 void update();
 
-Ray castRay(float playerSpaceAngle, bool tracer = false);
-
-Ray castRayToFirstHit(float playerSpaceAngle);
+Ray castRay(float playerSpaceAngle);
 
 } // namespace RC::Viewport
 

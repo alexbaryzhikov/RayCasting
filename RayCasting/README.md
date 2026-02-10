@@ -4,7 +4,6 @@
 | ------------- | ------------------------|
 | W, S, A, D    | movement                |
 | Arrow keys    | movement, map scroll    |
-| B             | walls visibility        |
 | N             | walls collision         |
 | M             | map                     |
 | Shift + M     | minimap                 |

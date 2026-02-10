@@ -1,27 +1,16 @@
 #import <Foundation/Foundation.h>
 
-#include <simd/simd.h>
-
-#include "GPUShaderTypes.h"
+#include "GPUShaderTypesShared.h"
 
 @interface RCBridge : NSObject
 
 + (void)setCanvasBytes:(void*)bytes;
-+ (const void*)canvasBytes;
-+ (void*)fontBytes;
-+ (void*)textureBytes_ceiling;
-+ (void*)textureBytes_door;
-+ (void*)textureBytes_floor;
-+ (void*)textureBytes_wall;
-+ (void*)textureBytes_wallFortified;
-+ (void*)textureBytes_wallFortifiedDecal1;
-+ (void*)textureBytes_wallFortifiedDecal2;
-+ (void*)textureBytes_wallFortifiedTorch;
-+ (void*)textureBytes_wallIndestructible;
++ (void)setFontBytes:(void*)bytes;
 + (void)generateMap;
-+ (void)startWorld;
 + (void)drawWorld;
 + (void)updateWorld;
++ (void)copyCamera:(Camera*)dst;
++ (void)copyMap:(Map*)dst;
 + (void)keyDown:(unsigned short)code;
 + (void)keyUp:(unsigned short)code;
 + (void)flagsChanged:(unsigned long)flags;
@@ -31,7 +20,5 @@
 + (void)rightMouseUp;
 + (void)mouseMoved:(CGVector)offset;
 + (void)mouseWheel:(CGVector)offset;
-+ (void)copyCamera:(Camera*)dst;
-+ (void)copyMap:(Map*)dst;
 
 @end
