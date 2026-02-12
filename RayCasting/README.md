@@ -16,7 +16,6 @@
 
 ## Next Steps
 
-- FPS and map overlay
 - Torches as light sources
 - Toolbar for building different kinds of walls
 - Wall decorations (edge, support beam, window)
