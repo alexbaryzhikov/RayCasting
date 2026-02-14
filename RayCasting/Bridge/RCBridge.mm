@@ -43,22 +43,22 @@
     TileType* tiles = dst->tiles;
     for (int i = 0; i < RC::Map::tiles.size(); ++i) {
         switch (RC::Map::tiles[i]) {
-            case RC::Tile::doorH:
+            case RC::TileType::doorH:
                 tiles[i] = TileTypeDoorH;
                 break;
-            case RC::Tile::doorV:
+            case RC::TileType::doorV:
                 tiles[i] = TileTypeDoorV;
                 break;
-            case RC::Tile::empty:
+            case RC::TileType::empty:
                 tiles[i] = TileTypeEmpty;
                 break;
-            case RC::Tile::wall:
+            case RC::TileType::wall:
                 tiles[i] = TileTypeWall;
                 break;
-            case RC::Tile::wallFortified:
+            case RC::TileType::wallFortified:
                 tiles[i] = TileTypeWallFortified;
                 break;
-            case RC::Tile::wallIndestructible:
+            case RC::TileType::wallIndestructible:
                 tiles[i] = TileTypeWallIndestructible;
                 break;
         }

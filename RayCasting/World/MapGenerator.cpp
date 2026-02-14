@@ -64,9 +64,9 @@ void generateWalls() {
         for (int x = 0; x < MAP_WIDTH; ++x) {
             int idx = y * MAP_WIDTH + x;
             if (x == 0 || x == MAP_WIDTH - 1 || y == 0 || y == MAP_HEIGHT - 1) {
-                tiles[idx] = Tile::wallIndestructible;
+                tiles[idx] = TileType::wallIndestructible;
             } else {
-                tiles[idx] = Tile::wall;
+                tiles[idx] = TileType::wall;
             }
         }
     }
@@ -75,8 +75,8 @@ void generateWalls() {
 void carveRoom(const Rect& room, int& floorTiles) {
     for (int y = room.y; y < room.y + room.h; ++y) {
         for (int x = room.x; x < room.x + room.w; ++x) {
-            if (tiles[y * MAP_WIDTH + x] != Tile::empty) {
-                tiles[y * MAP_WIDTH + x] = Tile::empty;
+            if (tiles[y * MAP_WIDTH + x] != TileType::empty) {
+                tiles[y * MAP_WIDTH + x] = TileType::empty;
                 ++floorTiles;
             }
         }
@@ -87,20 +87,20 @@ void fortifyRoom(const Rect& room) {
     for (int y = room.y - 1; y <= room.y + room.h; ++y) {
         if (y > 0 && y < MAP_HEIGHT - 1) {
             if (room.x - 1 > 0) {
-                tiles[y * MAP_WIDTH + room.x - 1] = Tile::wallFortified;
+                tiles[y * MAP_WIDTH + room.x - 1] = TileType::wallFortified;
             }
             if (room.x + room.w < MAP_WIDTH - 1) {
-                tiles[y * MAP_WIDTH + room.x + room.w] = Tile::wallFortified;
+                tiles[y * MAP_WIDTH + room.x + room.w] = TileType::wallFortified;
             }
         }
     }
     for (int x = room.x; x < room.x + room.w; ++x) {
         if (x > 0 && x < MAP_WIDTH - 1) {
             if (room.y - 1 > 0) {
-                tiles[(room.y - 1) * MAP_WIDTH + x] = Tile::wallFortified;
+                tiles[(room.y - 1) * MAP_WIDTH + x] = TileType::wallFortified;
             }
             if (room.y + room.h < MAP_HEIGHT - 1) {
-                tiles[(room.y + room.h) * MAP_WIDTH + x] = Tile::wallFortified;
+                tiles[(room.y + room.h) * MAP_WIDTH + x] = TileType::wallFortified;
             }
         }
     }
@@ -142,14 +142,14 @@ void carveTunnelH(int x1, int x2, int y) {
     if (x1 > x2) std::swap(x1, x2);
     for (int x = x1; x <= x2; ++x) {
         if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
-            Tile& tile = tiles[y * MAP_WIDTH + x];
-            switch (tile) {
-                case Tile::wall:
-                    tile = Tile::empty;
+            TileType& tileType = tiles[y * MAP_WIDTH + x];
+            switch (tileType) {
+                case TileType::wall:
+                    tileType = TileType::empty;
                     break;
-                case Tile::wallFortified:
-                    tile = Tile::doorV;
-                    doors[y * MAP_WIDTH + x] = Door::makeDoorAt(x, y);
+                case TileType::wallFortified:
+                    tileType = TileType::doorV;
+                    doors[y * MAP_WIDTH + x] = makeDoorAt(x, y);
                     break;
                 default:
                     break;
@@ -162,14 +162,14 @@ void carveTunnelV(int y1, int y2, int x) {
     if (y1 > y2) std::swap(y1, y2);
     for (int y = y1; y <= y2; ++y) {
         if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
-            Tile& tile = tiles[y * MAP_WIDTH + x];
-            switch (tile) {
-                case Tile::wall:
-                    tile = Tile::empty;
+            TileType& tileType = tiles[y * MAP_WIDTH + x];
+            switch (tileType) {
+                case TileType::wall:
+                    tileType = TileType::empty;
                     break;
-                case Tile::wallFortified:
-                    tile = Tile::doorH;
-                    doors[y * MAP_WIDTH + x] = Door::makeDoorAt(x, y);
+                case TileType::wallFortified:
+                    tileType = TileType::doorH;
+                    doors[y * MAP_WIDTH + x] = makeDoorAt(x, y);
                     break;
                 default:
                     break;

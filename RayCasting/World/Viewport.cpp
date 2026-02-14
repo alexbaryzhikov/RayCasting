@@ -178,15 +178,15 @@ bool castRay(RayState& state, Ray& ray) {
             return false;
         }
         int tileIndex = row * MAP_WIDTH + col;
-        Tile tile = Map::tiles[tileIndex];
-        if (isWall(tile)) {
+        TileType tileType = Map::tiles[tileIndex];
+        if (isWall(tileType)) {
             ray.position = state.rayX.position;
             ray.length = lengthX;
             ray.tileIndex = tileIndex;
-        } else if (isDoor(tile)) {
+        } else if (isDoor(tileType)) {
             simd::float2 tilePosition = makeTilePosition(col, row);
             std::array<simd::float2, 2> raySegment = {state.rayX.position - tilePosition, state.rayX.position - tilePosition + state.rayX.step};
-            std::array<simd::float2, 4>& doorPolygon = tile == Tile::doorH ? doorH : doorV;
+            std::array<simd::float2, 4>& doorPolygon = tileType == TileType::doorH ? doorH : doorV;
             Intersection intersection;
             if (findClosestIntersection(raySegment, doorPolygon, intersection) && !Map::doors[tileIndex].isPassable()) {
                 ray.position = state.rayX.position + intersection.point - raySegment[0];
@@ -205,15 +205,15 @@ bool castRay(RayState& state, Ray& ray) {
             return false;
         }
         int tileIndex = row * MAP_WIDTH + col;
-        Tile tile = Map::tiles[tileIndex];
-        if (isWall(tile)) {
+        TileType tileType = Map::tiles[tileIndex];
+        if (isWall(tileType)) {
             ray.position = state.rayY.position;
             ray.length = lengthY;
             ray.tileIndex = tileIndex;
-        } else if (isDoor(tile)) {
+        } else if (isDoor(tileType)) {
             simd::float2 tilePosition = makeTilePosition(col, row);
             std::array<simd::float2, 2> raySegment = {state.rayY.position - tilePosition, state.rayY.position - tilePosition + state.rayY.step};
-            std::array<simd::float2, 4>& doorPolygon = tile == Tile::doorH ? doorH : doorV;
+            std::array<simd::float2, 4>& doorPolygon = tileType == TileType::doorH ? doorH : doorV;
             Intersection intersection;
             if (findClosestIntersection(raySegment, doorPolygon, intersection) && !Map::doors[tileIndex].isPassable()) {
                 ray.position = state.rayY.position + intersection.point - raySegment[0];

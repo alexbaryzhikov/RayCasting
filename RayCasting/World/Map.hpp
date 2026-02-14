@@ -10,7 +10,7 @@
 
 namespace RC {
 
-enum class Tile {
+enum class TileType {
     doorH,
     doorV,
     empty,
@@ -19,9 +19,9 @@ enum class Tile {
     wallIndestructible,
 };
 
-bool isDoor(Tile tile);
+bool isDoor(TileType type);
 
-bool isWall(Tile tile);
+bool isWall(TileType type);
 
 enum class DoorState {
     idle,
@@ -37,23 +37,16 @@ struct Door {
     DoorState state;
     TimePoint closingTime;
 
-    static Door makeDoorAt(int col, int row) {
-        return {
-            .position = (simd::float2{float(col), float(row)} + 0.5) * MAP_TILE_SIZE,
-            .progress = 1,
-            .state = DoorState::idle,
-            .closingTime = TimePoint(std::chrono::seconds(0)),
-        };
-    }
-
     bool isPassable() { return progress < 1 - CAMERA_HEIGHT / MAP_TILE_SIZE; }
 };
+
+Door makeDoorAt(int col, int row);
 
 } // namespace RC
 
 namespace RC::Map {
 
-extern std::array<Tile, MAP_WIDTH * MAP_HEIGHT> tiles;
+extern std::array<TileType, MAP_WIDTH * MAP_HEIGHT> tiles;
 extern std::map<int, Door> doors;
 extern const float width;
 extern const float height;

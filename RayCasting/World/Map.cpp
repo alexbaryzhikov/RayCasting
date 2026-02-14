@@ -10,25 +10,34 @@
 
 namespace RC {
 
-bool isDoor(Tile tile) {
-    switch (tile) {
-        case Tile::doorH:
-        case Tile::doorV:
+bool isDoor(TileType type) {
+    switch (type) {
+        case TileType::doorH:
+        case TileType::doorV:
             return true;
         default:
             return false;
     }
 }
 
-bool isWall(Tile tile) {
-    switch (tile) {
-        case Tile::wall:
-        case Tile::wallFortified:
-        case Tile::wallIndestructible:
+bool isWall(TileType type) {
+    switch (type) {
+        case TileType::wall:
+        case TileType::wallFortified:
+        case TileType::wallIndestructible:
             return true;
         default:
             return false;
     }
+}
+
+Door makeDoorAt(int col, int row) {
+    return {
+        .position = (simd::float2{float(col), float(row)} + 0.5) * MAP_TILE_SIZE,
+        .progress = 1,
+        .state = DoorState::idle,
+        .closingTime = Door::TimePoint(std::chrono::seconds(0)),
+    };
 }
 
 } // namespace RC
@@ -48,7 +57,7 @@ const std::vector<Segment> wallGeometry = MapGeometry::makeWall();
 const std::vector<Segment> fortifiedWallGeometry = MapGeometry::makeWallFortified();
 const std::vector<Segment> indestructibleWallGeometry = MapGeometry::makeWallIndestuctible();
 
-std::array<Tile, MAP_WIDTH * MAP_HEIGHT> tiles;
+std::array<TileType, MAP_WIDTH * MAP_HEIGHT> tiles;
 std::map<int, Door> doors;
 float zoomFactor = MAP_ZOOM_DEFAULT;
 Frame frame = fullFrame;
@@ -93,25 +102,25 @@ void drawTile(int row, int col) {
     simd::float3x3 scale = makeScaleMatrix(zoomFactor, zoomFactor);
     simd::float3x3 transform = matrix_multiply(translate, scale);
     switch (tiles[row * MAP_WIDTH + col]) {
-        case Tile::doorH:
+        case TileType::doorH:
             if (!doors[row * MAP_WIDTH + col].isPassable()) {
                 drawGeometry(doorHGeometry, transform, Palette::mapWallColor);
             }
             break;
-        case Tile::doorV:
+        case TileType::doorV:
             if (!doors[row * MAP_WIDTH + col].isPassable()) {
                 drawGeometry(doorVGeometry, transform, Palette::mapWallColor);
             }
             break;
-        case Tile::empty:
+        case TileType::empty:
             break;
-        case Tile::wall:
+        case TileType::wall:
             drawGeometry(wallGeometry, transform, Palette::mapWallColor);
             break;
-        case Tile::wallFortified:
+        case TileType::wallFortified:
             drawGeometry(fortifiedWallGeometry, transform, Palette::mapWallColor);
             break;
-        case Tile::wallIndestructible:
+        case TileType::wallIndestructible:
             drawGeometry(indestructibleWallGeometry, transform, Palette::mapWallColor);
             break;
     }

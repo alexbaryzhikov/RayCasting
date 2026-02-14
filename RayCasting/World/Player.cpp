@@ -175,8 +175,8 @@ void updateActions() {
         mouseRightUpdated = true;
         Ray ray = Viewport::castRay(0);
         if (!ray.isMiss() && ray.length < PLAYER_ACTION_RANGE) {
-            if (Map::tiles[ray.tileIndex] != Tile::wallIndestructible) {
-                Map::tiles[ray.tileIndex] = Tile::empty;
+            if (Map::tiles[ray.tileIndex] != TileType::wallIndestructible) {
+                Map::tiles[ray.tileIndex] = TileType::empty;
                 Map::doors.erase(ray.tileIndex);
             }
         }
@@ -194,9 +194,9 @@ void updateActions() {
             simd::float2 tilePosition = (position.xy + simd::float2{cos(angle), sin(angle)} * PLAYER_ACTION_RANGE) / MAP_TILE_SIZE;
             int col = floor(tilePosition.x);
             int row = floor(tilePosition.y);
-            Tile& tile = Map::tiles[row * MAP_WIDTH + col];
-            if (tile == Tile::empty) {
-                tile = Tile::wallFortified;
+            TileType& tileType = Map::tiles[row * MAP_WIDTH + col];
+            if (tileType == TileType::empty) {
+                tileType = TileType::wallFortified;
             }
         }
     }
