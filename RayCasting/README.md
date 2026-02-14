@@ -16,6 +16,8 @@
 
 ## Next Steps
 
-- Torches as light sources
+- Save and load map
+- Game menu: generate, save and load map
 - Toolbar for building different kinds of walls
-- Wall decorations (edge, support beam, window)
+- Torches
+- Torches as light sources
