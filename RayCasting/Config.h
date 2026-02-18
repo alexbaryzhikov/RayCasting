@@ -6,7 +6,6 @@
 #define VIEWPORT_HEIGHT             900
 #define CANVAS_WIDTH                800
 #define CANVAS_HEIGHT               450
-#define GPU_RENDERING               true
 
 // Font
 #define FONT_MAP_WIDTH              128
